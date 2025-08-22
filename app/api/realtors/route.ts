@@ -1,0 +1,104 @@
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth/auth";
+import { prisma } from "@/lib/db/prisma";
+import { z } from "zod";
+
+// Schema for creating/updating a realtor
+const realtorSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  email: z.string().email("Invalid email address"),
+  phone: z.string().optional(),
+  headshot: z.string().url().optional(),
+});
+
+// GET /api/realtors - Get all realtors for the current user
+export async function GET() {
+  try {
+    const session = await auth();
+    
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const realtors = await prisma.realtor.findMany({
+      where: {
+        userId: session.user.id,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return NextResponse.json(realtors);
+  } catch (error) {
+    console.error("Error fetching realtors:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch realtors" },
+      { status: 500 }
+    );
+  }
+}
+
+// POST /api/realtors - Create a new realtor
+export async function POST(request: NextRequest) {
+  try {
+    const session = await auth();
+    
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    
+    // Validate input
+    const validatedFields = realtorSchema.safeParse(body);
+    
+    if (!validatedFields.success) {
+      return NextResponse.json(
+        { error: "Invalid fields", details: validatedFields.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { firstName, lastName, email, phone, headshot } = validatedFields.data;
+
+    // Check if realtor with this email already exists
+    const existingRealtor = await prisma.realtor.findUnique({
+      where: { email },
+    });
+
+    if (existingRealtor) {
+      return NextResponse.json(
+        { error: "A realtor with this email already exists" },
+        { status: 409 }
+      );
+    }
+
+    // Create realtor
+    const realtor = await prisma.realtor.create({
+      data: {
+        firstName,
+        lastName,
+        email,
+        phone: phone || null,
+        headshot: headshot || null,
+        userId: session.user.id,
+      },
+    });
+
+    return NextResponse.json(realtor, { status: 201 });
+  } catch (error) {
+    console.error("Error creating realtor:", error);
+    return NextResponse.json(
+      { error: "Failed to create realtor" },
+      { status: 500 }
+    );
+  }
+}
