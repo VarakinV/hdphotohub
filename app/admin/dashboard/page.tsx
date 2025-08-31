@@ -75,14 +75,19 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card
+            className="cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => router.push('/admin/orders')}
+          >
             <CardHeader>
               <CardTitle>Orders</CardTitle>
               <CardDescription>Manage property orders</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">0</p>
-              <p className="text-sm text-muted-foreground">Total Orders</p>
+              <p className="text-2xl font-bold">View All</p>
+              <p className="text-sm text-muted-foreground">
+                Click to manage orders
+              </p>
             </CardContent>
           </Card>
 

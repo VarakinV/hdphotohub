@@ -33,6 +33,34 @@ model Realtor {
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  orders    Order[]
+}
+
+model Order {
+  id        String      @id @default(cuid())
+  realtorId String
+  realtor   Realtor     @relation(fields: [realtorId], references: [id])
+  slug      String      @unique
+  status    OrderStatus @default(DRAFT)
+
+  // Property info
+  propertyAddress String
+  propertySize    Int?
+  yearBuilt       Int?
+  mlsNumber       String?
+  listPrice       Int?
+  bedrooms        Int?
+  bathrooms       Int?
+  description     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum OrderStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
 }
 
 enum Role {
