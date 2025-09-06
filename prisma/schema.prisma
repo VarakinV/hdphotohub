@@ -53,8 +53,61 @@ model Order {
   bathrooms       Int?
   description     String?
 
+  // Media relations
+  photos      Photo[]
+  videos      Video[]
+  floorPlans  FloorPlan[]
+  attachments Attachment[]
+  embeds      Embed[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Photo {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id])
+  url       String // original S3 URL
+  urlMls    String? // resized MLS version
+  filename  String
+  createdAt DateTime @default(now())
+}
+
+model Video {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id])
+  url       String
+  filename  String
+  createdAt DateTime @default(now())
+}
+
+model FloorPlan {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id])
+  url       String
+  filename  String
+  createdAt DateTime @default(now())
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id])
+  url       String
+  filename  String
+  createdAt DateTime @default(now())
+}
+
+model Embed {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id])
+  title     String
+  embedUrl  String
+  createdAt DateTime @default(now())
 }
 
 enum OrderStatus {

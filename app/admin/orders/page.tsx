@@ -21,6 +21,7 @@ import {
 import { Input } from '@/components/ui/input';
 
 import { Loader2, Plus } from 'lucide-react';
+import { CopyDeliveryLinkIcon } from '@/components/admin/CopyDeliveryLinkIcon';
 
 interface RealtorOption {
   id: string;
@@ -198,9 +199,30 @@ export default function OrdersPage() {
                     </TableCell>
                     <TableCell>{o.mlsNumber || '—'}</TableCell>
                     <TableCell>{o.status}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right flex gap-2 justify-end">
+                      {o.status === 'PUBLISHED' && (
+                        <CopyDeliveryLinkIcon orderId={o.id} />
+                      )}
                       <Button variant="outline" size="sm" asChild>
                         <Link href={`/admin/orders/${o.id}`}>Open</Link>
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={async () => {
+                          if (!confirm('Delete this order and all its media?'))
+                            return;
+                          const res = await fetch(`/api/orders/${o.id}`, {
+                            method: 'DELETE',
+                          });
+                          if (res.ok)
+                            setOrders((list) =>
+                              list.filter((x) => x.id !== o.id)
+                            );
+                          else alert('Failed to delete order');
+                        }}
+                      >
+                        Delete
                       </Button>
                     </TableCell>
                   </TableRow>

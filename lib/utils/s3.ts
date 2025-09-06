@@ -24,8 +24,20 @@ const BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME || "";
 
 /**
  * Generate a presigned URL for uploading a file directly from the browser to S3
+ * (legacy headshot helper)
  */
 export async function getPresignedUploadUrl(
+  fileName: string,
+  fileType: string
+): Promise<{ uploadUrl: string; fileKey: string; fileUrl: string }> {
+  return getPresignedUploadUrlForPath(`realtors/headshots`, fileName, fileType);
+}
+
+/**
+ * Generalized presigned URL generator for a given S3 folder path
+ */
+export async function getPresignedUploadUrlForPath(
+  basePath: string,
   fileName: string,
   fileType: string
 ): Promise<{ uploadUrl: string; fileKey: string; fileUrl: string }> {
@@ -33,9 +45,8 @@ export async function getPresignedUploadUrl(
     throw new Error("S3 is not configured. Please set AWS credentials in environment variables.");
   }
 
-  // Generate unique file key
-  const fileExtension = fileName.split(".").pop();
-  const fileKey = `realtors/headshots/${uuidv4()}.${fileExtension}`;
+  const ext = (fileName.split(".").pop() || '').toLowerCase();
+  const fileKey = `${basePath}/${uuidv4()}.${ext}`;
 
   const command = new PutObjectCommand({
     Bucket: BUCKET_NAME,
@@ -43,17 +54,23 @@ export async function getPresignedUploadUrl(
     ContentType: fileType,
   });
 
-  // Generate presigned URL (valid for 5 minutes)
   const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 });
-  
-  // The public URL where the file will be accessible
   const fileUrl = `https://${BUCKET_NAME}.s3.${process.env.AWS_REGION || "us-east-1"}.amazonaws.com/${fileKey}`;
 
-  return {
-    uploadUrl,
-    fileKey,
-    fileUrl,
-  };
+  return { uploadUrl, fileKey, fileUrl };
+}
+
+/**
+ * Generate a presigned URL for uploading order media by category
+ */
+export async function getOrderMediaPresignedUrl(
+  orderId: string,
+  category: 'photos' | 'videos' | 'floorplans' | 'attachments',
+  fileName: string,
+  fileType: string
+): Promise<{ uploadUrl: string; fileKey: string; fileUrl: string }> {
+  const basePath = `orders/${orderId}/${category}`;
+  return getPresignedUploadUrlForPath(basePath, fileName, fileType);
 }
 
 /**
@@ -111,4 +128,23 @@ export function validateImageFile(file: File): { valid: boolean; error?: string 
   }
 
   return { valid: true };
+}
+
+/**
+ * Upload a buffer to S3 at a specific base path and file name
+ */
+export async function uploadBufferToS3WithPath(
+  basePath: string,
+  fileName: string,
+  buffer: Buffer,
+  contentType: string
+): Promise<{ fileKey: string; fileUrl: string }> {
+  if (!isS3Configured || !s3Client) {
+    throw new Error("S3 is not configured. Please set AWS credentials in environment variables.");
+  }
+  const key = `${basePath}/${fileName}`;
+  const command = new PutObjectCommand({ Bucket: BUCKET_NAME, Key: key, Body: buffer, ContentType: contentType });
+  await s3Client.send(command);
+  const fileUrl = `https://${BUCKET_NAME}.s3.${process.env.AWS_REGION || "us-east-1"}.amazonaws.com/${key}`;
+  return { fileKey: key, fileUrl };
 }
