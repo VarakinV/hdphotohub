@@ -11,7 +11,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const { id } = await params;
     const body = await req.json().catch(() => ({}));
-    const onlyMissing: boolean = !!body?.onlyMissing ?? true;
+    const onlyMissing: boolean = body?.onlyMissing ?? true;
 
     // Fetch photos for this order
     const photos = await prisma.photo.findMany({ where: { orderId: id } });

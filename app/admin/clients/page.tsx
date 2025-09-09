@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -40,6 +41,7 @@ import {
   Phone,
   AlertCircle,
 } from 'lucide-react';
+import { AdminNavbar } from '@/components/admin/admin-navbar';
 
 interface Realtor {
   id: string;
@@ -62,6 +64,17 @@ export default function ClientsPage() {
     isConfigured: boolean;
     bucketName?: string | null;
   }>({ isConfigured: false });
+
+  const [page, setPage] = useState(1);
+  const perPage = 20;
+  useEffect(() => {
+    setPage(1);
+  }, [realtors]);
+  const totalPages = Math.max(1, Math.ceil(realtors.length / perPage));
+  const pageItems = useMemo(
+    () => realtors.slice((page - 1) * perPage, page * perPage),
+    [realtors, page]
+  );
 
   // Fetch realtors
   const fetchRealtors = async () => {
@@ -137,6 +150,8 @@ export default function ClientsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <AdminNavbar />
+
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
@@ -147,12 +162,6 @@ export default function ClientsPage() {
               </p>
             </div>
             <div className="flex gap-4">
-              <Button
-                variant="outline"
-                onClick={() => (window.location.href = '/admin/dashboard')}
-              >
-                Back to Dashboard
-              </Button>
               <Button onClick={() => handleOpenDialog()}>
                 <Plus className="mr-2 h-4 w-4" />
                 Add Realtor
@@ -228,7 +237,7 @@ export default function ClientsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {realtors.map((realtor) => (
+                {pageItems.map((realtor) => (
                   <TableRow key={realtor.id}>
                     <TableCell>
                       <Avatar className="h-10 w-10">
@@ -280,6 +289,12 @@ export default function ClientsPage() {
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
+                        <Button variant="default" size="sm" asChild>
+                          <Link href={`/admin/clients/${realtor.id}/users`}>
+                            Send Invite
+                          </Link>
+                        </Button>
+
                         <Button
                           variant="outline"
                           size="sm"
@@ -293,6 +308,32 @@ export default function ClientsPage() {
                 ))}
               </TableBody>
             </Table>
+            {/* Pagination */}
+            {!isLoading && (
+              <div className="p-4 border-t flex items-center justify-between">
+                <div className="text-sm text-gray-500">
+                  Page {page} of {totalPages}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page <= 1}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page >= totalPages}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>

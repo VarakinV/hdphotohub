@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { AdminNavbar } from '@/components/admin/admin-navbar';
 
 import { Loader2, Plus } from 'lucide-react';
 import { CopyDeliveryLinkIcon } from '@/components/admin/CopyDeliveryLinkIcon';
@@ -87,8 +88,21 @@ export default function OrdersPage() {
     });
   }, [orders, filters]);
 
+  const [page, setPage] = useState(1);
+  const perPage = 20;
+  useEffect(() => {
+    setPage(1);
+  }, [filters]);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+  const pageItems = useMemo(
+    () => filtered.slice((page - 1) * perPage, page * perPage),
+    [filtered, page]
+  );
+
   return (
     <div className="min-h-screen bg-gray-50">
+      <AdminNavbar />
+
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
@@ -99,9 +113,6 @@ export default function OrdersPage() {
               </p>
             </div>
             <div className="flex gap-4">
-              <Button variant="outline" asChild>
-                <Link href="/admin/dashboard">Back to Dashboard</Link>
-              </Button>
               <Button asChild>
                 <Link href="/admin/orders/new">
                   <Plus className="mr-2 h-4 w-4" /> New Order
@@ -178,57 +189,90 @@ export default function OrdersPage() {
               <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Property Address</TableHead>
-                  <TableHead>Realtor</TableHead>
-                  <TableHead>MLS #</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((o) => (
-                  <TableRow key={o.id}>
-                    <TableCell className="font-medium">
-                      {o.propertyAddress}
-                    </TableCell>
-                    <TableCell>
-                      {o.realtor.firstName} {o.realtor.lastName}
-                    </TableCell>
-                    <TableCell>{o.mlsNumber || '—'}</TableCell>
-                    <TableCell>{o.status}</TableCell>
-                    <TableCell className="text-right flex gap-2 justify-end">
-                      {o.status === 'PUBLISHED' && (
-                        <CopyDeliveryLinkIcon orderId={o.id} />
-                      )}
-                      <Button variant="outline" size="sm" asChild>
-                        <Link href={`/admin/orders/${o.id}`}>Open</Link>
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={async () => {
-                          if (!confirm('Delete this order and all its media?'))
-                            return;
-                          const res = await fetch(`/api/orders/${o.id}`, {
-                            method: 'DELETE',
-                          });
-                          if (res.ok)
-                            setOrders((list) =>
-                              list.filter((x) => x.id !== o.id)
-                            );
-                          else alert('Failed to delete order');
-                        }}
-                      >
-                        Delete
-                      </Button>
-                    </TableCell>
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Property Address</TableHead>
+                    <TableHead>Realtor</TableHead>
+                    <TableHead>MLS #</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {pageItems.map((o) => (
+                    <TableRow key={o.id}>
+                      <TableCell className="font-medium">
+                        {o.propertyAddress}
+                      </TableCell>
+                      <TableCell>
+                        {o.realtor.firstName} {o.realtor.lastName}
+                      </TableCell>
+                      <TableCell>{o.mlsNumber || '—'}</TableCell>
+                      <TableCell>{o.status}</TableCell>
+                      <TableCell className="text-right flex gap-2 justify-end">
+                        {o.status === 'PUBLISHED' && (
+                          <CopyDeliveryLinkIcon orderId={o.id} />
+                        )}
+                        <Button variant="outline" size="sm" asChild>
+                          <Link href={`/admin/orders/${o.id}`}>Open</Link>
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={async () => {
+                            if (
+                              !confirm('Delete this order and all its media?')
+                            )
+                              return;
+                            const res = await fetch(`/api/orders/${o.id}`, {
+                              method: 'DELETE',
+                            });
+                            if (res.ok)
+                              setOrders((list) =>
+                                list.filter((x) => x.id !== o.id)
+                              );
+                            else alert('Failed to delete order');
+                          }}
+                        >
+                          Delete
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              {/* Pagination */}
+              {!loading && (
+                <div className="p-4 border-t flex items-center justify-between">
+                  <div className="text-sm text-gray-500">
+                    Page {page} of {totalPages}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={page <= 1}
+                    >
+                      Previous
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setPage((p) => Math.min(totalPages, p + 1))
+                      }
+                      disabled={page >= totalPages}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </main>

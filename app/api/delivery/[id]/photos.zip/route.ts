@@ -59,7 +59,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     const content = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
 
-    return new NextResponse(content, {
+    // Cast to Uint8Array to satisfy BodyInit types in Response
+    const uint8 = new Uint8Array(content);
+    return new Response(uint8, {
       status: 200,
       headers: {
         'Content-Type': 'application/zip',

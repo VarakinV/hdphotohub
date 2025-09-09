@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import { signIn, getSession } from 'next-auth/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -56,7 +56,14 @@ export function LoginForm() {
         toast.error('Invalid email or password');
       } else {
         toast.success('Login successful!');
-        router.push('/admin/dashboard');
+        // Fetch session to determine role and redirect accordingly
+        const session = await getSession();
+        const role = (session?.user as any)?.role as string | undefined;
+        if (role === 'ADMIN' || role === 'SUPERADMIN') {
+          router.push('/admin/dashboard');
+        } else {
+          router.push('/portal');
+        }
         router.refresh();
       }
     } catch (error) {

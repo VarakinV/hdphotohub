@@ -69,8 +69,10 @@ async function proxyDownload(sourceUrl: string, filename: string) {
   return blobResponse(buf, filename, contentType);
 }
 
-function blobResponse(buf: Buffer, filename: string, contentType: string) {
-  return new NextResponse(buf, {
+function blobResponse(buf: Buffer | Uint8Array, filename: string, contentType: string) {
+  // Use a Blob to satisfy BodyInit across environments
+  const body = new Blob([new Uint8Array(buf as Uint8Array)], { type: contentType });
+  return new Response(body, {
     status: 200,
     headers: {
       'Content-Type': contentType,

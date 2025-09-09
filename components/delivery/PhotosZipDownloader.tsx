@@ -1,22 +1,22 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Download, Loader2 } from "lucide-react";
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Download, Loader2 } from 'lucide-react';
 
 export function PhotosZipDownloader({ orderId }: { orderId: string }) {
-  const [loading, setLoading] = useState<null | "original" | "mls">(null);
+  const [loading, setLoading] = useState<null | 'original' | 'mls'>(null);
   const [progress, setProgress] = useState<number | null>(null);
 
-  async function download(variant: "original" | "mls") {
+  async function download(variant: 'original' | 'mls') {
     try {
       setLoading(variant);
       setProgress(0);
       const url = `/api/delivery/${orderId}/photos.zip?variant=${variant}`;
       const res = await fetch(url);
-      if (!res.ok) throw new Error("Failed to prepare ZIP");
+      if (!res.ok) throw new Error('Failed to prepare ZIP');
 
-      const total = Number(res.headers.get("content-length") || 0);
+      const total = Number(res.headers.get('content-length') || 0);
       if (res.body && total > 0) {
         // Stream with progress
         const reader = res.body.getReader();
@@ -31,7 +31,10 @@ export function PhotosZipDownloader({ orderId }: { orderId: string }) {
             setProgress(Math.round((loaded / total) * 100));
           }
         }
-        const blob = new Blob(chunks, { type: "application/zip" });
+        // Cast chunks to BlobPart[] to satisfy TS; runtime supports Uint8Array parts
+        const blob = new Blob(chunks as unknown as BlobPart[], {
+          type: 'application/zip',
+        });
         triggerDownload(blob, `photos-${variant}.zip`);
       } else {
         // Fallback: no content-length; show indeterminate and finalize when done
@@ -49,7 +52,7 @@ export function PhotosZipDownloader({ orderId }: { orderId: string }) {
 
   function triggerDownload(blob: Blob, filename: string) {
     const href = URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.href = href;
     a.download = filename;
     document.body.appendChild(a);
@@ -63,10 +66,15 @@ export function PhotosZipDownloader({ orderId }: { orderId: string }) {
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-2">
-        <Button type="button" onClick={() => download("original")} disabled={busy}>
-          {loading === "original" ? (
+        <Button
+          type="button"
+          onClick={() => download('original')}
+          disabled={busy}
+        >
+          {loading === 'original' ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin" /> Preparing Originals...
+              <Loader2 className="h-4 w-4 animate-spin" /> Preparing
+              Originals...
             </>
           ) : (
             <>
@@ -74,8 +82,13 @@ export function PhotosZipDownloader({ orderId }: { orderId: string }) {
             </>
           )}
         </Button>
-        <Button type="button" variant="outline" onClick={() => download("mls")} disabled={busy}>
-          {loading === "mls" ? (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => download('mls')}
+          disabled={busy}
+        >
+          {loading === 'mls' ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" /> Preparing MLS...
             </>
@@ -89,7 +102,10 @@ export function PhotosZipDownloader({ orderId }: { orderId: string }) {
       {busy && (
         <div className="h-2 w-full bg-gray-200 rounded overflow-hidden">
           {progress != null ? (
-            <div className="h-full bg-blue-500 transition-all" style={{ width: `${progress}%` }} />
+            <div
+              className="h-full bg-blue-500 transition-all"
+              style={{ width: `${progress}%` }}
+            />
           ) : (
             <div className="h-full bg-blue-500 animate-pulse w-1/3" />
           )}
@@ -98,4 +114,3 @@ export function PhotosZipDownloader({ orderId }: { orderId: string }) {
     </div>
   );
 }
-

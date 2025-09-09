@@ -46,8 +46,10 @@ export default {
             email: user.email,
             name: user.name,
             image: user.image,
+            avatarUrl: (user as any).avatarUrl ?? user.image ?? null,
             role: user.role,
-          };
+            realtorId: user.realtorId ?? null,
+          } as any;
         } catch (error) {
           console.error("Auth error:", error);
           return null;
@@ -62,26 +64,44 @@ export default {
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      const isOnAdmin = nextUrl.pathname.startsWith("/admin");
-      
-      if (isOnAdmin) {
-        if (isLoggedIn) return true;
-        return false; // Redirect unauthenticated users to login page
+      const path = nextUrl.pathname;
+      const role = (auth?.user as any)?.role as string | undefined;
+
+      if (path.startsWith("/admin")) {
+        // Admin area: ADMIN or SUPERADMIN can access
+        return isLoggedIn && (role === "ADMIN" || role === "SUPERADMIN");
       }
-      
+
+      if (path.startsWith("/portal")) {
+        // Portal area: REALTOR, ADMIN, or SUPERADMIN
+        return isLoggedIn && (role === "REALTOR" || role === "ADMIN" || role === "SUPERADMIN");
+      }
+
+      // Public and other routes
       return true;
     },
-    jwt({ token, user }) {
+    jwt({ token, user, trigger, session }) {
       if (user) {
-        token.id = user.id;
-        token.role = user.role;
+        token.id = (user as any).id;
+        token.role = (user as any).role;
+        token.realtorId = (user as any).realtorId ?? undefined;
+        token.name = (user as any).name ?? token.name;
+        (token as any).avatarUrl = (user as any).avatarUrl ?? (user as any).image ?? (token as any).avatarUrl ?? null;
+      }
+      // Support client-side session.update({...}) to refresh token values
+      if (trigger === 'update' && session) {
+        if (typeof (session as any).name === 'string') token.name = (session as any).name;
+        if ((session as any).avatarUrl !== undefined) (token as any).avatarUrl = (session as any).avatarUrl;
       }
       return token;
     },
     session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
+        (session.user as any).id = token.id as string;
+        (session.user as any).role = token.role as string;
+        (session.user as any).realtorId = (token as any).realtorId as string | undefined;
+        session.user.name = token.name as string | null | undefined;
+        (session.user as any).avatarUrl = (token as any).avatarUrl as string | null | undefined;
       }
       return session;
     }

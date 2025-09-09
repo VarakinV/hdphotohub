@@ -55,7 +55,7 @@ export async function POST(request: Request) {
         email,
         password: hashedPassword,
         name,
-        role: "ADMIN", // All users are admins in this system
+        role: "REALTOR", // Default role for self-registrations
       },
       select: {
         id: true,

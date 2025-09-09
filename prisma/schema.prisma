@@ -11,29 +11,36 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(cuid())
-  email     String    @unique
+  id        String  @id @default(cuid())
+  email     String  @unique
   password  String
   name      String?
   image     String?
-  role      Role      @default(ADMIN)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  realtors  Realtor[]
+  avatarUrl String?
+
+  role            Role         @default(REALTOR)
+  realtorId       String?
+  realtor         Realtor?     @relation("RealtorMembers", fields: [realtorId], references: [id])
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  createdRealtors Realtor[]    @relation("RealtorCreatedBy")
+  invitesSent     Invitation[] @relation("InvitesBy")
 }
 
 model Realtor {
-  id        String   @id @default(cuid())
+  id        String       @id @default(cuid())
   firstName String
   lastName  String
-  email     String   @unique
+  email     String       @unique
   phone     String?
   headshot  String? // S3 URL for headshot image
   userId    String // Admin who created this realtor
-  user      User     @relation(fields: [userId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  user      User         @relation("RealtorCreatedBy", fields: [userId], references: [id])
+  users     User[]       @relation("RealtorMembers") // Users (REALTOR role) linked to this Realtor
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
   orders    Order[]
+  invites   Invitation[] @relation("RealtorInvites")
 }
 
 model Order {
@@ -110,6 +117,20 @@ model Embed {
   createdAt DateTime @default(now())
 }
 
+model Invitation {
+  id          String    @id @default(cuid())
+  email       String
+  realtorId   String?
+  realtor     Realtor?  @relation("RealtorInvites", fields: [realtorId], references: [id])
+  role        Role
+  tokenHash   String
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  invitedById String
+  invitedBy   User      @relation("InvitesBy", fields: [invitedById], references: [id])
+  createdAt   DateTime  @default(now())
+}
+
 enum OrderStatus {
   DRAFT
   PUBLISHED
@@ -117,5 +138,7 @@ enum OrderStatus {
 }
 
 enum Role {
+  SUPERADMIN
   ADMIN
+  REALTOR
 }

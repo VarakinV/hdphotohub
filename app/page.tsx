@@ -5,7 +5,12 @@ export default async function Home() {
   const session = await auth();
 
   if (session?.user) {
-    redirect('/admin/dashboard');
+    const role = (session.user as any).role as string | undefined;
+    if (role === 'ADMIN' || role === 'SUPERADMIN') {
+      redirect('/admin/dashboard');
+    } else {
+      redirect('/portal');
+    }
   } else {
     redirect('/login');
   }
