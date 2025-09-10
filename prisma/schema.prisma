@@ -18,13 +18,14 @@ model User {
   image     String?
   avatarUrl String?
 
-  role            Role         @default(REALTOR)
-  realtorId       String?
-  realtor         Realtor?     @relation("RealtorMembers", fields: [realtorId], references: [id])
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  createdRealtors Realtor[]    @relation("RealtorCreatedBy")
-  invitesSent     Invitation[] @relation("InvitesBy")
+  role               Role                 @default(REALTOR)
+  realtorId          String?
+  realtor            Realtor?             @relation("RealtorMembers", fields: [realtorId], references: [id])
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  createdRealtors    Realtor[]            @relation("RealtorCreatedBy")
+  invitesSent        Invitation[]         @relation("InvitesBy")
+  PasswordResetToken PasswordResetToken[]
 }
 
 model Realtor {
@@ -129,6 +130,15 @@ model Invitation {
   invitedById String
   invitedBy   User      @relation("InvitesBy", fields: [invitedById], references: [id])
   createdAt   DateTime  @default(now())
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  expiresAt DateTime
 }
 
 enum OrderStatus {

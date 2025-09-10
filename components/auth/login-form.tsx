@@ -131,6 +131,11 @@ export function LoginForm() {
             Register here
           </a>
         </div>
+        <div className="mt-2 text-center text-sm">
+          <a href="/forgot-password" className="text-primary hover:underline">
+            Forgot password?
+          </a>
+        </div>
       </CardContent>
     </Card>
   );
