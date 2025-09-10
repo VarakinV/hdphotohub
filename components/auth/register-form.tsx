@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -94,9 +94,9 @@ export function RegisterForm() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle>Create Admin Account</CardTitle>
+        <CardTitle>Create Account</CardTitle>
         <CardDescription>
-          Register a new admin account to access the platform
+          Register a new account to access the platform
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -140,42 +140,86 @@ export function RegisterForm() {
             <FormField
               control={form.control}
               name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="password"
-                      placeholder="••••••••"
-                      {...field}
-                      disabled={isLoading}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Must be at least 8 characters with uppercase, lowercase,
-                    number, and special character
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                const pwd = form.watch('password');
+                const checklist = [
+                  {
+                    label: 'At least 8 characters',
+                    ok: (pwd?.length || 0) >= 8,
+                  },
+                  {
+                    label: 'One lowercase letter',
+                    ok: /[a-z]/.test(pwd || ''),
+                  },
+                  {
+                    label: 'One uppercase letter',
+                    ok: /[A-Z]/.test(pwd || ''),
+                  },
+                  { label: 'One number', ok: /\d/.test(pwd || '') },
+                  {
+                    label: 'One special character',
+                    ok: /[^A-Za-z0-9]/.test(pwd || ''),
+                  },
+                ];
+                const hasError = !!form.formState.errors.password;
+                return (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="••••••••"
+                        {...field}
+                        disabled={isLoading}
+                        aria-invalid={hasError}
+                        className={
+                          hasError
+                            ? 'border-red-500 focus-visible:ring-red-500'
+                            : undefined
+                        }
+                      />
+                    </FormControl>
+                    <ul className="mt-2 text-xs" aria-live="polite">
+                      {checklist.map((c) => (
+                        <li
+                          key={c.label}
+                          className={c.ok ? 'text-green-600' : 'text-gray-500'}
+                        >
+                          {c.ok ? '✓' : '•'} {c.label}
+                        </li>
+                      ))}
+                    </ul>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
             <FormField
               control={form.control}
               name="confirmPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Confirm Password</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="password"
-                      placeholder="••••••••"
-                      {...field}
-                      disabled={isLoading}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                const err = !!form.formState.errors.confirmPassword;
+                return (
+                  <FormItem>
+                    <FormLabel>Confirm Password</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="••••••••"
+                        {...field}
+                        disabled={isLoading}
+                        aria-invalid={err}
+                        className={
+                          err
+                            ? 'border-red-500 focus-visible:ring-red-500'
+                            : undefined
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? 'Creating account...' : 'Create Account'}
