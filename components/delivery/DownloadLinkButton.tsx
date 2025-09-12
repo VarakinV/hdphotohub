@@ -8,10 +8,14 @@ export function DownloadLinkButton({
   url,
   label = 'Download',
   fileName,
+  className,
+  fullWidth = true,
 }: {
   url: string;
   label?: string;
   fileName?: string;
+  className?: string;
+  fullWidth?: boolean;
 }) {
   const [loading, setLoading] = useState(false);
 
@@ -51,7 +55,9 @@ export function DownloadLinkButton({
       size="sm"
       onClick={onClick}
       disabled={loading}
-      className="w-full justify-center whitespace-nowrap"
+      className={`${
+        fullWidth ? 'w-full' : ''
+      } justify-center whitespace-nowrap ${className || ''}`}
     >
       {loading ? (
         <Loader2 className="h-4 w-4 animate-spin" />

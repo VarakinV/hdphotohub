@@ -6,8 +6,13 @@ import { AuthSessionProvider } from '@/components/providers/session-provider';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'HD PhotoHub Clone - Real Estate Photography Delivery',
+  title: 'Media Portal - Real Estate Photography Delivery',
   description: 'Professional real estate photography delivery platform',
+  icons: {
+    icon: '/Map-Pin-Logo.svg',
+    shortcut: '/Map-Pin-Logo.svg',
+    apple: '/Map-Pin-Logo.svg',
+  },
 };
 
 export default function RootLayout({

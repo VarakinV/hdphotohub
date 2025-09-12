@@ -3,10 +3,10 @@ import { prisma } from "@/lib/db/prisma";
 import { hashToken } from "@/lib/utils/invite";
 import { hashPassword, validatePassword } from "@/lib/utils/password";
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
+export async function POST(req: NextRequest, { params }: { params: { token: string } }) {
   try {
-    const { token } = await params;
-    const { name, password } = await req.json().catch(() => ({}));
+    const { token } = params;
+    const { name, password } = (await req.json().catch(() => ({}))) as { name?: string; password?: string };
 
     if (!password) return NextResponse.json({ error: "Password is required" }, { status: 400 });
     const pw = validatePassword(password);

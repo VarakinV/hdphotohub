@@ -134,7 +134,18 @@ export default function ClientsPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete realtor');
+        try {
+          const data = await response.json();
+          const msg = data?.error || 'Failed to delete realtor';
+          if (Array.isArray(data?.details)) {
+            data.details.forEach((d: string) => toast.error(d));
+          } else {
+            toast.error(msg);
+          }
+        } catch {
+          toast.error('Failed to delete realtor');
+        }
+        return;
       }
 
       toast.success('Realtor deleted successfully');

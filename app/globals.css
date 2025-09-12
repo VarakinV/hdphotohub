@@ -72,8 +72,31 @@
 }
 
 @layer base {
+  html { scroll-behavior: smooth; }
+
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
   }
+}
+
+
+/* Hero ambient glow (very subtle, low amplitude) */
+@layer utilities {
+  @keyframes heroGlow {
+    0% { transform: translate(-8%, -6%) scale(1); opacity: .35; }
+    50% { transform: translate(6%, 8%) scale(1.04); opacity: .45; }
+    100% { transform: translate(-8%, -6%) scale(1); opacity: .35; }
+  }
+  .hero-glow { position: absolute; inset: 0; z-index: -10; background: #131c3b; overflow: hidden; }
+  .hero-glow::before,
+  .hero-glow::after { content:""; position: absolute; width: 48vmax; height: 48vmax; border-radius: 9999px; filter: blur(80px); background: radial-gradient(closest-side, #ca4153 35%, transparent 70%); }
+  .hero-glow::before { top: -25%; left: -15%; animation: heroGlow 22s ease-in-out infinite; opacity: .35; }
+  .hero-glow::after { bottom: -25%; right: -15%; animation: heroGlow 26s ease-in-out infinite reverse; opacity: .35; }
+
+  .feature-glow { position: absolute; inset: 0; z-index: -10; background: #171717; overflow: hidden; }
+  .feature-glow::before,
+  .feature-glow::after { content:""; position: absolute; width: 48vmax; height: 48vmax; border-radius: 9999px; filter: blur(80px); background: radial-gradient(closest-side, #ca4153 35%, transparent 70%); }
+  .feature-glow::before { top: -25%; left: -15%; animation: heroGlow 22s ease-in-out infinite; opacity: .28; }
+  .feature-glow::after { bottom: -25%; right: -15%; animation: heroGlow 26s ease-in-out infinite reverse; opacity: .28; }
 }

@@ -4,7 +4,13 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2 } from 'lucide-react';
 
-export function PhotosZipDownloader({ orderId }: { orderId: string }) {
+export function PhotosZipDownloader({
+  orderId,
+  size = 'default',
+}: {
+  orderId: string;
+  size?: 'sm' | 'default' | 'lg' | 'icon';
+}) {
   const [loading, setLoading] = useState<null | 'original' | 'mls'>(null);
   const [progress, setProgress] = useState<number | null>(null);
 
@@ -70,6 +76,7 @@ export function PhotosZipDownloader({ orderId }: { orderId: string }) {
           type="button"
           onClick={() => download('original')}
           disabled={busy}
+          size={size}
         >
           {loading === 'original' ? (
             <>
@@ -87,6 +94,7 @@ export function PhotosZipDownloader({ orderId }: { orderId: string }) {
           variant="outline"
           onClick={() => download('mls')}
           disabled={busy}
+          size={size}
         >
           {loading === 'mls' ? (
             <>

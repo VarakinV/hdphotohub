@@ -20,7 +20,7 @@ export async function GET(
 ) {
   try {
     const session = await auth();
-    
+
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: "Unauthorized" },
@@ -61,7 +61,7 @@ export async function PUT(
 ) {
   try {
     const session = await auth();
-    
+
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: "Unauthorized" },
@@ -71,10 +71,10 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
-    
+
     // Validate input
     const validatedFields = updateRealtorSchema.safeParse(body);
-    
+
     if (!validatedFields.success) {
       return NextResponse.json(
         { error: "Invalid fields", details: validatedFields.error.flatten() },
@@ -143,11 +143,11 @@ export async function PUT(
 // DELETE /api/realtors/[id] - Delete a realtor
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const session = await auth();
-    
+
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: "Unauthorized" },
@@ -155,7 +155,7 @@ export async function DELETE(
       );
     }
 
-    const { id } = await params;
+    const { id } = params;
 
     // Check if realtor exists and belongs to the user
     const realtor = await prisma.realtor.findFirst({
@@ -169,6 +169,19 @@ export async function DELETE(
       return NextResponse.json(
         { error: "Realtor not found" },
         { status: 404 }
+      );
+    }
+
+
+    // Check for dependent Orders BEFORE deleting any assets to avoid partial cleanup
+    const orderCount = await prisma.order.count({ where: { realtorId: id } });
+    if (orderCount > 0) {
+      return NextResponse.json(
+        {
+          error: "Cannot delete realtor with existing orders",
+          details: [`This realtor has ${orderCount} order(s). Delete or reassign those orders before deleting the realtor.`],
+        },
+        { status: 409 }
       );
     }
 
