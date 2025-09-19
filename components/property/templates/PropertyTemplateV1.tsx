@@ -277,18 +277,28 @@ export default function PropertyTemplateV1({
                 <div className="text-gray-600 text-sm">
                   {order.realtor.companyName || '—'}
                 </div>
-                <div className="text-gray-600 text-sm">
-                  {order.realtor.email}
-                </div>
+
                 {order.realtor.phone && (
                   <div className="text-gray-600 text-sm">
                     {order.realtor.phone}
                   </div>
                 )}
+                {order.realtor.companyLogo && (
+                  <div className="mt-3">
+                    <Image
+                      src={order.realtor.companyLogo}
+                      alt={order.realtor.companyName || 'Company Logo'}
+                      width={160}
+                      height={60}
+                      className="h-10 w-auto object-contain"
+                    />
+                  </div>
+                )}
               </div>
             </div>
+
             <div>
-              <ContactForm orderId={order.id} toEmail={order.realtor.email} />
+              <ContactForm orderId={order.id} />
             </div>
           </div>
         </section>

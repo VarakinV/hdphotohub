@@ -86,9 +86,9 @@ export default function PropertyTemplateV3({
         </div>
 
         {/* Realtor info bottom-right (aligned to content width) */}
-        <div className="absolute inset-x-0 -bottom-10 md:-bottom-12 z-30">
-          <div className="mx-auto max-w-6xl px-4 flex justify-end items-end gap-5">
-            <div className="flex flex-col items-end bg-white/90 backdrop-blur px-5 md:px-6 py-4 md:py-5 rounded-xl shadow-xl max-w-[88%] sm:max-w-none">
+        <div className="absolute left-3 top-3 md:inset-x-0 md:-bottom-12 md:top-auto md:-translate-y-5 z-30">
+          <div className="mx-auto max-w-6xl px-4 flex md:justify-end justify-start items-end gap-5">
+            <div className="relative flex flex-col items-start md:items-end text-left md:text-right bg-white/90 backdrop-blur px-5 md:px-6 py-4 md:py-5 rounded-xl shadow-xl w-[78%] sm:w-auto md:w-auto max-w-[92%] md:max-w-none">
               {order.realtor.companyLogo && (
                 <img
                   src={order.realtor.companyLogo}
@@ -123,7 +123,7 @@ export default function PropertyTemplateV3({
                 alt={realtorName}
                 width={104}
                 height={104}
-                className="rounded-full object-cover ring-4 ring-white shadow-2xl"
+                className="block rounded-full object-cover ring-4 ring-white shadow-2xl"
               />
             )}
           </div>
@@ -203,9 +203,12 @@ export default function PropertyTemplateV3({
 
         {!!order.photos.length && (
           <Section id="photos" title="Photo Gallery">
-            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2">
+            <div className="columns-2 sm:columns-3 md:columns-4 [column-gap:0.75rem] md:[column-gap:1rem]">
               {order.photos.map((p: any) => (
-                <div key={p.id} className="border rounded-md overflow-hidden">
+                <div
+                  key={p.id}
+                  className="mb-3 md:mb-4 break-inside-avoid overflow-hidden rounded-md"
+                >
                   <PhotoLightbox
                     src={p.urlMls || p.url}
                     alt={p.filename}
@@ -213,7 +216,7 @@ export default function PropertyTemplateV3({
                     startIndex={order.photos.findIndex(
                       (x: any) => x.id === p.id
                     )}
-                    thumbClassName="w-full h-36 object-cover cursor-pointer"
+                    thumbClassName="w-full h-auto cursor-pointer"
                   />
                 </div>
               ))}
@@ -281,18 +284,27 @@ export default function PropertyTemplateV3({
                 <div className="text-gray-600 text-sm">
                   {order.realtor.companyName || '\u2014'}
                 </div>
-                <div className="text-gray-600 text-sm">
-                  {order.realtor.email}
-                </div>
+
                 {order.realtor.phone && (
                   <div className="text-gray-600 text-sm">
                     {order.realtor.phone}
                   </div>
                 )}
+                {order.realtor.companyLogo && (
+                  <div className="mt-3">
+                    <Image
+                      src={order.realtor.companyLogo}
+                      alt={order.realtor.companyName || 'Company Logo'}
+                      width={160}
+                      height={60}
+                      className="h-10 w-auto object-contain"
+                    />
+                  </div>
+                )}
               </div>
             </div>
             <div>
-              <ContactForm orderId={order.id} toEmail={order.realtor.email} />
+              <ContactForm orderId={order.id} />
             </div>
           </div>
         </Section>

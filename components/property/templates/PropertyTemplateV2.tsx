@@ -36,6 +36,10 @@ export default function PropertyTemplateV2({
     order.embeds.find((e: any) => /iguide|matterport|tour/i.test(e.embedUrl)) ||
     order.embeds[0];
 
+  const phoneTel: string | undefined = order.realtor.phone
+    ? `tel:${String(order.realtor.phone).replace(/[^+\d]/g, '')}`
+    : undefined;
+
   const mosaicHeights: string[] = [
     'h-40 sm:h-56',
     'h-56 sm:h-72',
@@ -63,36 +67,60 @@ export default function PropertyTemplateV2({
           showMap={order.propertyLat != null && order.propertyLng != null}
         />
 
-        <div className="absolute inset-0 z-10 text-white">
-          <div className="mx-auto max-w-6xl px-4 py-12 md:py-20">
-            <div className="max-w-xl space-y-2">
-              <div className="text-3xl md:text-5xl font-extrabold tracking-tight">
-                {order.propertyFormattedAddress || order.propertyAddress}
-              </div>
-              <div className="text-white/90">
-                {order.description?.slice(0, 160) || ''}
-              </div>
-            </div>
-            <div className="mt-8 flex items-center gap-4">
-              {order.realtor.headshot && (
-                <Image
-                  src={order.realtor.headshot}
-                  alt={realtorName}
-                  width={64}
-                  height={64}
-                  className="rounded-full object-cover"
-                />
-              )}
-              <div>
-                <div className="text-lg font-semibold">{realtorName}</div>
-                <div className="text-white/80 text-sm">
-                  {order.realtor.email}
-                </div>
-                {order.realtor.phone && (
-                  <div className="text-white/80 text-sm">
-                    {order.realtor.phone}
-                  </div>
+        <div className="absolute inset-0 z-10 pointer-events-none">
+          {/* Address centered like V1 and remains vertically centered */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <h1 className="px-4 text-center text-white text-4xl md:text-7xl font-extrabold leading-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.6)] translate-y-10 md:translate-y-0">
+              {order.propertyFormattedAddress || order.propertyAddress}
+            </h1>
+          </div>
+
+          {/* Realtor infobox positioned above the centered address */}
+          <div className="absolute left-1/2 bottom-[calc(50%+1.25rem)] md:bottom-[calc(50%+3rem)] -translate-x-1/2 pointer-events-auto">
+            <div className="bg-white/60 backdrop-blur px-5 md:px-6 py-4 md:py-5 rounded-xl shadow-xl w-[90vw] sm:w-auto">
+              <div className="flex items-center gap-4">
+                {order.realtor.headshot && (
+                  <Image
+                    src={order.realtor.headshot}
+                    alt={realtorName}
+                    width={72}
+                    height={72}
+                    className="rounded-full object-cover"
+                  />
                 )}
+                <div className="text-gray-900">
+                  {order.realtor.companyLogo && (
+                    <Image
+                      src={order.realtor.companyLogo}
+                      alt={order.realtor.companyName || 'Company Logo'}
+                      width={140}
+                      height={48}
+                      className="h-8 w-auto object-contain mb-1"
+                    />
+                  )}
+                  <div className="text-base md:text-xl font-semibold">
+                    {realtorName}
+                  </div>
+                  {order.realtor.phone && (
+                    <a
+                      href={phoneTel}
+                      className="text-sm md:text-base text-gray-700 hover:text-gray-900"
+                    >
+                      {order.realtor.phone}
+                    </a>
+                  )}
+                  {order.realtor.companyName && (
+                    <div className="text-gray-700 text-sm md:text-base">
+                      {order.realtor.companyName}
+                    </div>
+                  )}
+                  <a
+                    href="#contact"
+                    className="mt-2 inline-block bg-gray-900 text-white text-sm md:text-base px-4 md:px-5 py-2 rounded-md font-medium"
+                  >
+                    Contact Me
+                  </a>
+                </div>
               </div>
             </div>
           </div>
@@ -238,18 +266,28 @@ export default function PropertyTemplateV2({
                 <div className="text-gray-600 text-sm">
                   {order.realtor.companyName || '—'}
                 </div>
-                <div className="text-gray-600 text-sm">
-                  {order.realtor.email}
-                </div>
+
                 {order.realtor.phone && (
                   <div className="text-gray-600 text-sm">
                     {order.realtor.phone}
                   </div>
                 )}
+                {order.realtor.companyLogo && (
+                  <div className="mt-3">
+                    <Image
+                      src={order.realtor.companyLogo}
+                      alt={order.realtor.companyName || 'Company Logo'}
+                      width={160}
+                      height={60}
+                      className="h-10 w-auto object-contain"
+                    />
+                  </div>
+                )}
               </div>
             </div>
+
             <div>
-              <ContactForm orderId={order.id} toEmail={order.realtor.email} />
+              <ContactForm orderId={order.id} />
             </div>
           </div>
         </Section>
