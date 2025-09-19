@@ -19,17 +19,29 @@ import { AttachmentsList } from '@/components/orders/attachments-list';
 import { EmbedsForm } from '@/components/orders/embeds-form';
 import { EmbedsList } from '@/components/orders/embeds-list';
 import { RegenerateMlsButton } from '@/components/admin/RegenerateMlsButton';
+import PlacesAddressInput from '@/components/admin/PlacesAddressInput';
 
 interface Order {
   id: string;
-  realtor: { id: string; firstName: string; lastName: string };
+  realtor: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email?: string;
+    phone?: string;
+    companyName?: string;
+  };
   propertyAddress: string;
+  propertyFormattedAddress?: string | null;
+  propertyLat?: number | null;
+  propertyLng?: number | null;
   propertySize?: number | null;
   yearBuilt?: number | null;
   mlsNumber?: string | null;
   listPrice?: number | null;
   bedrooms?: number | null;
   bathrooms?: number | null;
+  featuresText?: string | null;
   description?: string | null;
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
   slug: string;
@@ -115,7 +127,9 @@ export default function OrderDetailsPage() {
                 </div>
                 <div>
                   <div className="text-xs text-gray-500">Property Address</div>
-                  <div className="font-medium">{order.propertyAddress}</div>
+                  <div className="font-medium">
+                    {order.propertyFormattedAddress || order.propertyAddress}
+                  </div>
                 </div>
                 <div>
                   <div className="text-xs text-gray-500">MLS #</div>
@@ -164,12 +178,23 @@ export default function OrderDetailsPage() {
                         propertyAddress: String(
                           payload.propertyAddress || order.propertyAddress
                         ),
+                        propertyFormattedAddress:
+                          String(payload.propertyFormattedAddress || '') ||
+                          null,
+                        propertyLat: payload.propertyLat
+                          ? Number(payload.propertyLat)
+                          : null,
+                        propertyLng: payload.propertyLng
+                          ? Number(payload.propertyLng)
+                          : null,
                         mlsNumber: String(payload.mlsNumber || '') || null,
                         yearBuilt: num(payload.yearBuilt),
                         propertySize: num(payload.propertySize),
                         listPrice: num(payload.listPrice),
                         bedrooms: num(payload.bedrooms),
                         bathrooms: num(payload.bathrooms),
+                        featuresText:
+                          String(payload.featuresText || '') || null,
                         description: String(payload.description || '') || null,
                         status: (payload.status as string) || order.status,
                       };
@@ -192,10 +217,9 @@ export default function OrderDetailsPage() {
                       <label className="text-xs text-gray-500">
                         Property Address
                       </label>
-                      <input
+                      <PlacesAddressInput
                         name="propertyAddress"
                         defaultValue={order.propertyAddress}
-                        className="border rounded-md w-full p-2"
                       />
                     </div>
                     <div>
@@ -267,6 +291,20 @@ export default function OrderDetailsPage() {
                         className="border rounded-md w-full p-2"
                       />
                     </div>
+                    <div className="sm:col-span-2">
+                      <label className="text-xs text-gray-500">
+                        Features (one per line)
+                      </label>
+                      <textarea
+                        name="featuresText"
+                        defaultValue={order.featuresText ?? ''}
+                        className="border rounded-md w-full p-2"
+                        placeholder={
+                          'E.g.\nQuartz countertops\nHardwood floors\nSouth-facing backyard'
+                        }
+                      />
+                    </div>
+
                     <div>
                       <label className="text-xs text-gray-500">Status</label>
                       <select

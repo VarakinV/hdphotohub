@@ -11,6 +11,8 @@ const updateRealtorSchema = z.object({
   email: z.string().email("Invalid email address"),
   phone: z.string().optional(),
   headshot: z.string().url().optional().nullable(),
+  companyName: z.string().optional().nullable(),
+  companyLogo: z.string().url().optional().nullable(),
 });
 
 // GET /api/realtors/[id] - Get a single realtor
@@ -82,7 +84,7 @@ export async function PUT(
       );
     }
 
-    const { firstName, lastName, email, phone, headshot } = validatedFields.data;
+    const { firstName, lastName, email, phone, headshot, companyName, companyLogo } = validatedFields.data;
 
     // Check if realtor exists and belongs to the user
     const existingRealtor = await prisma.realtor.findFirst({
@@ -117,6 +119,10 @@ export async function PUT(
     if (existingRealtor.headshot && existingRealtor.headshot !== headshot) {
       await deleteFromS3(existingRealtor.headshot);
     }
+    // If companyLogo is being removed or changed, delete the old one from S3
+    if (existingRealtor.companyLogo && existingRealtor.companyLogo !== companyLogo) {
+      await deleteFromS3(existingRealtor.companyLogo);
+    }
 
     // Update realtor
     const updatedRealtor = await prisma.realtor.update({
@@ -127,6 +133,8 @@ export async function PUT(
         email,
         phone: phone || null,
         headshot: headshot || null,
+        companyName: companyName || null,
+        companyLogo: companyLogo || null,
       },
     });
 
@@ -188,6 +196,10 @@ export async function DELETE(
     // Delete headshot from S3 if it exists
     if (realtor.headshot) {
       await deleteFromS3(realtor.headshot);
+    }
+    // Delete company logo from S3 if it exists
+    if (realtor.companyLogo) {
+      await deleteFromS3(realtor.companyLogo);
     }
 
     // Delete realtor from database

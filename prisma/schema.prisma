@@ -29,19 +29,21 @@ model User {
 }
 
 model Realtor {
-  id        String       @id @default(cuid())
-  firstName String
-  lastName  String
-  email     String       @unique
-  phone     String?
-  headshot  String? // S3 URL for headshot image
-  userId    String // Admin who created this realtor
-  user      User         @relation("RealtorCreatedBy", fields: [userId], references: [id])
-  users     User[]       @relation("RealtorMembers") // Users (REALTOR role) linked to this Realtor
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  orders    Order[]
-  invites   Invitation[] @relation("RealtorInvites")
+  id          String       @id @default(cuid())
+  firstName   String
+  lastName    String
+  email       String       @unique
+  phone       String?
+  headshot    String? // S3 URL for headshot image
+  companyName String?
+  companyLogo String?
+  userId      String // Admin who created this realtor
+  user        User         @relation("RealtorCreatedBy", fields: [userId], references: [id])
+  users       User[]       @relation("RealtorMembers") // Users (REALTOR role) linked to this Realtor
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  orders      Order[]
+  invites     Invitation[] @relation("RealtorInvites")
 }
 
 model Order {
@@ -52,21 +54,27 @@ model Order {
   status    OrderStatus @default(DRAFT)
 
   // Property info
-  propertyAddress String
-  propertySize    Int?
-  yearBuilt       Int?
-  mlsNumber       String?
-  listPrice       Int?
-  bedrooms        Int?
-  bathrooms       Int?
-  description     String?
+  propertyAddress          String
+  propertyFormattedAddress String?
+  propertyLat              Float?
+  propertyLng              Float?
+  propertySize             Int?
+  yearBuilt                Int?
+  mlsNumber                String?
+  listPrice                Int?
+  bedrooms                 Int?
+  bathrooms                Int?
+  featuresText             String?
+  description              String?
 
   // Media relations
-  photos      Photo[]
-  videos      Video[]
-  floorPlans  FloorPlan[]
-  attachments Attachment[]
-  embeds      Embed[]
+  photos        Photo[]
+  videos        Video[]
+  floorPlans    FloorPlan[]
+  attachments   Attachment[]
+  embeds        Embed[]
+  propertyPages PropertyPage[]
+  inquiries     PropertyInquiry[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -130,6 +138,27 @@ model Invitation {
   invitedById String
   invitedBy   User      @relation("InvitesBy", fields: [invitedById], references: [id])
   createdAt   DateTime  @default(now())
+}
+
+model PropertyPage {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id])
+  template  Int
+  urlPath   String
+  published Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model PropertyInquiry {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id])
+  name      String
+  email     String
+  phone     String?
+  message   String
+  createdAt DateTime @default(now())
 }
 
 model PasswordResetToken {

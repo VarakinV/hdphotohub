@@ -10,6 +10,8 @@ const realtorSchema = z.object({
   email: z.string().email("Invalid email address"),
   phone: z.string().optional(),
   headshot: z.string().url().optional(),
+  companyName: z.string().optional(),
+  companyLogo: z.string().url().optional(),
 });
 
 // GET /api/realtors - Get all realtors for the current user
@@ -67,7 +69,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { firstName, lastName, email, phone, headshot } = validatedFields.data;
+    const { firstName, lastName, email, phone, headshot, companyName, companyLogo } = validatedFields.data;
 
     // Check if realtor with this email already exists
     const existingRealtor = await prisma.realtor.findUnique({
@@ -89,6 +91,8 @@ export async function POST(request: NextRequest) {
         email,
         phone: phone || null,
         headshot: headshot || null,
+        companyName: companyName || null,
+        companyLogo: companyLogo || null,
         userId: session.user.id,
       },
     });

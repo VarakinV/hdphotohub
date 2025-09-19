@@ -24,6 +24,7 @@ const formSchema = z.object({
   lastName: z.string().min(1, 'Last name is required'),
   email: z.string().email('Invalid email address'),
   phone: z.string().optional(),
+  companyName: z.string().optional(),
 });
 
 interface RealtorFormProps {
@@ -34,6 +35,8 @@ interface RealtorFormProps {
     email: string;
     phone?: string | null;
     headshot?: string | null;
+    companyName?: string | null;
+    companyLogo?: string | null;
   };
   onSuccess?: () => void;
   onCancel?: () => void;
@@ -53,8 +56,15 @@ export function RealtorForm({
   const [headshotPreview, setHeadshotPreview] = useState<string | null>(
     realtor?.headshot || null
   );
+  const [companyLogoUrl, setCompanyLogoUrl] = useState<string | null>(
+    realtor?.companyLogo || null
+  );
+  const [companyLogoPreview, setCompanyLogoPreview] = useState<string | null>(
+    realtor?.companyLogo || null
+  );
   const [s3Configured, setS3Configured] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileLogoInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -63,6 +73,7 @@ export function RealtorForm({
       lastName: realtor?.lastName || '',
       email: realtor?.email || '',
       phone: realtor?.phone || '',
+      companyName: realtor?.companyName || '',
     },
   });
 
@@ -156,6 +167,77 @@ export function RealtorForm({
     }
   };
 
+  const handleLogoSelect = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/webp',
+      'image/svg+xml',
+    ];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Please upload a valid image file (JPEG, PNG, WebP, or SVG)');
+      return;
+    }
+
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      toast.error('File size must be less than 5MB');
+      return;
+    }
+
+    if (!s3Configured) {
+      toast.error(
+        'File uploads are not configured. Please set up AWS S3 credentials.'
+      );
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      const response = await fetch('/api/upload/presigned-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName: file.name, fileType: file.type }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to get upload URL');
+      }
+      const { uploadUrl, fileUrl } = await response.json();
+
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type },
+      });
+      if (!uploadResponse.ok) throw new Error('Failed to upload file');
+
+      setCompanyLogoUrl(fileUrl);
+      setCompanyLogoPreview(URL.createObjectURL(file));
+      toast.success('Company logo uploaded successfully');
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload company logo');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const removeCompanyLogo = () => {
+    setCompanyLogoUrl(null);
+    setCompanyLogoPreview(null);
+    if (fileLogoInputRef.current) {
+      fileLogoInputRef.current.value = '';
+    }
+  };
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
 
@@ -172,6 +254,7 @@ export function RealtorForm({
         body: JSON.stringify({
           ...values,
           headshot: headshotUrl,
+          companyLogo: companyLogoUrl,
         }),
       });
 
@@ -204,8 +287,16 @@ export function RealtorForm({
       if (headshotPreview && headshotPreview !== realtor?.headshot) {
         URL.revokeObjectURL(headshotPreview);
       }
+      if (companyLogoPreview && companyLogoPreview !== realtor?.companyLogo) {
+        URL.revokeObjectURL(companyLogoPreview);
+      }
     };
-  }, [headshotPreview, realtor?.headshot]);
+  }, [
+    headshotPreview,
+    realtor?.headshot,
+    companyLogoPreview,
+    realtor?.companyLogo,
+  ]);
 
   return (
     <Form {...form}>
@@ -272,6 +363,66 @@ export function RealtorForm({
           </div>
         </div>
 
+        {/* Company Logo Upload */}
+        <div className="flex flex-col items-center space-y-4">
+          <div className="text-sm font-medium">Company Logo</div>
+          <Avatar className="h-24 w-24">
+            <AvatarImage src={companyLogoPreview || undefined} />
+            <AvatarFallback>CL</AvatarFallback>
+          </Avatar>
+
+          <div className="flex gap-2">
+            <input
+              ref={fileLogoInputRef}
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/webp,image/svg+xml"
+              onChange={handleLogoSelect}
+              className="hidden"
+              disabled={isUploading || isLoading}
+            />
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => fileLogoInputRef.current?.click()}
+              disabled={isUploading || isLoading || !s3Configured}
+              title={
+                s3Configured
+                  ? 'Upload a company logo image'
+                  : 'S3 must be configured for file uploads to work'
+              }
+            >
+              {isUploading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-2 h-4 w-4" />
+                  {s3Configured
+                    ? 'Upload Company Logo'
+                    : 'Upload (S3 not configured)'}
+                </>
+              )}
+            </Button>
+
+            {companyLogoUrl && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={removeCompanyLogo}
+                disabled={isUploading || isLoading}
+              >
+                <X className="mr-2 h-4 w-4" />
+                Remove
+              </Button>
+            )}
+          </div>
+        </div>
+
         <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -301,6 +452,20 @@ export function RealtorForm({
             )}
           />
         </div>
+
+        <FormField
+          control={form.control}
+          name="companyName"
+          render={({ field }) => (
+            <FormItem className="col-span-2">
+              <FormLabel>Company Name</FormLabel>
+              <FormControl>
+                <Input {...field} disabled={isLoading} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <FormField
           control={form.control}

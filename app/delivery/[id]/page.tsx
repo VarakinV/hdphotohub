@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/db/prisma';
 import { notFound } from 'next/navigation';
-import { Download } from 'lucide-react';
+import { Download, ExternalLink, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -21,6 +21,7 @@ async function getOrder(id: string) {
       floorPlans: true,
       attachments: true,
       embeds: true,
+      propertyPages: true,
     },
   });
   return order;
@@ -304,6 +305,60 @@ export default async function DeliveryPage({
             </div>
           </section>
         )}
+
+        {/* Property Websites */}
+        <section id="property-sites" className="space-y-3 scroll-mt-24">
+          <div className="space-y-2">
+            <h2 className="text-2xl md:text-3xl font-semibold">
+              Property Websites
+            </h2>
+            <div className="h-px bg-gray-200/80" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[1, 2, 3].map((v) => {
+              const url = `${baseUrl}/property/${order.id}/v${v}`;
+              return (
+                <div key={v} className="border rounded-md overflow-hidden">
+                  <div className="px-3 py-2 text-sm font-medium bg-gray-50 border-b">
+                    Variant {v}
+                  </div>
+
+                  <div className="aspect-video bg-black/5 relative">
+                    {heroUrl ? (
+                      <Image
+                        src={heroUrl}
+                        alt={`Template v${v}`}
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400">
+                        No preview
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-3 flex items-center justify-between">
+                    <Button
+                      asChild
+                      variant="secondary"
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      <Link href={url} target="_blank">
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        Open
+                      </Link>
+                    </Button>
+                    <CopyButton
+                      text={url}
+                      label="Copy Public Link"
+                      icon={<Copy className="w-4 h-4 mr-2" />}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
 
         <div className="text-xs text-gray-500 text-center py-6">
           Powered by Photos 4 Real Estate

@@ -80,21 +80,33 @@ export async function POST(req: NextRequest) {
     const clientName = `${realtor.firstName} ${realtor.lastName}`;
     const slug = await generateUniqueSlug(clientName, parsed.data.propertyAddress);
 
-    const order = await prisma.order.create({
-      data: {
-        realtorId: parsed.data.realtorId,
-        slug,
-        status: 'DRAFT',
-        propertyAddress: parsed.data.propertyAddress,
-        propertySize: parsed.data.propertySize ?? null,
-        yearBuilt: parsed.data.yearBuilt ?? null,
-        mlsNumber: parsed.data.mlsNumber ?? null,
-        listPrice: parsed.data.listPrice ?? null,
-        bedrooms: parsed.data.bedrooms ?? null,
-        bathrooms: parsed.data.bathrooms ?? null,
-        description: parsed.data.description ?? null,
-      },
-      include: { realtor: { select: { id: true, firstName: true, lastName: true } } },
+    const [order] = await prisma.$transaction([
+      prisma.order.create({
+        data: {
+          realtorId: parsed.data.realtorId,
+          slug,
+          status: 'DRAFT',
+          propertyAddress: parsed.data.propertyAddress,
+          propertySize: parsed.data.propertySize ?? null,
+          yearBuilt: parsed.data.yearBuilt ?? null,
+          mlsNumber: parsed.data.mlsNumber ?? null,
+          listPrice: parsed.data.listPrice ?? null,
+          bedrooms: parsed.data.bedrooms ?? null,
+          bathrooms: parsed.data.bathrooms ?? null,
+          description: parsed.data.description ?? null,
+        },
+        include: { realtor: { select: { id: true, firstName: true, lastName: true } } },
+      }),
+    ]);
+
+    // Automatically create three PropertyPage variants for this order
+    await prisma.propertyPage.createMany({
+      data: [
+        { orderId: order.id, template: 1, urlPath: `/property/${order.id}/v1`, published: true },
+        { orderId: order.id, template: 2, urlPath: `/property/${order.id}/v2`, published: true },
+        { orderId: order.id, template: 3, urlPath: `/property/${order.id}/v3`, published: true },
+      ],
+      skipDuplicates: true,
     });
 
     return NextResponse.json(order, { status: 201 });
