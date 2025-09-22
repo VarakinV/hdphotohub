@@ -19,7 +19,9 @@ import { AttachmentsList } from '@/components/orders/attachments-list';
 import { EmbedsForm } from '@/components/orders/embeds-form';
 import { EmbedsList } from '@/components/orders/embeds-list';
 import { RegenerateMlsButton } from '@/components/admin/RegenerateMlsButton';
+import { sanitizeDescription } from '@/lib/sanitize';
 import PlacesAddressInput from '@/components/admin/PlacesAddressInput';
+import DescriptionEditor from '@/components/admin/DescriptionEditor';
 
 interface Order {
   id: string;
@@ -175,8 +177,22 @@ export default function OrderDetailsPage() {
                 </div>
                 <div className="sm:col-span-2">
                   <div className="text-xs text-gray-500">Description</div>
-                  <div className="font-medium whitespace-pre-wrap">
-                    {order.description || '—'}
+                  <div className="font-medium">
+                    {order.description ? (
+                      <div
+                        className="text-gray-800 leading-7 [&_*+_*]:mt-3 [&_h1]:text-2xl [&_h1]:font-semibold [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:text-lg [&_h3]:font-semibold [&_p]:text-base [&_ul]:list-disc [&_ol]:list-decimal [&_ul]:pl-5 [&_ol]:pl-5"
+                        dangerouslySetInnerHTML={{
+                          __html: sanitizeDescription(
+                            String(order.description).replace(
+                              /^(<br\s*\/?\>)+/i,
+                              ''
+                            )
+                          ),
+                        }}
+                      />
+                    ) : (
+                      '—'
+                    )}
                   </div>
                 </div>
               </div>
@@ -337,10 +353,9 @@ export default function OrderDetailsPage() {
                       <label className="text-xs text-gray-500">
                         Description
                       </label>
-                      <textarea
+                      <DescriptionEditor
                         name="description"
                         defaultValue={order.description ?? ''}
-                        className="border rounded-md w-full p-2"
                       />
                     </div>
                     <div className="sm:col-span-2">

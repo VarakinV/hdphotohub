@@ -5,6 +5,7 @@ import { useEffect, useRef } from 'react';
 declare global {
   interface Window {
     google?: any;
+    __googleMapsPlacesPromise?: Promise<void>;
   }
 }
 
@@ -58,18 +59,37 @@ export default function PlacesAddressInput({
       process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ||
       process.env.GOOGLE_MAPS_API_KEY;
     if (!key) return; // no key, render plain input
-    if (window.google?.maps?.places) {
-      init();
-    } else {
-      const el = document.createElement('script');
-      el.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places`;
-      el.async = true;
-      el.onload = init;
-      document.head.appendChild(el);
-      return () => {
-        // no cleanup for script tag
-      };
-    }
+
+    const ensurePlaces = () => {
+      if (window.google?.maps?.places) return Promise.resolve();
+      if (!window.__googleMapsPlacesPromise) {
+        window.__googleMapsPlacesPromise = new Promise<void>((resolve) => {
+          const existing = document.querySelector(
+            'script[data-google-maps="true"],script#google-maps-js,script[src*="maps.googleapis.com/maps/api/js"]'
+          ) as HTMLScriptElement | null;
+          if (existing) {
+            if (window.google?.maps?.places) {
+              resolve();
+              return;
+            }
+            existing.addEventListener('load', () => resolve(), { once: true });
+            existing.addEventListener('error', () => resolve(), { once: true });
+            return;
+          }
+          const el = document.createElement('script');
+          el.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places`;
+          el.async = true;
+          el.defer = true;
+          el.setAttribute('data-google-maps', 'true');
+          el.onload = () => resolve();
+          el.onerror = () => resolve();
+          document.head.appendChild(el);
+        });
+      }
+      return window.__googleMapsPlacesPromise!;
+    };
+
+    ensurePlaces().then(() => init());
   }, []);
 
   function init() {

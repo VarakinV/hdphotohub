@@ -82,7 +82,7 @@ export default async function PortalOrdersPage({
                       <div className="flex justify-end items-center gap-2">
                         <Button variant="outline" asChild size="sm">
                           <Link href={`/portal/orders/${o.id}`}>
-                            Order Info
+                            Order Details
                           </Link>
                         </Button>
                         <Button asChild size="sm">

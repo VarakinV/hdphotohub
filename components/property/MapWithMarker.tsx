@@ -70,19 +70,26 @@ export default function MapWithMarker({
         initMap();
         return;
       }
-      const existing = document.getElementById('google-maps-js');
+      const existing = document.querySelector(
+        '#google-maps-js,script[data-google-maps="true"],script[src*="maps.googleapis.com/maps/api/js"]'
+      ) as HTMLScriptElement | null;
       if (existing) {
-        existing.addEventListener('load', initMap, { once: true });
-        existing.addEventListener(
-          'error',
-          () => setError('Failed to load Google Maps'),
-          { once: true }
-        );
+        if ((window as any).google?.maps) {
+          initMap();
+        } else {
+          existing.addEventListener('load', initMap, { once: true });
+          existing.addEventListener(
+            'error',
+            () => setError('Failed to load Google Maps'),
+            { once: true }
+          );
+        }
       } else {
         const script = document.createElement('script');
         script.id = 'google-maps-js';
         script.async = true;
         script.defer = true;
+        script.setAttribute('data-google-maps', 'true');
         script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&v=weekly`;
         script.addEventListener('load', initMap, { once: true });
         script.addEventListener(

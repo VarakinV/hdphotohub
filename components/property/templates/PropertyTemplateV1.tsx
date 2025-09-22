@@ -3,6 +3,7 @@ import { PhotoLightbox } from '@/components/delivery/PhotoLightbox';
 import ContactForm from '@/components/property/ContactForm';
 import HeroSlider from '@/components/property/HeroSlider';
 import TopAnchorMenu from '@/components/property/TopAnchorMenu';
+import { sanitizeDescription } from '@/lib/sanitize';
 import MapWithMarker from '@/components/property/MapWithMarker';
 import {
   Bed,
@@ -196,9 +197,14 @@ export default function PropertyTemplateV1({
           <section id="description" className="space-y-2">
             <h2 className="text-2xl md:text-3xl font-semibold">Description</h2>
             <div className="h-px bg-gray-200/80" />
-            <p className="text-gray-700 whitespace-pre-line">
-              {order.description}
-            </p>
+            <div
+              className="text-gray-800 leading-7 [&_*+_*]:mt-3 [&_h1]:text-2xl [&_h1]:font-semibold [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:text-lg [&_h3]:font-semibold [&_p]:text-base [&_ul]:list-disc [&_ol]:list-decimal [&_ul]:pl-5 [&_ol]:pl-5"
+              dangerouslySetInnerHTML={{
+                __html: sanitizeDescription(
+                  String(order.description).replace(/^(<br\s*\/?\>)+/i, '')
+                ),
+              }}
+            />
           </section>
         )}
 

@@ -85,7 +85,7 @@ export default async function PortalHomePage({
                   </div>
                   <div className="flex gap-2">
                     <Button variant="outline" asChild size="sm">
-                      <Link href={`/portal/orders/${o.id}`}>Order Info</Link>
+                      <Link href={`/portal/orders/${o.id}`}>Order Details</Link>
                     </Button>
                     <Button asChild size="sm">
                       <Link href={`/delivery/${o.id}`} target="_blank">

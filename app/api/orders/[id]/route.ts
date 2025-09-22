@@ -9,12 +9,23 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { id } = await params;
-    const order = await prisma.order.findFirst({
-      where: { id, realtor: { userId: session.user.id } },
+    const user = session.user as any;
+    const realtorId = user?.realtorId as string | undefined;
+
+    const order = await prisma.order.findUnique({
+      where: { id },
       include: { realtor: { select: { id: true, firstName: true, lastName: true } } },
     });
 
     if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+
+    // Allow if admin or if user's realtor membership matches the order's realtor
+    const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPERADMIN';
+    if (!isAdmin) {
+      if (!realtorId || order.realtorId !== realtorId) {
+        return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      }
+    }
 
     return NextResponse.json(order);
   } catch (e) {
@@ -29,6 +40,18 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { id } = await params;
+    const user = session.user as any;
+    const realtorId = user?.realtorId as string | undefined;
+
+    // Permission check
+    const current = await prisma.order.findUnique({ where: { id } });
+    if (!current) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPERADMIN';
+    if (!isAdmin) {
+      if (!realtorId || current.realtorId !== realtorId) {
+        return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      }
+    }
 
     const body = await req.json();
 
@@ -71,9 +94,18 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const { id } = await params;
 
-    // Verify ownership
-    const order = await prisma.order.findFirst({ where: { id, realtor: { userId: session.user.id } } });
+    const user = session.user as any;
+    const realtorId = user?.realtorId as string | undefined;
+
+    // Verify permission
+    const order = await prisma.order.findUnique({ where: { id } });
     if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPERADMIN';
+    if (!isAdmin) {
+      if (!realtorId || order.realtorId !== realtorId) {
+        return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      }
+    }
 
     // Fetch related media to delete from S3
     const [photos, videos, floors, attaches] = await Promise.all([

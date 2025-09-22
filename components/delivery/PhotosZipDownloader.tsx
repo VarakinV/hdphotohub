@@ -77,6 +77,7 @@ export function PhotosZipDownloader({
           onClick={() => download('original')}
           disabled={busy}
           size={size}
+          className="border-2 border-white/90"
         >
           {loading === 'original' ? (
             <>

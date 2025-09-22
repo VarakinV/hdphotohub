@@ -3,6 +3,7 @@ import { PhotoLightbox } from '@/components/delivery/PhotoLightbox';
 import ContactForm from '@/components/property/ContactForm';
 import HeroSlider from '@/components/property/HeroSlider';
 import TopAnchorMenu from '@/components/property/TopAnchorMenu';
+import { sanitizeDescription } from '@/lib/sanitize';
 import MapWithMarker from '@/components/property/MapWithMarker';
 import {
   Bed,
@@ -148,34 +149,87 @@ export default function PropertyTemplateV2({
               </div>
             </div>
           </div>
+          {/* Property details overlay (desktop only) */}
+          <div className="hidden md:block absolute left-1/2 bottom-6 -translate-x-1/2 z-10 pointer-events-auto w-[92vw] max-w-6xl">
+            <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
+              <div className="rounded-xl bg-white shadow-xl p-3">
+                <Detail label="Beds" value={order.bedrooms ?? '—'} Icon={Bed} />
+              </div>
+              <div className="rounded-xl bg-white shadow-xl p-3">
+                <Detail
+                  label="Baths"
+                  value={order.bathrooms ?? '—'}
+                  Icon={Bath}
+                />
+              </div>
+              <div className="rounded-xl bg-white shadow-xl p-3">
+                <Detail
+                  label="Sqft"
+                  value={order.propertySize ?? '—'}
+                  Icon={Ruler}
+                />
+              </div>
+              <div className="rounded-xl bg-white shadow-xl p-3">
+                <Detail
+                  label="Year"
+                  value={order.yearBuilt ?? '—'}
+                  Icon={Calendar}
+                />
+              </div>
+              <div className="rounded-xl bg-white shadow-xl p-3">
+                <Detail
+                  label="MLS"
+                  value={order.mlsNumber || '—'}
+                  Icon={Hash}
+                />
+              </div>
+              <div className="rounded-xl bg-white shadow-xl p-3">
+                <Detail
+                  label="Price"
+                  value={
+                    order.listPrice
+                      ? `$${order.listPrice.toLocaleString()}`
+                      : '—'
+                  }
+                  Icon={DollarSign}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
       <main className="mx-auto max-w-6xl p-4 space-y-12 mt-8 md:mt-12">
-        <Section id="details" title="Property Details">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 text-base md:text-lg">
-            <Detail label="Beds" value={order.bedrooms ?? '—'} Icon={Bed} />
-            <Detail label="Baths" value={order.bathrooms ?? '—'} Icon={Bath} />
-            <Detail
-              label="Sqft"
-              value={order.propertySize ?? '—'}
-              Icon={Ruler}
-            />
-            <Detail
-              label="Year"
-              value={order.yearBuilt ?? '—'}
-              Icon={Calendar}
-            />
-            <Detail label="MLS" value={order.mlsNumber || '—'} Icon={Hash} />
-            <Detail
-              label="Price"
-              value={
-                order.listPrice ? `$${order.listPrice.toLocaleString()}` : '—'
-              }
-              Icon={DollarSign}
-            />
-          </div>
-        </Section>
+        <div className="md:hidden">
+          <Section id="details" title="Property Details">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 text-base md:text-lg">
+              <Detail label="Beds" value={order.bedrooms ?? '—'} Icon={Bed} />
+              <Detail
+                label="Baths"
+                value={order.bathrooms ?? '—'}
+                Icon={Bath}
+              />
+              <Detail
+                label="Sqft"
+                value={order.propertySize ?? '—'}
+                Icon={Ruler}
+              />
+              <Detail
+                label="Year"
+                value={order.yearBuilt ?? '—'}
+                Icon={Calendar}
+              />
+              <Detail label="MLS" value={order.mlsNumber || '—'} Icon={Hash} />
+              <Detail
+                label="Price"
+                value={
+                  order.listPrice ? `$${order.listPrice.toLocaleString()}` : '—'
+                }
+                Icon={DollarSign}
+              />
+            </div>
+          </Section>
+        </div>
 
         {order.featuresText && (
           <Section id="features" title="Features">
@@ -199,9 +253,14 @@ export default function PropertyTemplateV2({
 
         {order.description && (
           <Section id="description" title="Description">
-            <p className="text-gray-700 whitespace-pre-line leading-7">
-              {order.description}
-            </p>
+            <div
+              className="text-gray-800 leading-7 [&_*+_*]:mt-3 [&_h1]:text-2xl [&_h1]:font-semibold [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:text-lg [&_h3]:font-semibold [&_p]:text-base [&_ul]:list-disc [&_ol]:list-decimal [&_ul]:pl-5 [&_ol]:pl-5"
+              dangerouslySetInnerHTML={{
+                __html: sanitizeDescription(
+                  String(order.description).replace(/^(<br\s*\/?\>)+/i, '')
+                ),
+              }}
+            />
           </Section>
         )}
 

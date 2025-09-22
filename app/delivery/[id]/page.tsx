@@ -134,7 +134,7 @@ export default async function DeliveryPage({
         </div>
       </section>
 
-      <main className="mx-auto max-w-6xl p-4 space-y-12">
+      <main className="mx-auto max-w-6xl p-4 space-y-12 mt-8 md:mt-12">
         {/* Individual Photos */}
         {!!order.photos.length && (
           <section id="photos" className="space-y-3 scroll-mt-24">

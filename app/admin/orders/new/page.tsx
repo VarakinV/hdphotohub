@@ -27,6 +27,7 @@ import { Loader2 } from 'lucide-react';
 
 import { AdminNavbar } from '@/components/admin/admin-navbar';
 import PlacesAddressInput from '@/components/admin/PlacesAddressInput';
+import DescriptionEditor from '@/components/admin/DescriptionEditor';
 
 const schema = z.object({
   realtorId: z.string().min(1, 'Realtor is required'),
@@ -338,10 +339,11 @@ export default function NewOrderPage() {
                 <FormItem>
                   <FormLabel>Short Description</FormLabel>
                   <FormControl>
-                    <textarea
-                      className="border rounded-md w-full min-h-24 p-3"
+                    <DescriptionEditor
+                      name="description"
                       value={field.value ?? ''}
-                      onChange={(e) => field.onChange(e.target.value)}
+                      onChange={field.onChange}
+                      placeholder="Write a short property description..."
                     />
                   </FormControl>
                   <FormMessage />
