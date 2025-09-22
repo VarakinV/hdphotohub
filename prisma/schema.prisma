@@ -58,14 +58,20 @@ model Order {
   propertyFormattedAddress String?
   propertyLat              Float?
   propertyLng              Float?
-  propertySize             Int?
-  yearBuilt                Int?
-  mlsNumber                String?
-  listPrice                Int?
-  bedrooms                 Int?
-  bathrooms                Int?
-  featuresText             String?
-  description              String?
+  propertyCity             String?
+  propertyProvince         String?
+  propertyPostalCode       String?
+  propertyCountry          String?
+  propertyPlaceId          String?
+
+  propertySize Int?
+  yearBuilt    Int?
+  mlsNumber    String?
+  listPrice    Int?
+  bedrooms     Int?
+  bathrooms    Int?
+  featuresText String?
+  description  String?
 
   // Media relations
   photos        Photo[]

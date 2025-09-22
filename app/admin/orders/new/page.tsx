@@ -26,10 +26,19 @@ import {
 import { Loader2 } from 'lucide-react';
 
 import { AdminNavbar } from '@/components/admin/admin-navbar';
+import PlacesAddressInput from '@/components/admin/PlacesAddressInput';
 
 const schema = z.object({
   realtorId: z.string().min(1, 'Realtor is required'),
   propertyAddress: z.string().min(1, 'Property address is required'),
+  propertyFormattedAddress: z.string().optional().nullable(),
+  propertyLat: z.coerce.number().optional().nullable(),
+  propertyLng: z.coerce.number().optional().nullable(),
+  propertyCity: z.string().optional().nullable(),
+  propertyProvince: z.string().optional().nullable(),
+  propertyPostalCode: z.string().optional().nullable(),
+  propertyCountry: z.string().optional().nullable(),
+  propertyPlaceId: z.string().optional().nullable(),
   propertySize: z.coerce.number().int().positive().optional().nullable(),
   yearBuilt: z.coerce
     .number()
@@ -51,6 +60,10 @@ export default function NewOrderPage() {
   const router = useRouter();
   const [realtors, setRealtors] = useState<{ id: string; name: string }[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [preview, setPreview] = useState<{
+    lat: number | null;
+    lng: number | null;
+  } | null>(null);
 
   const form = useForm<FormValues>({
     // Cast resolver to any to avoid resolver generic mismatch from @hookform/resolvers
@@ -58,6 +71,14 @@ export default function NewOrderPage() {
     defaultValues: {
       realtorId: '',
       propertyAddress: '',
+      propertyFormattedAddress: '',
+      propertyLat: undefined,
+      propertyLng: undefined,
+      propertyCity: '',
+      propertyProvince: '',
+      propertyPostalCode: '',
+      propertyCountry: '',
+      propertyPlaceId: '',
       propertySize: undefined,
       yearBuilt: undefined,
       mlsNumber: '',
@@ -153,7 +174,48 @@ export default function NewOrderPage() {
                 <FormItem>
                   <FormLabel>Property Address</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <div className="space-y-3">
+                      <PlacesAddressInput
+                        name="propertyAddress"
+                        defaultValue={field.value}
+                        onResolved={(d) => {
+                          form.setValue(
+                            'propertyAddress',
+                            d.street ||
+                              d.formatted?.split(',')[0] ||
+                              field.value
+                          );
+                          form.setValue(
+                            'propertyFormattedAddress',
+                            d.formatted || null
+                          );
+                          form.setValue('propertyLat', (d.lat as any) ?? null);
+                          form.setValue('propertyLng', (d.lng as any) ?? null);
+                          form.setValue('propertyCity', d.city || '');
+                          form.setValue('propertyProvince', d.province || '');
+                          form.setValue(
+                            'propertyPostalCode',
+                            d.postalCode || ''
+                          );
+                          form.setValue('propertyCountry', d.country || '');
+                          form.setValue('propertyPlaceId', d.placeId || '');
+                          setPreview({
+                            lat: d.lat ?? null,
+                            lng: d.lng ?? null,
+                          });
+                        }}
+                      />
+                      {preview?.lat != null && preview?.lng != null && (
+                        <div className="aspect-video rounded overflow-hidden border">
+                          <iframe
+                            src={`https://www.google.com/maps?q=${preview.lat},${preview.lng}&z=15&output=embed`}
+                            className="w-full h-full"
+                            loading="lazy"
+                            referrerPolicy="no-referrer-when-downgrade"
+                          />
+                        </div>
+                      )}
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

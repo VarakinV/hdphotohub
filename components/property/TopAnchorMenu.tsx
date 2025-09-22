@@ -30,8 +30,8 @@ export default function TopAnchorMenu({
     { href: '#floorplans', label: 'Floor Plans', show: showFloorPlans },
     { href: '#video', label: 'Video', show: showVideo },
     { href: '#tours', label: 'Virtual Tour', show: showTours },
-    { href: '#map', label: 'Map', show: showMap },
     { href: '#contact', label: 'Contact', show: true },
+    { href: '#map', label: 'Map', show: showMap },
   ].filter((l) => l.show);
 
   return (

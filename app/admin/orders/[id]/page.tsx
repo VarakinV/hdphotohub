@@ -35,6 +35,11 @@ interface Order {
   propertyFormattedAddress?: string | null;
   propertyLat?: number | null;
   propertyLng?: number | null;
+  propertyCity?: string | null;
+  propertyProvince?: string | null;
+  propertyPostalCode?: string | null;
+  propertyCountry?: string | null;
+  propertyPlaceId?: string | null;
   propertySize?: number | null;
   yearBuilt?: number | null;
   mlsNumber?: string | null;
@@ -60,6 +65,10 @@ export default function OrderDetailsPage() {
   const [attachRefresh, setAttachRefresh] = useState(0);
   const [embedRefresh, setEmbedRefresh] = useState(0);
   const [editing, setEditing] = useState(false);
+  const [preview, setPreview] = useState<{
+    lat: number | null;
+    lng: number | null;
+  } | null>(null);
 
   useEffect(() => {
     if (!params?.id) return;
@@ -68,6 +77,15 @@ export default function OrderDetailsPage() {
       if (res.ok) setOrder(await res.json());
     })();
   }, [params?.id]);
+
+  useEffect(() => {
+    if (order) {
+      setPreview({
+        lat: order.propertyLat ?? null,
+        lng: order.propertyLng ?? null,
+      });
+    }
+  }, [order]);
 
   return (
     <>
@@ -187,6 +205,16 @@ export default function OrderDetailsPage() {
                         propertyLng: payload.propertyLng
                           ? Number(payload.propertyLng)
                           : null,
+                        propertyCity:
+                          String(payload.propertyCity || '') || null,
+                        propertyProvince:
+                          String(payload.propertyProvince || '') || null,
+                        propertyPostalCode:
+                          String(payload.propertyPostalCode || '') || null,
+                        propertyCountry:
+                          String(payload.propertyCountry || '') || null,
+                        propertyPlaceId:
+                          String(payload.propertyPlaceId || '') || null,
                         mlsNumber: String(payload.mlsNumber || '') || null,
                         yearBuilt: num(payload.yearBuilt),
                         propertySize: num(payload.propertySize),
@@ -220,7 +248,31 @@ export default function OrderDetailsPage() {
                       <PlacesAddressInput
                         name="propertyAddress"
                         defaultValue={order.propertyAddress}
+                        defaultFormattedAddress={
+                          order.propertyFormattedAddress ??
+                          order.propertyAddress
+                        }
+                        defaultLat={order.propertyLat ?? null}
+                        defaultLng={order.propertyLng ?? null}
+                        defaultCity={order.propertyCity ?? null}
+                        defaultProvince={order.propertyProvince ?? null}
+                        defaultPostalCode={order.propertyPostalCode ?? null}
+                        defaultCountry={order.propertyCountry ?? null}
+                        defaultPlaceId={order.propertyPlaceId ?? null}
+                        onResolved={(d) =>
+                          setPreview({ lat: d.lat ?? null, lng: d.lng ?? null })
+                        }
                       />
+                      {preview?.lat != null && preview?.lng != null && (
+                        <div className="mt-3 aspect-video rounded overflow-hidden border">
+                          <iframe
+                            src={`https://www.google.com/maps?q=${preview.lat},${preview.lng}&z=15&output=embed`}
+                            className="w-full h-full"
+                            loading="lazy"
+                            referrerPolicy="no-referrer-when-downgrade"
+                          />
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label className="text-xs text-gray-500">MLS #</label>

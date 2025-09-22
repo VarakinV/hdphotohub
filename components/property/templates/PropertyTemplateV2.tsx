@@ -3,6 +3,7 @@ import { PhotoLightbox } from '@/components/delivery/PhotoLightbox';
 import ContactForm from '@/components/property/ContactForm';
 import HeroSlider from '@/components/property/HeroSlider';
 import TopAnchorMenu from '@/components/property/TopAnchorMenu';
+import MapWithMarker from '@/components/property/MapWithMarker';
 import {
   Bed,
   Bath,
@@ -50,12 +51,16 @@ export default function PropertyTemplateV2({
   ];
 
   return (
-    <div>
+    <div className="overflow-x-hidden">
       <section className="relative isolate">
         <HeroSlider
           images={order.photos.map((p: any) => p.urlMls || p.url)}
           url={fullUrl}
-          title={order.propertyFormattedAddress || order.propertyAddress}
+          title={
+            order.propertyAddress?.split(',')[0] ||
+            (order.propertyFormattedAddress || '').split(',')[0] ||
+            order.propertyAddress
+          }
         />
         <TopAnchorMenu
           showFeatures={Boolean(order.featuresText)}
@@ -70,9 +75,28 @@ export default function PropertyTemplateV2({
         <div className="absolute inset-0 z-10 pointer-events-none">
           {/* Address centered like V1 and remains vertically centered */}
           <div className="absolute inset-0 flex items-center justify-center">
-            <h1 className="px-4 text-center text-white text-4xl md:text-7xl font-extrabold leading-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.6)] translate-y-10 md:translate-y-0">
-              {order.propertyFormattedAddress || order.propertyAddress}
-            </h1>
+            <div className="text-center translate-y-10 md:translate-y-0">
+              <h1 className="px-4 text-white text-4xl md:text-7xl font-extrabold leading-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.6)]">
+                {order.propertyAddress?.split(',')[0] ||
+                  (order.propertyFormattedAddress || '').split(',')[0] ||
+                  order.propertyAddress}
+              </h1>
+              <div className="mt-1 text-white/90 text-sm md:text-base drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)]">
+                {[
+                  order.propertyCity,
+                  order.propertyProvince,
+                  order.propertyPostalCode,
+                ]
+                  .filter(Boolean)
+                  .join(', ') ||
+                  (order.propertyFormattedAddress || '')
+                    .split(',')
+                    .slice(1, 3)
+                    .map((s: string) => s.trim())
+                    .filter(Boolean)
+                    .join(', ')}
+              </div>
+            </div>
           </div>
 
           {/* Realtor infobox positioned above the centered address */}
@@ -293,16 +317,14 @@ export default function PropertyTemplateV2({
         </Section>
 
         {order.propertyLat != null && order.propertyLng != null && (
-          <Section id="map" title="Map">
-            <div className="aspect-video rounded overflow-hidden">
-              <iframe
-                src={`https://www.google.com/maps?q=${order.propertyLat},${order.propertyLng}&z=15&output=embed`}
-                className="w-full h-full"
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
+          <section
+            id="map"
+            className="relative -mx-[calc(50vw-50%)] w-[100vw] overflow-x-hidden"
+          >
+            <div className="aspect-video md:aspect-[28/9] overflow-hidden">
+              <MapWithMarker lat={order.propertyLat} lng={order.propertyLng} />
             </div>
-          </Section>
+          </section>
         )}
 
         <footer className="text-xs text-gray-500 text-center py-6">

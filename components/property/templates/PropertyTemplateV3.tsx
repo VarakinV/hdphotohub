@@ -3,6 +3,7 @@ import { PhotoLightbox } from '@/components/delivery/PhotoLightbox';
 import ContactForm from '@/components/property/ContactForm';
 import HeroSlider from '@/components/property/HeroSlider';
 import TopAnchorMenu from '@/components/property/TopAnchorMenu';
+import MapWithMarker from '@/components/property/MapWithMarker';
 import {
   Bed,
   Bath,
@@ -37,24 +38,36 @@ export default function PropertyTemplateV3({
     order.embeds[0];
 
   // Convenience hero strings
-  const address: string =
+  const formatted: string =
     order.propertyFormattedAddress || order.propertyAddress || '';
-  const city: string | undefined = order.propertyCity;
-  const provinceState: string | undefined =
-    order.propertyState || order.propertyProvinceState || order.propertyRegion;
-  const cityState: string = [city, provinceState].filter(Boolean).join(', ');
+  const street: string =
+    (order.propertyAddress && order.propertyAddress.split(',')[0]) ||
+    (formatted && formatted.split(',')[0]) ||
+    '';
+  const cityLine: string =
+    [order.propertyCity, order.propertyProvince, order.propertyPostalCode]
+      .filter(Boolean)
+      .join(', ') ||
+    (formatted
+      ? formatted
+          .split(',')
+          .slice(1, 3)
+          .map((s: string) => s.trim())
+          .filter(Boolean)
+          .join(', ')
+      : '');
   const phoneTel: string | undefined = order.realtor.phone
     ? `tel:${String(order.realtor.phone).replace(/[^+\d]/g, '')}`
     : undefined;
 
   return (
-    <div>
+    <div className="overflow-x-hidden">
       {/* Split hero with overlay card (slider background) */}
       <section className="relative isolate">
         <HeroSlider
           images={order.photos.map((p: any) => p.urlMls || p.url)}
           url={fullUrl}
-          title={order.propertyFormattedAddress || order.propertyAddress}
+          title={street}
         />
         <TopAnchorMenu
           showFeatures={Boolean(order.featuresText)}
@@ -70,11 +83,11 @@ export default function PropertyTemplateV3({
         <div className="absolute left-0 bottom-24 md:bottom-28 z-20">
           <div className="inline-block bg-white/95 backdrop-blur shadow-xl rounded-none px-5 md:px-7 py-4 md:py-5">
             <div className="text-3xl md:text-5xl font-semibold text-gray-900 leading-tight">
-              {address}
+              {street}
             </div>
-            {!!cityState && (
-              <div className="mt-1 text-gray-700 tracking-wide uppercase text-xs md:text-sm">
-                {cityState}
+            {!!cityLine && (
+              <div className="mt-1 text-gray-700 text-xs md:text-sm">
+                {cityLine}
               </div>
             )}
             {order.status && order.status !== 'PUBLISHED' && (
@@ -310,16 +323,14 @@ export default function PropertyTemplateV3({
         </Section>
 
         {order.propertyLat != null && order.propertyLng != null && (
-          <Section id="map" title="Map">
-            <div className="aspect-video rounded overflow-hidden">
-              <iframe
-                src={`https://www.google.com/maps?q=${order.propertyLat},${order.propertyLng}&z=15&output=embed`}
-                className="w-full h-full"
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
+          <section
+            id="map"
+            className="relative -mx-[calc(50vw-50%)] w-[100vw] overflow-x-hidden"
+          >
+            <div className="aspect-video md:aspect-[28/9] overflow-hidden">
+              <MapWithMarker lat={order.propertyLat} lng={order.propertyLng} />
             </div>
-          </Section>
+          </section>
         )}
 
         <footer className="text-xs text-gray-500 text-center py-6">
