@@ -22,31 +22,15 @@ export default function MapWithMarker({
   const [error, setError] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
 
-  // If coordinates are not available, render nothing
-  if (lat == null || lng == null) return null;
-
-  // Fallback to iframe when API key is not provided
-  if (!apiKey) {
-    const src = `https://www.google.com/maps?q=${lat},${lng}&z=${zoom}&output=embed`;
-    return (
-      <div className={className}>
-        <iframe
-          src={src}
-          className="w-full h-full"
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-        />
-      </div>
-    );
-  }
-
+  // Always call hooks. Perform side effects only when we have coords and an API key
   useEffect(() => {
+    if (lat == null || lng == null || !apiKey) return;
+
     let marker: any = null;
     let map: any = null;
 
     function initMap() {
       if (!mapRef.current) return;
-      // @ts-ignore - google is provided by Maps JS API
       const gmaps: any = (window as any).google?.maps;
       if (!gmaps) return;
       map = new gmaps.Map(mapRef.current, {
@@ -65,7 +49,6 @@ export default function MapWithMarker({
 
     function loadScript() {
       // If already loaded, initialize immediately
-      // @ts-ignore
       if ((window as any).google?.maps) {
         initMap();
         return;
@@ -101,7 +84,6 @@ export default function MapWithMarker({
       }
       // Resilience: fallback to iframe if the global never initializes (e.g., key restrictions)
       const fallbackTimer = window.setTimeout(() => {
-        // @ts-ignore
         if (!(window as any).google?.maps && !initialized) {
           setError('Failed to initialize Google Maps');
         }
@@ -110,16 +92,19 @@ export default function MapWithMarker({
     }
 
     const cleanup = loadScript();
-
     return () => {
       if (marker) marker.setMap(null);
       if (map) map = null;
       if (typeof cleanup === 'function') cleanup();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lat, lng, zoom]);
+  }, [lat, lng, zoom, apiKey]);
 
-  if (error) {
+  // Rendering flow below can return early (after hooks executed above)
+  if (lat == null || lng == null) return null;
+
+  // Fallback to iframe when API key is not provided or error happened
+  if (!apiKey || error) {
     const src = `https://www.google.com/maps?q=${lat},${lng}&z=${zoom}&output=embed`;
     return (
       <div className={className}>

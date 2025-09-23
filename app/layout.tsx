@@ -6,6 +6,7 @@ import { AuthSessionProvider } from '@/components/providers/session-provider';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://app.photos4realestate.ca'),
   title: 'Media Portal - Real Estate Photography Delivery',
   description: 'Professional real estate photography delivery platform',
   icons: {

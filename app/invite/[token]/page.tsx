@@ -1,9 +1,10 @@
 import { AcceptInviteForm } from '@/components/auth/accept-invite-form';
 
-export default function AcceptInvitePage({
+export default async function AcceptInvitePage({
   params,
 }: {
-  params: { token: string };
+  params: Promise<{ token: string }>;
 }) {
-  return <AcceptInviteForm token={params.token} />;
+  const { token } = await params;
+  return <AcceptInviteForm token={token} />;
 }

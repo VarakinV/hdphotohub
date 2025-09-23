@@ -151,7 +151,7 @@ export async function PUT(
 // DELETE /api/realtors/[id] - Delete a realtor
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -163,7 +163,7 @@ export async function DELETE(
       );
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // Check if realtor exists and belongs to the user
     const realtor = await prisma.realtor.findFirst({
