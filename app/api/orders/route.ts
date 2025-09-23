@@ -49,8 +49,27 @@ export async function GET() {
     const session = await auth();
     if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const me: any = session.user;
+    let where: any = {};
+
+    if (me.role === 'SUPERADMIN') {
+      where = {};
+    } else if (me.role === 'ADMIN') {
+      where = {
+        OR: [
+          { realtor: { userId: me.id } },
+          { realtor: { assignedAdmins: { some: { adminId: me.id } } } },
+        ],
+      };
+    } else if (me.role === 'REALTOR') {
+      // fallback for potential use by portal
+      where = { realtorId: me.realtorId ?? '' };
+    } else {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const orders = await prisma.order.findMany({
-      where: { realtor: { userId: session.user.id } },
+      where,
       include: { realtor: { select: { id: true, firstName: true, lastName: true } } },
       orderBy: { createdAt: 'desc' },
     });
@@ -83,8 +102,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid fields', details: parsed.error.flatten() }, { status: 400 });
     }
 
-    // Ensure realtor belongs to the user
-    const realtor = await prisma.realtor.findFirst({ where: { id: parsed.data.realtorId, userId: session.user.id } });
+    // Ensure realtor is accessible to the current user
+    const me: any = session.user;
+    let realtor = null as any;
+    if (me.role === 'SUPERADMIN') {
+      realtor = await prisma.realtor.findUnique({ where: { id: parsed.data.realtorId } });
+    } else if (me.role === 'ADMIN') {
+      realtor = await prisma.realtor.findFirst({
+        where: {
+          id: parsed.data.realtorId,
+          OR: [
+            { userId: me.id },
+            { assignedAdmins: { some: { adminId: me.id } } },
+          ],
+        },
+      });
+    } else if (me.role === 'REALTOR') {
+      if (parsed.data.realtorId !== me.realtorId) {
+        return NextResponse.json({ error: 'Realtor not found' }, { status: 404 });
+      }
+      realtor = await prisma.realtor.findUnique({ where: { id: parsed.data.realtorId } });
+    } else {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
     if (!realtor) return NextResponse.json({ error: 'Realtor not found' }, { status: 404 });
 
     const clientName = `${realtor.firstName} ${realtor.lastName}`;

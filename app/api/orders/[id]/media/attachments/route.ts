@@ -12,9 +12,16 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     const user = session.user as any;
     const realtorId = user?.realtorId as string | undefined;
 
+    const me: any = user;
+    const isSuper = me?.role === 'SUPERADMIN';
+    const isAdmin = me?.role === 'ADMIN';
     const items = await prisma.attachment.findMany({
       where: realtorId
         ? { orderId: id, order: { realtorId } }
+        : isSuper
+        ? { orderId: id }
+        : isAdmin
+        ? { orderId: id, order: { realtor: { OR: [{ userId: me.id }, { assignedAdmins: { some: { adminId: me.id } } }] } } }
         : { order: { id, realtor: { userId: session.user.id } } },
       orderBy: { createdAt: 'desc' },
     });
@@ -65,7 +72,19 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     const ids: string[] = body?.ids || [];
     if (!ids.length) return NextResponse.json({ error: 'No ids provided' }, { status: 400 });
 
-    const items = await prisma.attachment.findMany({ where: { id: { in: ids }, orderId: id, order: { realtor: { userId: session.user.id } } } });
+    const user2 = session.user as any;
+    const relId2 = user2?.realtorId as string | undefined;
+    const isSuper2 = user2?.role === 'SUPERADMIN';
+    const isAdmin2 = user2?.role === 'ADMIN';
+    const items = await prisma.attachment.findMany({
+      where: relId2
+        ? { id: { in: ids }, orderId: id, order: { realtorId: relId2 } }
+        : isSuper2
+        ? { id: { in: ids }, orderId: id }
+        : isAdmin2
+        ? { id: { in: ids }, orderId: id, order: { realtor: { OR: [{ userId: user2.id }, { assignedAdmins: { some: { adminId: user2.id } } }] } } }
+        : { id: { in: ids }, orderId: id, order: { realtor: { userId: session.user.id } } },
+    });
 
     await prisma.attachment.deleteMany({ where: { id: { in: ids }, orderId: id } });
 

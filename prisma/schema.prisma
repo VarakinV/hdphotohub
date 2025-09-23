@@ -26,6 +26,9 @@ model User {
   createdRealtors    Realtor[]            @relation("RealtorCreatedBy")
   invitesSent        Invitation[]         @relation("InvitesBy")
   PasswordResetToken PasswordResetToken[]
+
+  // Admin ↔ Realtors assignments (as Admin)
+  managedRealtors RealtorAssignment[] @relation("AdminRealtors")
 }
 
 model Realtor {
@@ -44,6 +47,21 @@ model Realtor {
   updatedAt   DateTime     @updatedAt
   orders      Order[]
   invites     Invitation[] @relation("RealtorInvites")
+
+  // Realtors ↔ Admins assignments (as Realtor)
+  assignedAdmins RealtorAssignment[] @relation("RealtorAdmins")
+}
+
+model RealtorAssignment {
+  id        String   @id @default(cuid())
+  adminId   String
+  realtorId String
+  createdAt DateTime @default(now())
+
+  admin   User    @relation("AdminRealtors", fields: [adminId], references: [id])
+  realtor Realtor @relation("RealtorAdmins", fields: [realtorId], references: [id])
+
+  @@unique([adminId, realtorId])
 }
 
 model Order {

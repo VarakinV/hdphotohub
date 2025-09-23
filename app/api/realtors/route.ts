@@ -26,14 +26,24 @@ export async function GET() {
       );
     }
 
-    const realtors = await prisma.realtor.findMany({
-      where: {
-        userId: session.user.id,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+    const me: any = session.user;
+
+    let realtors;
+    if (me.role === 'SUPERADMIN') {
+      // Superadmin can see all realtors
+      realtors = await prisma.realtor.findMany({
+        orderBy: { createdAt: 'desc' },
+      });
+    } else if (me.role === 'ADMIN') {
+      // Admin sees realtors assigned to them via RealtorAssignment
+      realtors = await prisma.realtor.findMany({
+        where: { assignedAdmins: { some: { adminId: me.id } } },
+        orderBy: { createdAt: 'desc' },
+      });
+    } else {
+      // Others: no access via this admin endpoint
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     return NextResponse.json(realtors);
   } catch (error) {

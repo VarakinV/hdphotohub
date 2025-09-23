@@ -386,15 +386,59 @@ export default function PropertyTemplateV2({
           </section>
         )}
 
-        <footer className="text-xs text-gray-500 text-center py-6">
-          Proudly created by Photos4RealEstate ·{' '}
-          <a className="underline" href="/terms">
-            Terms
-          </a>{' '}
-          ·{' '}
-          <a className="underline" href="/privacy">
-            Privacy
-          </a>
+        <footer className="text-xs text-gray-500 text-center py-6 space-y-4">
+          <div className="flex justify-center">
+            <img
+              src="/images/crea-logos.png"
+              alt="REALTOR and MLS trademarks"
+              className="h-8 md:h-10 w-auto object-contain"
+            />
+          </div>
+          <div className="max-w-4xl mx-auto px-4 space-y-2 leading-relaxed">
+            <p>
+              The trademarks REALTOR®, REALTORS®, and the REALTOR® logo are
+              controlled by The Canadian Real Estate Association (CREA) and
+              identify real estate professionals who are members of CREA.
+            </p>
+            <p>
+              The trademarks MLS®, Multiple Listing Service® and the associated
+              logos are owned by The Canadian Real Estate Association (CREA) and
+              identify the quality of services provided by real estate
+              professionals who are members of CREA. Used under license.
+            </p>
+          </div>
+          <div className="text-gray-600">
+            Powered by{' '}
+            <a
+              className="underline"
+              href="https://photos4realestate.ca/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Photos 4 Real Estate
+            </a>{' '}
+            · © {new Date().getFullYear()} All Rights Reserved
+          </div>
+
+          <div>
+            <a
+              className="underline"
+              href="https://photos4realestate.ca/terms-and-conditions/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Terms
+            </a>{' '}
+            ·{' '}
+            <a
+              className="underline"
+              href="https://photos4realestate.ca/privacy-policy/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Privacy
+            </a>
+          </div>
         </footer>
       </main>
     </div>

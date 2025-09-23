@@ -15,6 +15,7 @@ import { DeleteUserButton } from '@/components/admin/delete-user-button';
 import { Toaster } from '@/components/ui/sonner';
 
 import { AdminNavbar } from '@/components/admin/admin-navbar';
+import { AssignRealtorAdmins } from '@/components/admin/assign-realtor-admins';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,9 +70,40 @@ export default async function AdminUsersPage({
     orderBy: [{ role: 'desc' }, { createdAt: 'desc' }],
     skip: (page - 1) * perPage,
     take: perPage,
-    select: { id: true, name: true, email: true, role: true, createdAt: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      createdAt: true,
+      realtorId: true,
+    },
   });
   const totalPages = Math.max(1, Math.ceil(total / perPage));
+
+  // Admin options for assignment dropdown
+  const adminUsers = await prisma.user.findMany({
+    where: { role: 'ADMIN' },
+    select: { id: true, name: true, email: true },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  // Build map of realtorId -> assigned admin ids
+  const realtorIds = users
+    .filter((u) => u.role === 'REALTOR' && u.realtorId)
+    .map((u) => u.realtorId!);
+  const assignments = realtorIds.length
+    ? await prisma.realtorAssignment.findMany({
+        where: { realtorId: { in: realtorIds } },
+        select: { realtorId: true, adminId: true },
+      })
+    : [];
+  const assignedMap = new Map<string, string[]>();
+  for (const a of assignments) {
+    const arr = assignedMap.get(a.realtorId) || [];
+    arr.push(a.adminId);
+    assignedMap.set(a.realtorId, arr);
+  }
 
   async function updateRoleAction(formData: FormData) {
     'use server';
@@ -88,16 +120,29 @@ export default async function AdminUsersPage({
 
     const target = await prisma.user.findUnique({
       where: { id: userId },
-      select: { role: true },
+      select: { role: true, realtorId: true },
     });
     if (!target) throw new Error('User not found');
     if (target.role === 'SUPERADMIN')
       throw new Error('Cannot modify SUPERADMIN');
 
-    await prisma.user.update({
-      where: { id: userId },
-      data: { role: role as any },
-    });
+    // If promoting to ADMIN from REALTOR, remove any RealtorAssignment rows for their realtor profile
+    if (role === 'ADMIN' && target.realtorId) {
+      await prisma.$transaction([
+        prisma.realtorAssignment.deleteMany({
+          where: { realtorId: target.realtorId },
+        }),
+        prisma.user.update({
+          where: { id: userId },
+          data: { role: role as any },
+        }),
+      ]);
+    } else {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { role: role as any },
+      });
+    }
     revalidatePath('/admin/users');
   }
 
@@ -135,6 +180,50 @@ export default async function AdminUsersPage({
       prisma.user.delete({ where: { id: userId } }),
     ]);
 
+    revalidatePath('/admin/users');
+  }
+
+  async function createRealtorProfileAction(formData: FormData) {
+    'use server';
+    const session = await auth();
+    const current = session?.user as any | null;
+    if (!current || current.role !== 'SUPERADMIN')
+      throw new Error('Unauthorized');
+
+    const userId = String(formData.get('userId') || '');
+    if (!userId) throw new Error('Invalid payload');
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, name: true, realtorId: true },
+    });
+    if (!user) throw new Error('User not found');
+    if (user.realtorId) return revalidatePath('/admin/users');
+
+    // If a Realtor profile exists with the same email, link to it; otherwise create
+    let realtor = await prisma.realtor.findUnique({
+      where: { email: user.email },
+    });
+    if (!realtor) {
+      const fullName = (user.name || '').trim();
+      const [firstName, ...rest] = fullName
+        ? fullName.split(' ')
+        : [user.email.split('@')[0]];
+      const lastName = rest.join(' ');
+      realtor = await prisma.realtor.create({
+        data: {
+          firstName: firstName || 'Realtor',
+          lastName: lastName || '',
+          email: user.email,
+          userId: current.id, // created by superadmin
+        },
+      });
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { realtorId: realtor.id },
+    });
     revalidatePath('/admin/users');
   }
 
@@ -199,12 +288,34 @@ export default async function AdminUsersPage({
                       </form>
                     </td>
                     <td className="py-3 px-4">
-                      <div className="flex justify-end">
+                      <div className="flex justify-end gap-2">
+                        {u.role === 'REALTOR' && !u.realtorId && (
+                          <form action={createRealtorProfileAction}>
+                            <input type="hidden" name="userId" value={u.id} />
+                            <Button type="submit" size="sm" variant="secondary">
+                              Create Realtor Profile
+                            </Button>
+                          </form>
+                        )}
                         <DeleteUserButton
                           userId={u.id}
                           userLabel={u.name || u.email}
                         />
                       </div>
+                      {u.role === 'REALTOR' && u.realtorId && (
+                        <div className="mt-2 flex justify-end">
+                          <AssignRealtorAdmins
+                            realtorId={u.realtorId}
+                            admins={adminUsers.map((a) => ({
+                              id: a.id,
+                              label: a.name || a.email,
+                            }))}
+                            assignedAdminIds={
+                              assignedMap.get(u.realtorId) || []
+                            }
+                          />
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
