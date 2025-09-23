@@ -123,13 +123,15 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
       ...attaches.map(async (a) => { try { await deleteFromS3(a.url); } catch {} }),
     ]);
 
-    // Delete DB records in a transaction
+    // Delete DB records in a transaction (delete children first to satisfy FK constraints)
     await prisma.$transaction([
       prisma.photo.deleteMany({ where: { orderId: id } }),
       prisma.video.deleteMany({ where: { orderId: id } }),
       prisma.floorPlan.deleteMany({ where: { orderId: id } }),
       prisma.attachment.deleteMany({ where: { orderId: id } }),
       prisma.embed.deleteMany({ where: { orderId: id } }),
+      prisma.propertyInquiry.deleteMany({ where: { orderId: id } }),
+      prisma.propertyPage.deleteMany({ where: { orderId: id } }),
       prisma.order.delete({ where: { id } }),
     ]);
 

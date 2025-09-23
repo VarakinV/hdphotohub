@@ -37,7 +37,12 @@ export async function GET() {
     } else if (me.role === 'ADMIN') {
       // Admin sees realtors assigned to them via RealtorAssignment
       realtors = await prisma.realtor.findMany({
-        where: { assignedAdmins: { some: { adminId: me.id } } },
+        where: {
+          OR: [
+            { assignedAdmins: { some: { adminId: me.id } } },
+            { userId: me.id },
+          ],
+        },
         orderBy: { createdAt: 'desc' },
       });
     } else {
@@ -106,6 +111,18 @@ export async function POST(request: NextRequest) {
         userId: session.user.id,
       },
     });
+
+    // Auto-assign the creating admin to this realtor so it appears in their list
+    try {
+      const adminId = session.user.id;
+      await prisma.realtorAssignment.upsert({
+        where: { adminId_realtorId: { adminId, realtorId: realtor.id } },
+        create: { adminId, realtorId: realtor.id },
+        update: {},
+      });
+    } catch (e) {
+      console.warn('Failed to create self-assignment for admin -> realtor', e);
+    }
 
     return NextResponse.json(realtor, { status: 201 });
   } catch (error) {
