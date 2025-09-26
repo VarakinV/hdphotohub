@@ -8,10 +8,11 @@ const realtorSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   email: z.string().email("Invalid email address"),
-  phone: z.string().optional(),
-  headshot: z.string().url().optional(),
-  companyName: z.string().optional(),
-  companyLogo: z.string().url().optional(),
+  // Treat empty strings as undefined so they pass validation and become null in DB
+  phone: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional().nullable()),
+  headshot: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional().nullable()),
+  companyName: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional().nullable()),
+  companyLogo: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional().nullable()),
 });
 
 // GET /api/realtors - Get all realtors for the current user

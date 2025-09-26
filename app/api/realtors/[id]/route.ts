@@ -180,8 +180,7 @@ export async function DELETE(
       );
     }
 
-
-    // Check for dependent Orders BEFORE deleting any assets to avoid partial cleanup
+    // Check for dependent Orders BEFORE deleting (we block delete if any orders exist)
     const orderCount = await prisma.order.count({ where: { realtorId: id } });
     if (orderCount > 0) {
       return NextResponse.json(
@@ -193,19 +192,22 @@ export async function DELETE(
       );
     }
 
-    // Delete headshot from S3 if it exists
-    if (realtor.headshot) {
-      await deleteFromS3(realtor.headshot);
-    }
-    // Delete company logo from S3 if it exists
-    if (realtor.companyLogo) {
-      await deleteFromS3(realtor.companyLogo);
-    }
+    // Capture asset urls before DB changes
+    const headshotUrl = realtor.headshot;
+    const companyLogoUrl = realtor.companyLogo;
 
-    // Delete realtor from database
-    await prisma.realtor.delete({
-      where: { id },
-    });
+    // Remove relationships that would violate FKs, then delete the realtor
+    await prisma.$transaction([
+      prisma.realtorAssignment.deleteMany({ where: { realtorId: id } }),
+      prisma.user.updateMany({ where: { realtorId: id }, data: { realtorId: null } }),
+      prisma.invitation.updateMany({ where: { realtorId: id }, data: { realtorId: null } }),
+      prisma.booking.updateMany({ where: { realtorId: id }, data: { realtorId: null } }),
+      prisma.realtor.delete({ where: { id } }),
+    ]);
+
+    // Best-effort S3 cleanup after successful DB deletion
+    try { if (headshotUrl) { await deleteFromS3(headshotUrl); } } catch (e) { console.warn('Failed to delete headshot from S3', e); }
+    try { if (companyLogoUrl) { await deleteFromS3(companyLogoUrl); } } catch (e) { console.warn('Failed to delete company logo from S3', e); }
 
     return NextResponse.json(
       { message: "Realtor deleted successfully" },
