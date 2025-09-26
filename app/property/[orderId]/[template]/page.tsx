@@ -33,22 +33,21 @@ export async function generateMetadata({
   const order = await getOrder(orderId);
   if (!order) return {};
   const title = order.propertyFormattedAddress || order.propertyAddress;
-  const description =
-    order.description ||
-    `Listing by ${order.realtor.firstName} ${order.realtor.lastName}`;
+  // Use a clean, predictable description for social previews to avoid picking up styled HTML
+  const shareDescription = `Check this property at ${title} — photos, floor plans, and more.`;
   const image = order.photos[0]?.urlMls || order.photos[0]?.url;
   return {
     title: `${title} — Media Portal`,
-    description,
+    description: shareDescription,
     openGraph: {
       title,
-      description,
+      description: shareDescription,
       images: image ? [{ url: image }] : undefined,
     },
     twitter: {
       card: 'summary_large_image',
       title,
-      description,
+      description: shareDescription,
       images: image ? [image] : undefined,
     },
   };
