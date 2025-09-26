@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 
 import { AdminNavbar } from '@/components/admin/admin-navbar';
+import AdminTwoColumnShell from '@/components/admin/AdminTwoColumnShell';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
@@ -122,7 +123,7 @@ export default function AdminDashboard() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <AdminTwoColumnShell>
         {/* Quick Actions + Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Quick Actions Panel */}
@@ -371,7 +372,7 @@ export default function AdminDashboard() {
             </div>
           </CardContent>
         </Card>
-      </main>
+      </AdminTwoColumnShell>
     </div>
   );
 }

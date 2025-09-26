@@ -88,6 +88,95 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   }
 }
 
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id)
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const { id } = await params;
+    const user = session.user as any;
+    const realtorId = user?.realtorId as string | undefined;
+
+    // Permission check
+    const current = await prisma.order.findUnique({ where: { id } });
+    if (!current) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPERADMIN';
+    if (!isAdmin) {
+      if (!realtorId || current.realtorId !== realtorId) {
+        return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      }
+    }
+
+    const body: any = await req.json();
+    const data: any = {};
+
+    if ('propertyAddress' in body) data.propertyAddress = body.propertyAddress;
+    if ('propertyFormattedAddress' in body)
+      data.propertyFormattedAddress = body.propertyFormattedAddress ?? null;
+    if ('propertyLat' in body)
+      data.propertyLat =
+        body.propertyLat == null || body.propertyLat === ''
+          ? null
+          : Number(body.propertyLat);
+    if ('propertyLng' in body)
+      data.propertyLng =
+        body.propertyLng == null || body.propertyLng === ''
+          ? null
+          : Number(body.propertyLng);
+    if ('propertyCity' in body) data.propertyCity = body.propertyCity ?? null;
+    if ('propertyProvince' in body)
+      data.propertyProvince = body.propertyProvince ?? null;
+    if ('propertyPostalCode' in body)
+      data.propertyPostalCode = body.propertyPostalCode ?? null;
+    if ('propertyCountry' in body)
+      data.propertyCountry = body.propertyCountry ?? null;
+    if ('propertyPlaceId' in body)
+      data.propertyPlaceId = body.propertyPlaceId ?? null;
+    if ('propertySize' in body)
+      data.propertySize =
+        body.propertySize == null || body.propertySize === ''
+          ? null
+          : Number(body.propertySize);
+    if ('yearBuilt' in body)
+      data.yearBuilt =
+        body.yearBuilt == null || body.yearBuilt === ''
+          ? null
+          : Number(body.yearBuilt);
+    if ('mlsNumber' in body) data.mlsNumber = body.mlsNumber ?? null;
+    if ('listPrice' in body)
+      data.listPrice =
+        body.listPrice == null || body.listPrice === ''
+          ? null
+          : Number(body.listPrice);
+    if ('bedrooms' in body)
+      data.bedrooms =
+        body.bedrooms == null || body.bedrooms === ''
+          ? null
+          : Number(body.bedrooms);
+    if ('bathrooms' in body)
+      data.bathrooms =
+        body.bathrooms == null || body.bathrooms === ''
+          ? null
+          : Number(body.bathrooms);
+    if ('featuresText' in body) data.featuresText = body.featuresText ?? null;
+    if ('description' in body) data.description = body.description ?? null;
+    if ('status' in body) data.status = body.status;
+
+    const updated = await prisma.order.update({
+      where: { id },
+      data,
+      include: { realtor: { select: { id: true, firstName: true, lastName: true } } },
+    });
+
+    return NextResponse.json(updated);
+  } catch (e) {
+    console.error(e);
+    return NextResponse.json({ error: 'Failed to update order' }, { status: 500 });
+  }
+}
+
+
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();

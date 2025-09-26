@@ -17,6 +17,7 @@ model User {
   name      String?
   image     String?
   avatarUrl String?
+  adminSlug String? @unique
 
   role               Role                 @default(REALTOR)
   realtorId          String?
@@ -28,7 +29,15 @@ model User {
   PasswordResetToken PasswordResetToken[]
 
   // Admin ↔ Realtors assignments (as Admin)
-  managedRealtors RealtorAssignment[] @relation("AdminRealtors")
+  managedRealtors       RealtorAssignment[]     @relation("AdminRealtors")
+  ServiceCategory       ServiceCategory[]
+  Service               Service[]
+  Tax                   Tax[]
+  Booking               Booking[]
+  AdminAvailabilityRule AdminAvailabilityRule[]
+  BlackoutDate          BlackoutDate[]
+  CalendarAccount       CalendarAccount[]
+  AdminBookingSettings  AdminBookingSettings?
 }
 
 model Realtor {
@@ -50,6 +59,7 @@ model Realtor {
 
   // Realtors ↔ Admins assignments (as Realtor)
   assignedAdmins RealtorAssignment[] @relation("RealtorAdmins")
+  Booking        Booking[]
 }
 
 model RealtorAssignment {
@@ -111,7 +121,10 @@ model Photo {
   url       String // original S3 URL
   urlMls    String? // resized MLS version
   filename  String
+  sortOrder Int      @default(0)
   createdAt DateTime @default(now())
+
+  @@index([orderId, sortOrder])
 }
 
 model Video {
@@ -204,4 +217,182 @@ enum Role {
   SUPERADMIN
   ADMIN
   REALTOR
+}
+
+// Booking system enums and core service models (Milestone 1)
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+model ServiceCategory {
+  id          String    @id @default(cuid())
+  adminId     String
+  admin       User      @relation(fields: [adminId], references: [id])
+  name        String
+  slug        String
+  description String?
+  iconUrl     String?
+  iconKey     String?
+  active      Boolean   @default(true)
+  services    Service[]
+
+  @@unique([adminId, slug])
+  @@index([adminId, name])
+}
+
+model Service {
+  id              String           @id @default(cuid())
+  adminId         String
+  admin           User             @relation(fields: [adminId], references: [id])
+  categoryId      String
+  category        ServiceCategory  @relation(fields: [categoryId], references: [id])
+  name            String
+  slug            String
+  description     String?
+  priceCents      Int
+  durationMin     Int
+  bufferBeforeMin Int              @default(0)
+  bufferAfterMin  Int              @default(0)
+  minSqFt         Int?
+  maxSqFt         Int?
+  active          Boolean          @default(true)
+  sortOrder       Int              @default(0)
+  taxes           ServiceTax[]
+  bookingItems    BookingService[]
+
+  @@unique([adminId, slug])
+  @@index([adminId, sortOrder])
+}
+
+model Tax {
+  id       String       @id @default(cuid())
+  adminId  String
+  admin    User         @relation(fields: [adminId], references: [id])
+  name     String
+  rateBps  Int // 5% => 500
+  active   Boolean      @default(true)
+  services ServiceTax[]
+
+  @@unique([adminId, name])
+  @@index([adminId, active])
+}
+
+model ServiceTax {
+  serviceId String
+  taxId     String
+
+  service Service @relation(fields: [serviceId], references: [id])
+  tax     Tax     @relation(fields: [taxId], references: [id])
+
+  @@id([serviceId, taxId])
+}
+
+// Booking, availability, and integrations (Milestone 1)
+
+model Booking {
+  id        String        @id @default(cuid())
+  adminId   String
+  admin     User          @relation(fields: [adminId], references: [id])
+  realtorId String?
+  realtor   Realtor?      @relation(fields: [realtorId], references: [id])
+  status    BookingStatus @default(PENDING)
+  start     DateTime
+  end       DateTime
+  timeZone  String
+
+  // Property & location
+  propertyAddress          String
+  propertyFormattedAddress String?
+  propertyLat              Float?
+  propertyLng              Float?
+  propertyCity             String?
+  propertyProvince         String?
+  propertyPostalCode       String?
+  propertyCountry          String?
+  propertyPlaceId          String?
+  propertySizeSqFt         Int?
+
+  // Contact
+  contactName  String
+  contactEmail String
+  contactPhone String?
+  notes        String?
+
+  // Pricing snapshot
+  subtotalCents Int @default(0)
+  taxCents      Int @default(0)
+  totalCents    Int @default(0)
+
+  // Calendar integration
+  googleEventId String?
+
+  items     BookingService[]
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@index([adminId, start, end])
+  @@index([realtorId])
+}
+
+model BookingService {
+  id        String @id @default(cuid())
+  bookingId String
+  serviceId String
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+  service Service @relation(fields: [serviceId], references: [id])
+
+  // Snapshots for historical accuracy
+  serviceName    String
+  unitPriceCents Int
+  taxCents       Int    @default(0)
+}
+
+model AdminAvailabilityRule {
+  id           String  @id @default(cuid())
+  adminId      String
+  admin        User    @relation(fields: [adminId], references: [id])
+  dayOfWeek    Int // 0=Sun ... 6=Sat
+  startMinutes Int // minutes since midnight
+  endMinutes   Int
+  timeZone     String
+  active       Boolean @default(true)
+
+  @@index([adminId, dayOfWeek])
+}
+
+model BlackoutDate {
+  id      String   @id @default(cuid())
+  adminId String
+  admin   User     @relation(fields: [adminId], references: [id])
+  start   DateTime
+  end     DateTime
+  reason  String?
+
+  @@index([adminId, start, end])
+}
+
+model CalendarAccount {
+  id           String    @id @default(cuid())
+  adminId      String
+  admin        User      @relation(fields: [adminId], references: [id])
+  provider     String    @default("google")
+  accessToken  String?
+  refreshToken String?
+  expiresAt    DateTime?
+
+  @@unique([adminId, provider])
+}
+
+model AdminBookingSettings {
+  id               String @id @default(cuid())
+  adminId          String @unique
+  admin            User   @relation(fields: [adminId], references: [id])
+  timeZone         String
+  leadTimeMin      Int    @default(0)
+  maxAdvanceDays   Int    @default(60)
+  defaultBufferMin Int    @default(0)
 }

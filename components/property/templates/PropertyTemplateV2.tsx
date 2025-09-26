@@ -266,14 +266,9 @@ export default function PropertyTemplateV2({
 
         {!!order.photos.length && (
           <Section id="photos" title="Photo Gallery">
-            <div className="columns-1 sm:columns-2 md:columns-3 xl:columns-4 [column-gap:0.75rem] md:[column-gap:1rem]">
-              {order.photos.map((p: any, i: number) => (
-                <div
-                  key={p.id}
-                  className={`inline-block w-full align-top mb-3 md:mb-4 break-inside-avoid [break-inside:avoid] [break-inside:avoid-column] overflow-hidden rounded-md ${
-                    mosaicHeights[i % mosaicHeights.length]
-                  }`}
-                >
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
+              {order.photos.map((p: any) => (
+                <div key={p.id} className="overflow-hidden rounded-md">
                   <PhotoLightbox
                     src={p.urlMls || p.url}
                     alt={p.filename}
@@ -281,7 +276,7 @@ export default function PropertyTemplateV2({
                     startIndex={order.photos.findIndex(
                       (x: any) => x.id === p.id
                     )}
-                    thumbClassName="w-full h-full object-cover cursor-pointer"
+                    thumbClassName="w-full h-48 sm:h-56 object-cover cursor-pointer"
                   />
                 </div>
               ))}

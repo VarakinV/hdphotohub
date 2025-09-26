@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, Trash2 } from 'lucide-react';
+import { Loader2, Trash2, GripVertical, Star } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Photo {
   id: string;
@@ -22,6 +23,8 @@ export function PhotosGrid({
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [savingOrder, setSavingOrder] = useState(false);
   const selectedIds = Object.keys(selected).filter((k) => selected[k]);
 
   async function load() {
@@ -69,6 +72,65 @@ export function PhotosGrid({
       setPhotos((p) => p.filter((x) => x.id !== id));
     } finally {
       setDeleting(null);
+    }
+  }
+
+  function reorderByIds(list: Photo[], fromId: string, toId: string) {
+    const srcIdx = list.findIndex((x) => x.id === fromId);
+    const dstIdx = list.findIndex((x) => x.id === toId);
+    if (srcIdx === -1 || dstIdx === -1) return list;
+    const copy = [...list];
+    const [moved] = copy.splice(srcIdx, 1);
+    copy.splice(dstIdx, 0, moved);
+    return copy;
+  }
+
+  const handleDragStart = (id: string) => setDragId(id);
+  const handleDragOver = (e: React.DragEvent) => e.preventDefault();
+  const handleDrop = async (overId: string) => {
+    if (!dragId || dragId === overId) return;
+    const next = reorderByIds(photos, dragId, overId);
+    setPhotos(next);
+    setDragId(null);
+    // Auto-save order
+    try {
+      setSavingOrder(true);
+      const ids = next.map((p) => p.id);
+      const res = await fetch(`/api/orders/${orderId}/media/photos/reorder`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids }),
+      });
+      if (!res.ok) throw new Error('Failed to save order');
+      toast.success('Photo order saved');
+    } catch (e) {
+      toast.error('Failed to save photo order');
+    } finally {
+      setSavingOrder(false);
+    }
+  };
+
+  async function makeHero(photoId: string) {
+    try {
+      setSavingOrder(true);
+      const ids = [
+        photoId,
+        ...photos.filter((p) => p.id !== photoId).map((p) => p.id),
+      ];
+      const res = await fetch(`/api/orders/${orderId}/media/photos/reorder`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids }),
+      });
+      if (!res.ok) throw new Error('Failed to save order');
+      const byId = new Map(photos.map((p) => [p.id, p]));
+      const next = ids.map((id) => byId.get(id)!).filter(Boolean) as Photo[];
+      setPhotos(next);
+      toast.success('Set as hero');
+    } catch (e) {
+      toast.error('Failed to set hero photo');
+    } finally {
+      setSavingOrder(false);
     }
   }
 
@@ -139,7 +201,17 @@ export function PhotosGrid({
             className={`relative group border rounded-md overflow-hidden ${
               selected[p.id] ? 'ring-2 ring-primary' : ''
             }`}
+            draggable
+            onDragStart={() => handleDragStart(p.id)}
+            onDragOver={handleDragOver}
+            onDrop={() => handleDrop(p.id)}
           >
+            {/* drag handle */}
+            <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+              <span className="inline-flex items-center justify-center rounded bg-white/80 border px-1.5 py-1 text-[10px] text-gray-700 select-none">
+                <GripVertical className="h-3 w-3 mr-1" /> Drag
+              </span>
+            </div>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={p.urlMls || p.url}
@@ -155,12 +227,22 @@ export function PhotosGrid({
                 setSelected((s) => ({ ...s, [p.id]: e.target.checked }))
               }
             />
-            <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition">
+            <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition flex gap-1">
+              <Button
+                size="icon"
+                variant="outline"
+                title="Make hero"
+                onClick={() => makeHero(p.id)}
+                disabled={savingOrder}
+              >
+                <Star className="h-4 w-4" />
+              </Button>
               <Button
                 size="icon"
                 variant="outline"
                 onClick={() => remove(p.id)}
                 disabled={deleting === p.id}
+                title="Delete photo"
               >
                 {deleting === p.id ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -172,6 +254,12 @@ export function PhotosGrid({
           </div>
         ))}
       </div>
+
+      {savingOrder && (
+        <div className="text-xs text-gray-500 flex items-center gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" /> Saving order...
+        </div>
+      )}
     </div>
   );
 }

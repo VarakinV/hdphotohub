@@ -12,7 +12,9 @@ async function getOrder(orderId: string) {
     where: { id: orderId },
     include: {
       realtor: true,
-      photos: true,
+      photos: {
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
+      },
       videos: true,
       floorPlans: true,
       attachments: true,
@@ -87,4 +89,3 @@ export default async function PropertyPage({
     </div>
   );
 }
-

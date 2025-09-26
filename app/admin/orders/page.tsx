@@ -20,6 +20,8 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { AdminNavbar } from '@/components/admin/admin-navbar';
+import { Switch } from '@/components/ui/switch';
+import AdminTwoColumnShell from '@/components/admin/AdminTwoColumnShell';
 
 import { Loader2, Plus } from 'lucide-react';
 import { CopyDeliveryLinkIcon } from '@/components/admin/CopyDeliveryLinkIcon';
@@ -123,7 +125,7 @@ export default function OrdersPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <AdminTwoColumnShell>
         {/* Filters */}
         <div className="bg-white rounded-lg shadow p-4 flex flex-wrap gap-3 items-center">
           <div className="flex items-center gap-2">
@@ -210,7 +212,43 @@ export default function OrdersPage() {
                         {o.realtor.firstName} {o.realtor.lastName}
                       </TableCell>
                       <TableCell>{o.mlsNumber || '—'}</TableCell>
-                      <TableCell>{o.status}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            size="sm"
+                            checked={o.status === 'PUBLISHED'}
+                            disabled={o.status === 'ARCHIVED'}
+                            srLabel="Toggle Published"
+                            onCheckedChange={async (checked) => {
+                              const prev = o.status;
+                              const newStatus = checked ? 'PUBLISHED' : 'DRAFT';
+                              setOrders((list) =>
+                                list.map((x) =>
+                                  x.id === o.id
+                                    ? { ...x, status: newStatus }
+                                    : x
+                                )
+                              );
+                              const res = await fetch(`/api/orders/${o.id}`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ status: newStatus }),
+                              });
+                              if (!res.ok) {
+                                setOrders((list) =>
+                                  list.map((x) =>
+                                    x.id === o.id ? { ...x, status: prev } : x
+                                  )
+                                );
+                                alert('Failed to update status');
+                              }
+                            }}
+                          />
+                          <span className="text-xs text-gray-600">
+                            {o.status}
+                          </span>
+                        </div>
+                      </TableCell>
                       <TableCell className="text-right flex gap-2 justify-end">
                         {o.status === 'PUBLISHED' && (
                           <CopyDeliveryLinkIcon orderId={o.id} />
@@ -275,7 +313,7 @@ export default function OrdersPage() {
             </>
           )}
         </div>
-      </main>
+      </AdminTwoColumnShell>
     </div>
   );
 }

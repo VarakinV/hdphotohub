@@ -83,7 +83,9 @@ export function FloorplansUploader({ orderId, onUploaded }: Props) {
           if (ev.lengthComputable) {
             const pct = Math.round((ev.loaded / ev.total) * 100);
             setItems((prev) =>
-              prev.map((it) => (it === item ? { ...it, progress: pct } : it))
+              prev.map((it) =>
+                it.file === item.file ? { ...it, progress: pct } : it
+              )
             );
           }
         };
@@ -97,19 +99,23 @@ export function FloorplansUploader({ orderId, onUploaded }: Props) {
         xhr.send(item.file);
         setItems((prev) =>
           prev.map((it) =>
-            it === item ? { ...it, status: 'uploading', progress: 0 } : it
+            it.file === item.file
+              ? { ...it, status: 'uploading', progress: 0 }
+              : it
           )
         );
       });
       setItems((prev) =>
         prev.map((it) =>
-          it === item ? { ...it, status: 'done', progress: 100 } : it
+          it.file === item.file ? { ...it, status: 'done', progress: 100 } : it
         )
       );
       return { url: fileUrl, filename: item.file.name };
     } catch (e) {
       setItems((prev) =>
-        prev.map((it) => (it === item ? { ...it, status: 'error' } : it))
+        prev.map((it) =>
+          it.file === item.file ? { ...it, status: 'error' } : it
+        )
       );
       return null;
     }

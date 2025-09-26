@@ -15,6 +15,7 @@ import { DeleteUserButton } from '@/components/admin/delete-user-button';
 import { Toaster } from '@/components/ui/sonner';
 
 import { AdminNavbar } from '@/components/admin/admin-navbar';
+import AdminTwoColumnShell from '@/components/admin/AdminTwoColumnShell';
 import { AssignRealtorAdmins } from '@/components/admin/assign-realtor-admins';
 
 export const dynamic = 'force-dynamic';
@@ -32,11 +33,11 @@ export default async function AdminUsersPage({
     return (
       <div className="min-h-screen bg-gray-50">
         <AdminNavbar />
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <AdminTwoColumnShell>
           <div className="bg-white rounded-lg shadow p-6 text-sm text-gray-600">
             Access denied. This page is available to Superadmin only.
           </div>
-        </main>
+        </AdminTwoColumnShell>
       </div>
     );
   }
@@ -239,7 +240,7 @@ export default async function AdminUsersPage({
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <AdminTwoColumnShell>
         <div className="bg-white rounded-lg shadow">
           <div className="p-4 border-b flex items-center gap-3">
             <h2 className="text-lg font-medium">Admins & Realtors</h2>
@@ -361,7 +362,7 @@ export default async function AdminUsersPage({
             </div>
           </div>
         </div>
-      </main>
+      </AdminTwoColumnShell>
       <Toaster />
     </div>
   );

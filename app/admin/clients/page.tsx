@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import AdminTwoColumnShell from '@/components/admin/AdminTwoColumnShell';
 import {
   Table,
   TableBody,
@@ -198,7 +199,7 @@ export default function ClientsPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <AdminTwoColumnShell>
         {/* S3 Configuration Notice */}
         {!s3Status.isConfigured && (
           <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
@@ -363,7 +364,7 @@ export default function ClientsPage() {
             </div>
           </>
         )}
-      </main>
+      </AdminTwoColumnShell>
 
       {/* Add/Edit Modal */}
       <Dialog

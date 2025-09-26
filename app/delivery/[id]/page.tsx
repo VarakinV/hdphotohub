@@ -16,7 +16,9 @@ async function getOrder(id: string) {
     where: { id, status: 'PUBLISHED' },
     include: {
       realtor: true,
-      photos: true,
+      photos: {
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
+      },
       videos: true,
       floorPlans: true,
       attachments: true,

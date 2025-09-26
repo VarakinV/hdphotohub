@@ -23,7 +23,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         : isAdmin
         ? { orderId: id, order: { realtor: { OR: [{ userId: me.id }, { assignedAdmins: { some: { adminId: me.id } } }] } } }
         : { order: { id, realtor: { userId: session.user.id } } },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [
+        { sortOrder: 'asc' },
+        { createdAt: 'asc' },
+        { id: 'asc' }
+      ],
     });
     return NextResponse.json(photos);
   } catch (e) {
@@ -52,8 +56,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     // body: [{ url, urlMls?, filename }]
     if (!Array.isArray(body)) return NextResponse.json({ error: 'Invalid body' }, { status: 400 });
 
+    // Determine next sortOrder base using the current max for this order
+    const last = await prisma.photo.findFirst({
+      where: { orderId: id },
+      orderBy: [{ sortOrder: 'desc' }, { createdAt: 'desc' }],
+      select: { sortOrder: true },
+    });
+    const base = (last?.sortOrder ?? -1) + 1;
+
     const created = await prisma.photo.createMany({
-      data: body.map((p) => ({ orderId: id, url: p.url, urlMls: p.urlMls ?? null, filename: p.filename })),
+      data: body.map((p, idx) => ({
+        orderId: id,
+        url: p.url,
+        urlMls: p.urlMls ?? null,
+        filename: p.filename,
+        sortOrder: base + idx,
+      })),
     });
 
     // Fire-and-forget: ensure MLS sizes for any new photos missing urlMls

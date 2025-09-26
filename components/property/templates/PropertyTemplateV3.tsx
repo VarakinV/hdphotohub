@@ -222,12 +222,9 @@ export default function PropertyTemplateV3({
 
         {!!order.photos.length && (
           <Section id="photos" title="Photo Gallery">
-            <div className="columns-2 sm:columns-3 md:columns-4 [column-gap:0.75rem] md:[column-gap:1rem]">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-4">
               {order.photos.map((p: any) => (
-                <div
-                  key={p.id}
-                  className="mb-3 md:mb-4 break-inside-avoid overflow-hidden rounded-md"
-                >
+                <div key={p.id} className="overflow-hidden rounded-md">
                   <PhotoLightbox
                     src={p.urlMls || p.url}
                     alt={p.filename}
