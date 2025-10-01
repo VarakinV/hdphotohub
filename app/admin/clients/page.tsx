@@ -257,7 +257,6 @@ export default function ClientsPage() {
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Phone</TableHead>
-                    <TableHead>Added</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -302,9 +301,7 @@ export default function ClientsPage() {
                           <span className="text-gray-400">—</span>
                         )}
                       </TableCell>
-                      <TableCell>
-                        {new Date(realtor.createdAt).toLocaleDateString()}
-                      </TableCell>
+
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
@@ -374,8 +371,8 @@ export default function ClientsPage() {
           if (!open) setSelectedRealtor(null);
         }}
       >
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader className="sticky top-0 z-10 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/70">
             <DialogTitle>
               {selectedRealtor ? 'Edit Realtor' : 'Add New Realtor'}
             </DialogTitle>
@@ -386,11 +383,13 @@ export default function ClientsPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <RealtorForm
-            realtor={selectedRealtor || undefined}
-            onSuccess={handleCloseDialog}
-            onCancel={() => setIsDialogOpen(false)}
-          />
+          <div className="pt-2 pb-4">
+            <RealtorForm
+              realtor={selectedRealtor || undefined}
+              onSuccess={handleCloseDialog}
+              onCancel={() => setIsDialogOpen(false)}
+            />
+          </div>
         </DialogContent>
       </Dialog>
 

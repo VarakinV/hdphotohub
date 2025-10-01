@@ -8,6 +8,7 @@ const categoryUpdateSchema = z.object({
   description: z.string().optional().nullable(),
   iconUrl: z.string().url().optional().nullable(),
   iconKey: z.string().optional().nullable(),
+  featured: z.boolean().optional(),
   active: z.boolean().optional(),
 });
 
@@ -63,6 +64,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         description: parsed.data.description ?? existing.description,
         iconUrl: parsed.data.iconUrl ?? existing.iconUrl,
         iconKey: parsed.data.iconKey ?? existing.iconKey,
+        featured: parsed.data.featured ?? existing.featured,
         active: parsed.data.active ?? existing.active,
       },
     });

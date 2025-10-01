@@ -5,9 +5,26 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Layers, Wrench, Percent, Settings2, X } from 'lucide-react';
+import {
+  Layers,
+  Wrench,
+  Percent,
+  Settings2,
+  X,
+  Calendar,
+  Settings as SettingsIcon,
+  Ban,
+  Tag,
+} from 'lucide-react';
 
 const items = [
+  {
+    href: '/admin/booking-settings',
+    label: 'Booking Settings',
+    Icon: SettingsIcon,
+  },
+  { href: '/admin/availability', label: 'Availability', Icon: Calendar },
+  { href: '/admin/blackouts', label: 'Blackouts', Icon: Ban },
   {
     href: '/admin/service-categories',
     label: 'Service Categories',
@@ -15,6 +32,7 @@ const items = [
   },
   { href: '/admin/services', label: 'Services', Icon: Wrench },
   { href: '/admin/taxes', label: 'Taxes', Icon: Percent },
+  { href: '/admin/promo-codes', label: 'Promo Codes', Icon: Tag },
 ];
 
 export default function AdminNavCard() {

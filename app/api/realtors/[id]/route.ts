@@ -9,10 +9,17 @@ const updateRealtorSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   email: z.string().email("Invalid email address"),
-  phone: z.string().optional(),
+  phone: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional().nullable()),
   headshot: z.string().url().optional().nullable(),
   companyName: z.string().optional().nullable(),
   companyLogo: z.string().url().optional().nullable(),
+  facebookUrl: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional().nullable()),
+  linkedinUrl: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional().nullable()),
+  instagramUrl: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional().nullable()),
+  youtubeUrl: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional().nullable()),
+  twitterUrl: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional().nullable()),
+  pinterestUrl: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional().nullable()),
+  vimeoUrl: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional().nullable()),
 });
 
 // GET /api/realtors/[id] - Get a single realtor
@@ -84,7 +91,7 @@ export async function PUT(
       );
     }
 
-    const { firstName, lastName, email, phone, headshot, companyName, companyLogo } = validatedFields.data;
+    const { firstName, lastName, email, phone, headshot, companyName, companyLogo, facebookUrl, linkedinUrl, instagramUrl, youtubeUrl, twitterUrl, pinterestUrl, vimeoUrl } = validatedFields.data;
 
     // Check if realtor exists and belongs to the user
     const existingRealtor = await prisma.realtor.findFirst({
@@ -135,6 +142,13 @@ export async function PUT(
         headshot: headshot || null,
         companyName: companyName || null,
         companyLogo: companyLogo || null,
+        facebookUrl: facebookUrl || null,
+        linkedinUrl: linkedinUrl || null,
+        instagramUrl: instagramUrl || null,
+        youtubeUrl: youtubeUrl || null,
+        twitterUrl: twitterUrl || null,
+        pinterestUrl: pinterestUrl || null,
+        vimeoUrl: vimeoUrl || null,
       },
     });
 

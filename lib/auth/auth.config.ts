@@ -1,5 +1,7 @@
 import type { NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
+import { PrismaAdapter } from "@auth/prisma-adapter";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { verifyPassword } from "@/lib/utils/password";
@@ -10,6 +12,7 @@ const loginSchema = z.object({
 });
 
 export default {
+  adapter: PrismaAdapter(prisma) as any,
   providers: [
     Credentials({
       name: "credentials",
@@ -55,7 +58,20 @@ export default {
           return null;
         }
       }
-    })
+    }),
+    Google({
+      clientId: process.env.AUTH_GOOGLE_ID!,
+      clientSecret: process.env.AUTH_GOOGLE_SECRET!,
+      allowDangerousEmailAccountLinking: true,
+      authorization: {
+        params: {
+          access_type: "offline",
+          prompt: "consent",
+          include_granted_scopes: "true",
+          scope: "openid email profile https://www.googleapis.com/auth/calendar",
+        },
+      },
+    }),
   ],
   pages: {
     signIn: "/login",

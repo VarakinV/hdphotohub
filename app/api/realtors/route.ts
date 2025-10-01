@@ -13,6 +13,13 @@ const realtorSchema = z.object({
   headshot: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional().nullable()),
   companyName: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional().nullable()),
   companyLogo: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional().nullable()),
+  facebookUrl: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional().nullable()),
+  linkedinUrl: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional().nullable()),
+  instagramUrl: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional().nullable()),
+  youtubeUrl: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional().nullable()),
+  twitterUrl: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional().nullable()),
+  pinterestUrl: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional().nullable()),
+  vimeoUrl: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional().nullable()),
 });
 
 // GET /api/realtors - Get all realtors for the current user
@@ -85,7 +92,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { firstName, lastName, email, phone, headshot, companyName, companyLogo } = validatedFields.data;
+    const { firstName, lastName, email, phone, headshot, companyName, companyLogo, facebookUrl, linkedinUrl, instagramUrl, youtubeUrl, twitterUrl, pinterestUrl, vimeoUrl } = validatedFields.data;
 
     // Check if realtor with this email already exists
     const existingRealtor = await prisma.realtor.findUnique({
@@ -109,6 +116,13 @@ export async function POST(request: NextRequest) {
         headshot: headshot || null,
         companyName: companyName || null,
         companyLogo: companyLogo || null,
+        facebookUrl: facebookUrl || null,
+        linkedinUrl: linkedinUrl || null,
+        instagramUrl: instagramUrl || null,
+        youtubeUrl: youtubeUrl || null,
+        twitterUrl: twitterUrl || null,
+        pinterestUrl: pinterestUrl || null,
+        vimeoUrl: vimeoUrl || null,
         userId: session.user.id,
       },
     });

@@ -13,6 +13,12 @@ import {
   Hash,
   DollarSign,
   Check,
+  Facebook,
+  Instagram,
+  Linkedin,
+  Youtube,
+  Twitter,
+  Link2,
 } from 'lucide-react';
 
 export default function PropertyTemplateV1({
@@ -46,9 +52,12 @@ export default function PropertyTemplateV1({
           images={order.photos.map((p: any) => p.urlMls || p.url)}
           url={fullUrl}
           title={
-            order.propertyAddress?.split(',')[0] ||
-            (order.propertyFormattedAddress || '').split(',')[0] ||
-            order.propertyAddress
+            (
+              order.propertyAddressOverride ||
+              order.propertyAddress ||
+              order.propertyFormattedAddress ||
+              ''
+            ).split(',')[0]
           }
         />
         <TopAnchorMenu
@@ -66,15 +75,20 @@ export default function PropertyTemplateV1({
           <div className="absolute inset-0 flex items-start md:items-center justify-center pt-16 md:pt-0">
             <div className="text-center">
               <h1 className="px-4 text-white text-4xl md:text-7xl font-extrabold leading-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.6)]">
-                {order.propertyAddress?.split(',')[0] ||
-                  (order.propertyFormattedAddress || '').split(',')[0] ||
-                  order.propertyAddress}
+                {
+                  (
+                    order.propertyAddressOverride ||
+                    order.propertyAddress ||
+                    order.propertyFormattedAddress ||
+                    ''
+                  ).split(',')[0]
+                }
               </h1>
               <div className="mt-1 text-white/90 text-sm md:text-base drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)]">
                 {[
-                  order.propertyCity,
+                  order.propertyCityOverride || order.propertyCity,
                   order.propertyProvince,
-                  order.propertyPostalCode,
+                  order.propertyPostalCodeOverride || order.propertyPostalCode,
                 ]
                   .filter(Boolean)
                   .join(', ') ||
@@ -319,6 +333,87 @@ export default function PropertyTemplateV1({
                       height={60}
                       className="h-10 w-auto object-contain"
                     />
+                  </div>
+                )}
+
+                {(order.realtor.facebookUrl ||
+                  order.realtor.linkedinUrl ||
+                  order.realtor.instagramUrl ||
+                  order.realtor.youtubeUrl ||
+                  order.realtor.twitterUrl ||
+                  order.realtor.pinterestUrl ||
+                  order.realtor.vimeoUrl) && (
+                  <div className="mt-3 flex flex-wrap gap-3 text-gray-600">
+                    {order.realtor.facebookUrl && (
+                      <a
+                        href={order.realtor.facebookUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Facebook"
+                      >
+                        <Facebook className="h-5 w-5" />
+                      </a>
+                    )}
+                    {order.realtor.linkedinUrl && (
+                      <a
+                        href={order.realtor.linkedinUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="LinkedIn"
+                      >
+                        <Linkedin className="h-5 w-5" />
+                      </a>
+                    )}
+                    {order.realtor.instagramUrl && (
+                      <a
+                        href={order.realtor.instagramUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Instagram"
+                      >
+                        <Instagram className="h-5 w-5" />
+                      </a>
+                    )}
+                    {order.realtor.youtubeUrl && (
+                      <a
+                        href={order.realtor.youtubeUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="YouTube"
+                      >
+                        <Youtube className="h-5 w-5" />
+                      </a>
+                    )}
+                    {order.realtor.twitterUrl && (
+                      <a
+                        href={order.realtor.twitterUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Twitter/X"
+                      >
+                        <Twitter className="h-5 w-5" />
+                      </a>
+                    )}
+                    {order.realtor.pinterestUrl && (
+                      <a
+                        href={order.realtor.pinterestUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Pinterest"
+                      >
+                        <Link2 className="h-5 w-5" />
+                      </a>
+                    )}
+                    {order.realtor.vimeoUrl && (
+                      <a
+                        href={order.realtor.vimeoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Vimeo"
+                      >
+                        <Link2 className="h-5 w-5" />
+                      </a>
+                    )}
                   </div>
                 )}
               </div>

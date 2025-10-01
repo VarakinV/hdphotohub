@@ -8,6 +8,7 @@ const categoryCreateSchema = z.object({
   description: z.string().optional().nullable(),
   iconUrl: z.string().url().optional().nullable(),
   iconKey: z.string().optional().nullable(),
+  featured: z.boolean().optional(),
   active: z.boolean().optional(),
 });
 
@@ -16,6 +17,7 @@ const categoryUpdateSchema = z.object({
   description: z.string().optional().nullable(),
   iconUrl: z.string().url().optional().nullable(),
   iconKey: z.string().optional().nullable(),
+  featured: z.boolean().optional(),
   active: z.boolean().optional(),
 });
 
@@ -35,11 +37,11 @@ export async function GET() {
     const me: any = session.user;
 
     if (me.role === "SUPERADMIN") {
-      const rows = await prisma.serviceCategory.findMany({ orderBy: { name: "asc" } });
+      const rows = await prisma.serviceCategory.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }] });
       return NextResponse.json(rows);
     }
     if (me.role === "ADMIN") {
-      const rows = await prisma.serviceCategory.findMany({ where: { adminId: me.id }, orderBy: { name: "asc" } });
+      const rows = await prisma.serviceCategory.findMany({ where: { adminId: me.id }, orderBy: [{ sortOrder: "asc" }, { name: "asc" }] });
       return NextResponse.json(rows);
     }
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -71,6 +73,7 @@ export async function POST(req: NextRequest) {
         description: parsed.data.description ?? null,
         iconUrl: parsed.data.iconUrl ?? null,
         iconKey: parsed.data.iconKey ?? null,
+        featured: parsed.data.featured ?? false,
         active: parsed.data.active ?? true,
       },
     });

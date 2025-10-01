@@ -42,12 +42,16 @@ interface Order {
   propertyPostalCode?: string | null;
   propertyCountry?: string | null;
   propertyPlaceId?: string | null;
+  propertyAddressOverride?: string | null;
+  propertyCityOverride?: string | null;
+  propertyPostalCodeOverride?: string | null;
+
   propertySize?: number | null;
   yearBuilt?: number | null;
   mlsNumber?: string | null;
   listPrice?: number | null;
-  bedrooms?: number | null;
-  bathrooms?: number | null;
+  bedrooms?: string | null;
+  bathrooms?: string | null;
   featuresText?: string | null;
   description?: string | null;
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
@@ -71,6 +75,11 @@ export default function OrderDetailsPage() {
     lat: number | null;
     lng: number | null;
   } | null>(null);
+  const hasOverrides = Boolean(
+    order?.propertyAddressOverride ||
+      order?.propertyCityOverride ||
+      order?.propertyPostalCodeOverride
+  );
 
   useEffect(() => {
     if (!params?.id) return;
@@ -208,6 +217,8 @@ export default function OrderDetailsPage() {
                       const payload = Object.fromEntries(formData.entries());
                       const num = (v: any) =>
                         v === '' || v == null ? null : Number(v);
+                      const strOrNull = (v: any) =>
+                        v === '' || v == null ? null : String(v);
                       const body = {
                         propertyAddress: String(
                           payload.propertyAddress || order.propertyAddress
@@ -231,12 +242,19 @@ export default function OrderDetailsPage() {
                           String(payload.propertyCountry || '') || null,
                         propertyPlaceId:
                           String(payload.propertyPlaceId || '') || null,
+                        propertyAddressOverride:
+                          String(payload.propertyAddressOverride || '') || null,
+                        propertyCityOverride:
+                          String(payload.propertyCityOverride || '') || null,
+                        propertyPostalCodeOverride:
+                          String(payload.propertyPostalCodeOverride || '') ||
+                          null,
                         mlsNumber: String(payload.mlsNumber || '') || null,
                         yearBuilt: num(payload.yearBuilt),
                         propertySize: num(payload.propertySize),
                         listPrice: num(payload.listPrice),
-                        bedrooms: num(payload.bedrooms),
-                        bathrooms: num(payload.bathrooms),
+                        bedrooms: strOrNull(payload.bedrooms),
+                        bathrooms: strOrNull(payload.bathrooms),
                         featuresText:
                           String(payload.featuresText || '') || null,
                         description: String(payload.description || '') || null,
@@ -257,7 +275,7 @@ export default function OrderDetailsPage() {
                       }
                     }}
                   >
-                    <div>
+                    <div className="sm:col-span-2">
                       <label className="text-xs text-gray-500">
                         Property Address
                       </label>
@@ -279,25 +297,81 @@ export default function OrderDetailsPage() {
                           setPreview({ lat: d.lat ?? null, lng: d.lng ?? null })
                         }
                       />
-                      {preview?.lat != null && preview?.lng != null && (
-                        <div className="mt-3 aspect-video rounded overflow-hidden border">
+                    </div>
+
+                    {/* Map (left on desktop) */}
+                    <div>
+                      <div className="aspect-video rounded overflow-hidden border flex items-center justify-center bg-gray-50 text-gray-400">
+                        {preview?.lat != null && preview?.lng != null ? (
                           <iframe
                             src={`https://www.google.com/maps?q=${preview.lat},${preview.lng}&z=15&output=embed`}
                             className="w-full h-full"
                             loading="lazy"
                             referrerPolicy="no-referrer-when-downgrade"
                           />
-                        </div>
-                      )}
+                        ) : (
+                          <span className="text-xs">
+                            Map preview unavailable
+                          </span>
+                        )}
+                      </div>
                     </div>
+
+                    {/* Overrides (right on desktop, above map on mobile) */}
                     <div>
-                      <label className="text-xs text-gray-500">MLS #</label>
-                      <input
-                        name="mlsNumber"
-                        defaultValue={order.mlsNumber ?? ''}
-                        className="border rounded-md w-full p-2"
-                      />
+                      <div className="text-xs font-medium text-gray-600 mb-2 flex items-center gap-2">
+                        <span>Public display overrides (optional)</span>
+                        {hasOverrides && (
+                          <span className="inline-flex items-center rounded bg-emerald-100 text-emerald-700 px-2 py-0.5 text-[10px] font-semibold">
+                            Overrides active
+                          </span>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-1 gap-3">
+                        <div>
+                          <label className="text-xs text-gray-500">
+                            Override Street Address
+                          </label>
+                          <input
+                            name="propertyAddressOverride"
+                            defaultValue={order.propertyAddressOverride ?? ''}
+                            className="border rounded-md w-full p-2"
+                            placeholder="e.g., 123A Main St, Unit 402"
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs text-gray-500">
+                              Override City
+                            </label>
+                            <input
+                              name="propertyCityOverride"
+                              defaultValue={order.propertyCityOverride ?? ''}
+                              className="border rounded-md w-full p-2"
+                              placeholder="e.g., Springfield"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-500">
+                              Override Postal Code
+                            </label>
+                            <input
+                              name="propertyPostalCodeOverride"
+                              defaultValue={
+                                order.propertyPostalCodeOverride ?? ''
+                              }
+                              className="border rounded-md w-full p-2"
+                              placeholder="e.g., 12345"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-gray-500 mt-1">
+                        These override only the address text shown on the public
+                        property page hero. Map/coordinates remain unchanged.
+                      </p>
                     </div>
+
                     <div>
                       <label className="text-xs text-gray-500">
                         Year Built
@@ -334,20 +408,35 @@ export default function OrderDetailsPage() {
                     <div>
                       <label className="text-xs text-gray-500">Bedrooms</label>
                       <input
-                        type="number"
+                        type="text"
                         name="bedrooms"
                         defaultValue={order.bedrooms ?? ''}
                         className="border rounded-md w-full p-2"
+                        placeholder="e.g., 2+1"
                       />
                     </div>
-                    <div>
-                      <label className="text-xs text-gray-500">Bathrooms</label>
-                      <input
-                        type="number"
-                        name="bathrooms"
-                        defaultValue={order.bathrooms ?? ''}
-                        className="border rounded-md w-full p-2"
-                      />
+                    {/* Bathrooms + MLS row */}
+                    <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs text-gray-500">
+                          Bathrooms
+                        </label>
+                        <input
+                          type="text"
+                          name="bathrooms"
+                          defaultValue={order.bathrooms ?? ''}
+                          className="border rounded-md w-full p-2"
+                          placeholder="e.g., 2.5 or 2+2"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500">MLS #</label>
+                        <input
+                          name="mlsNumber"
+                          defaultValue={order.mlsNumber ?? ''}
+                          className="border rounded-md w-full p-2"
+                        />
+                      </div>
                     </div>
                     <div className="sm:col-span-2">
                       <label className="text-xs text-gray-500">

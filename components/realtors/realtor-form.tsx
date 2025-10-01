@@ -25,6 +25,13 @@ const formSchema = z.object({
   email: z.string().email('Invalid email address'),
   phone: z.string().optional(),
   companyName: z.string().optional(),
+  facebookUrl: z.string().optional(),
+  linkedinUrl: z.string().optional(),
+  instagramUrl: z.string().optional(),
+  youtubeUrl: z.string().optional(),
+  twitterUrl: z.string().optional(),
+  pinterestUrl: z.string().optional(),
+  vimeoUrl: z.string().optional(),
 });
 
 interface RealtorFormProps {
@@ -37,6 +44,13 @@ interface RealtorFormProps {
     headshot?: string | null;
     companyName?: string | null;
     companyLogo?: string | null;
+    facebookUrl?: string | null;
+    linkedinUrl?: string | null;
+    instagramUrl?: string | null;
+    youtubeUrl?: string | null;
+    twitterUrl?: string | null;
+    pinterestUrl?: string | null;
+    vimeoUrl?: string | null;
   };
   onSuccess?: () => void;
   onCancel?: () => void;
@@ -74,6 +88,13 @@ export function RealtorForm({
       email: realtor?.email || '',
       phone: realtor?.phone || '',
       companyName: realtor?.companyName || '',
+      facebookUrl: realtor?.facebookUrl || '',
+      linkedinUrl: realtor?.linkedinUrl || '',
+      instagramUrl: realtor?.instagramUrl || '',
+      youtubeUrl: realtor?.youtubeUrl || '',
+      twitterUrl: realtor?.twitterUrl || '',
+      pinterestUrl: realtor?.pinterestUrl || '',
+      vimeoUrl: realtor?.vimeoUrl || '',
     },
   });
 
@@ -494,6 +515,132 @@ export function RealtorForm({
             </FormItem>
           )}
         />
+
+        {/* Social Media Profiles */}
+        <div className="mt-6">
+          <div className="text-sm font-medium mb-2">Social Media Profiles</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="facebookUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Facebook</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="https://facebook.com/username"
+                      {...field}
+                      disabled={isLoading}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="linkedinUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>LinkedIn</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="https://linkedin.com/in/username"
+                      {...field}
+                      disabled={isLoading}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="instagramUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Instagram</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="https://instagram.com/username"
+                      {...field}
+                      disabled={isLoading}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="youtubeUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>YouTube</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="https://youtube.com/@channel"
+                      {...field}
+                      disabled={isLoading}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="twitterUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Twitter/X</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="https://x.com/username"
+                      {...field}
+                      disabled={isLoading}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="pinterestUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Pinterest</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="https://pinterest.com/username"
+                      {...field}
+                      disabled={isLoading}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="vimeoUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Vimeo</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="https://vimeo.com/username"
+                      {...field}
+                      disabled={isLoading}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
 
         <div className="flex justify-end gap-2">
           {onCancel && (

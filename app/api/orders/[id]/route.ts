@@ -68,12 +68,15 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         propertyPostalCode: body.propertyPostalCode ?? null,
         propertyCountry: body.propertyCountry ?? null,
         propertyPlaceId: body.propertyPlaceId ?? null,
+        propertyAddressOverride: body.propertyAddressOverride ?? null,
+        propertyCityOverride: body.propertyCityOverride ?? null,
+        propertyPostalCodeOverride: body.propertyPostalCodeOverride ?? null,
         propertySize: body.propertySize == null || body.propertySize === '' ? null : Number(body.propertySize),
         yearBuilt: body.yearBuilt == null || body.yearBuilt === '' ? null : Number(body.yearBuilt),
         mlsNumber: body.mlsNumber ?? null,
         listPrice: body.listPrice == null || body.listPrice === '' ? null : Number(body.listPrice),
-        bedrooms: body.bedrooms == null || body.bedrooms === '' ? null : Number(body.bedrooms),
-        bathrooms: body.bathrooms == null || body.bathrooms === '' ? null : Number(body.bathrooms),
+        bedrooms: body.bedrooms == null || body.bedrooms === '' ? null : String(body.bedrooms),
+        bathrooms: body.bathrooms == null || body.bathrooms === '' ? null : String(body.bathrooms),
         featuresText: body.featuresText ?? null,
         description: body.description ?? null,
         status: body.status ?? undefined,
@@ -133,6 +136,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       data.propertyCountry = body.propertyCountry ?? null;
     if ('propertyPlaceId' in body)
       data.propertyPlaceId = body.propertyPlaceId ?? null;
+    if ('propertyAddressOverride' in body)
+      data.propertyAddressOverride = body.propertyAddressOverride ?? null;
+    if ('propertyCityOverride' in body)
+      data.propertyCityOverride = body.propertyCityOverride ?? null;
+    if ('propertyPostalCodeOverride' in body)
+      data.propertyPostalCodeOverride = body.propertyPostalCodeOverride ?? null;
     if ('propertySize' in body)
       data.propertySize =
         body.propertySize == null || body.propertySize === ''

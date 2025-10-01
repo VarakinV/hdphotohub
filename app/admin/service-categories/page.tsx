@@ -66,6 +66,7 @@ import {
   Moon,
   Rocket,
   Megaphone,
+  GripVertical,
 } from 'lucide-react';
 
 interface Category {
@@ -73,12 +74,16 @@ interface Category {
   name: string;
   description?: string | null;
   iconKey?: string | null;
+  featured: boolean;
   active: boolean;
 }
 
 export default function ServiceCategoriesPage() {
   const [items, setItems] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  // Drag & drop ordering
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [orderDirty, setOrderDirty] = useState(false);
   const [filters, setFilters] = useState<{ active?: string; query?: string }>(
     {}
   );
@@ -93,6 +98,7 @@ export default function ServiceCategoriesPage() {
   const [createErr, setCreateErr] = useState<{ name?: string; form?: string }>(
     {}
   );
+  const [createFeatured, setCreateFeatured] = useState(false);
 
   // Edit dialog state
   const [editOpen, setEditOpen] = useState(false);
@@ -100,6 +106,8 @@ export default function ServiceCategoriesPage() {
   const [editName, setEditName] = useState('');
   const [editDesc, setEditDesc] = useState('');
   const [editIconKey, setEditIconKey] = useState<string>('');
+
+  const [editFeatured, setEditFeatured] = useState(false);
 
   // Delete confirmation state
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -155,6 +163,41 @@ export default function ServiceCategoriesPage() {
     });
   }, [items, filters]);
 
+  function reorderByIds(list: Category[], fromId: string, toId: string) {
+    const srcIdx = list.findIndex((x) => x.id === fromId);
+    const dstIdx = list.findIndex((x) => x.id === toId);
+    if (srcIdx === -1 || dstIdx === -1) return list;
+    const copy = [...list];
+    const [moved] = copy.splice(srcIdx, 1);
+    copy.splice(dstIdx, 0, moved);
+    return copy;
+  }
+
+  const handleDragStart = (id: string) => setDragId(id);
+  const handleDragOver = (e: React.DragEvent) => e.preventDefault();
+  const handleDrop = (overId: string) => {
+    if (!dragId || dragId === overId) return;
+    setItems((prev) => reorderByIds(prev, dragId!, overId));
+    setOrderDirty(true);
+    setDragId(null);
+  };
+
+  const saveOrder = async () => {
+    try {
+      const ids = items.map((c) => c.id);
+      const res = await fetch('/api/service-categories/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids }),
+      });
+      if (!res.ok) throw new Error('Failed to save order');
+      setOrderDirty(false);
+      toast.success('Order saved');
+    } catch (e) {
+      toast.error('Failed to save order');
+    }
+  };
+
   const [page, setPage] = useState(1);
   const perPage = 20;
   useEffect(() => {
@@ -172,6 +215,7 @@ export default function ServiceCategoriesPage() {
     setEditName(row.name);
     setEditDesc(row.description ?? '');
     setEditIconKey(row.iconKey || '');
+    setEditFeatured(!!row.featured);
     setEditOpen(true);
   }
   function cancelEdit() {
@@ -189,6 +233,7 @@ export default function ServiceCategoriesPage() {
         name: editName,
         description: editDesc || null,
         iconKey: editIconKey || null,
+        featured: editFeatured,
       }),
     });
     if (res.ok) {
@@ -318,6 +363,19 @@ export default function ServiceCategoriesPage() {
                   })()}
                 </div>
               </div>
+              <div>
+                <label className="text-sm font-medium">Featured</label>
+                <div className="mt-1 flex items-center gap-2">
+                  <Switch
+                    checked={createFeatured}
+                    onCheckedChange={setCreateFeatured}
+                    srLabel="Toggle featured"
+                  />
+                  <span className="text-sm text-gray-600">
+                    Show under Packages
+                  </span>
+                </div>
+              </div>
             </div>
             {createErr.form && (
               <p className="text-xs text-red-600 mt-2">{createErr.form}</p>
@@ -340,6 +398,7 @@ export default function ServiceCategoriesPage() {
                         name: createName.trim(),
                         description: createDesc || undefined,
                         iconKey: createIconKey || undefined,
+                        featured: createFeatured,
                       }),
                     });
                     if (!res.ok) {
@@ -424,6 +483,20 @@ export default function ServiceCategoriesPage() {
                   })()}
                 </div>
               </div>
+              <div>
+                <label className="text-sm font-medium">Featured</label>
+                <div className="mt-1 flex items-center gap-2">
+                  <Switch
+                    checked={editFeatured}
+                    onCheckedChange={setEditFeatured}
+                    srLabel="Toggle featured"
+                  />
+                  <span className="text-sm text-gray-600">
+                    Show under Packages
+                  </span>
+                </div>
+              </div>
+
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" onClick={() => cancelEdit()}>
                   Cancel
@@ -470,9 +543,17 @@ export default function ServiceCategoriesPage() {
             </div>
           ) : (
             <>
+              {orderDirty && (
+                <div className="p-3 border-b flex justify-end">
+                  <Button size="sm" onClick={saveOrder}>
+                    Save order
+                  </Button>
+                </div>
+              )}
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-8"></TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Active</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -482,7 +563,16 @@ export default function ServiceCategoriesPage() {
                   {pageItems.map((c) => {
                     const isEditing = editingId === c.id;
                     return (
-                      <TableRow key={c.id}>
+                      <TableRow
+                        key={c.id}
+                        draggable
+                        onDragStart={() => setDragId(c.id)}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={() => handleDrop(c.id)}
+                      >
+                        <TableCell className="w-8 align-middle text-gray-400">
+                          <GripVertical className="h-4 w-4" />
+                        </TableCell>
                         <TableCell className="font-medium">
                           {isEditing ? (
                             <Input

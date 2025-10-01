@@ -18,6 +18,12 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { PlusCircle, UserPlus, ExternalLink } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -80,6 +86,77 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loadingStats, setLoadingStats] = useState<boolean>(true);
 
+  // Schedule (next 7 days)
+  type BookingRow = {
+    id: string;
+    status: 'PENDING' | 'CONFIRMED' | 'CANCELLED';
+    start: string;
+    propertyFormattedAddress?: string | null;
+    propertyAddress: string;
+    contactName: string;
+  };
+  const [scheduleRows, setScheduleRows] = useState<BookingRow[]>([]);
+  const [loadingSchedule, setLoadingSchedule] = useState<boolean>(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoadingSchedule(true);
+      try {
+        const now = new Date();
+        const start = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate()
+        ); // start of today
+        const end = new Date(start);
+        end.setDate(end.getDate() + 13); // today + next 13 days = 14 days window
+        const params = new URLSearchParams();
+        params.set('start', start.toISOString());
+        params.set('end', end.toISOString());
+        const res = await fetch(`/api/bookings?${params.toString()}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || 'Failed to load schedule');
+        if (!cancelled) setScheduleRows(data as BookingRow[]);
+      } catch (e) {
+        console.error(e);
+        if (!cancelled) setScheduleRows([]);
+      } finally {
+        if (!cancelled) setLoadingSchedule(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const scheduleDays = useMemo(() => {
+    function startOfDay(d: Date) {
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    }
+    const today = startOfDay(new Date());
+    const days = Array.from({ length: 14 }, (_v, i) => {
+      const d = new Date(today);
+      d.setDate(d.getDate() + i);
+      return d;
+    });
+    const groups = days.map((d) => {
+      const items = scheduleRows
+        .filter((r) => r.status !== 'CANCELLED')
+        .filter((r) => {
+          const t = new Date(r.start);
+          return (
+            t.getFullYear() === d.getFullYear() &&
+            t.getMonth() === d.getMonth() &&
+            t.getDate() === d.getDate()
+          );
+        })
+        .sort((a, b) => +new Date(a.start) - +new Date(b.start));
+      return { date: d, items };
+    });
+    return groups;
+  }, [scheduleRows]);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -111,9 +188,14 @@ export default function AdminDashboard() {
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">
-              Admin Dashboard
-            </h1>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Admin Dashboard
+              </h1>
+              <p className="text-sm text-gray-600 mt-1">
+                Overview of your business and recent activity
+              </p>
+            </div>
             <div className="flex items-center gap-4">
               <span className="text-sm text-gray-600">
                 Welcome, {session?.user?.name || session?.user?.email || ''}
@@ -191,6 +273,87 @@ export default function AdminDashboard() {
           </div>
         </div>
 
+        {/* Schedule - Next 14 Days */}
+        <Card className="mt-8">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Schedule</CardTitle>
+              <CardDescription>
+                Upcoming bookings for the next 14 days
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {loadingSchedule ? (
+              <div className="h-24 flex items-center justify-center text-gray-500">
+                Loading…
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                {scheduleDays.map(({ date, items }) => {
+                  const weekday = date.toLocaleDateString(undefined, {
+                    weekday: 'short',
+                  });
+                  const dayLabel = date.toLocaleDateString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                  });
+                  return (
+                    <div
+                      key={date.toISOString()}
+                      className="border rounded-md p-2"
+                      style={{
+                        backgroundColor: items.length > 0 ? '#d5f7dc' : 'white',
+                      }}
+                    >
+                      <div className="flex items-baseline justify-between mb-2">
+                        <div className="text-sm font-medium">{weekday}</div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-xs text-gray-500">
+                            {dayLabel}
+                          </div>
+                          {items.length > 0 && (
+                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">
+                              {items.length}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {items.length === 0 ? (
+                        <div className="text-xs text-gray-400">No bookings</div>
+                      ) : (
+                        <ul className="space-y-1">
+                          {items.slice(0, 6).map((b) => {
+                            const t = new Date(b.start);
+                            const time = t.toLocaleTimeString(undefined, {
+                              hour: 'numeric',
+                              minute: '2-digit',
+                            });
+                            const addr =
+                              b.propertyFormattedAddress || b.propertyAddress;
+                            return (
+                              <li key={b.id} className="text-xs">
+                                <span className="font-medium">{time}</span>
+                                <span className="mx-1">–</span>
+                                <span
+                                  className="truncate inline-block align-middle max-w-full"
+                                  title={addr}
+                                >
+                                  {addr}
+                                </span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Orders by Months (Bar chart) */}
         <Card className="mt-8">
           <CardHeader className="flex flex-row items-center justify-between">
@@ -243,23 +406,31 @@ export default function AdminDashboard() {
                     'Dec',
                   ];
                   return (
-                    <div className="grid grid-cols-12 gap-3 items-end h-56">
-                      {series.map((v, i) => (
-                        <div
-                          key={i}
-                          className="flex flex-col items-center justify-end"
-                        >
+                    <TooltipProvider>
+                      <div className="grid grid-cols-12 gap-3 items-end h-56">
+                        {series.map((v, i) => (
                           <div
-                            className="w-4 bg-rose-500/80 rounded-t"
-                            style={{ height: `${(v / max) * 180}px` }}
-                            title={`${months[i]}: ${v}`}
-                          />
-                          <div className="mt-2 text-xs text-gray-600">
-                            {months[i]}
+                            key={i}
+                            className="flex flex-col items-center justify-end"
+                          >
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div
+                                  className="w-4 bg-rose-500/80 rounded-t"
+                                  style={{ height: `${(v / max) * 180}px` }}
+                                />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {`${months[i]}: ${v} orders`}
+                              </TooltipContent>
+                            </Tooltip>
+                            <div className="mt-2 text-xs text-gray-600">
+                              {months[i]}
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    </TooltipProvider>
                   );
                 })()}
               </div>

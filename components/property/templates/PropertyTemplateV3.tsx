@@ -13,6 +13,12 @@ import {
   Hash,
   DollarSign,
   Check,
+  Facebook,
+  Instagram,
+  Linkedin,
+  Youtube,
+  Twitter,
+  Link2,
 } from 'lucide-react';
 
 export default function PropertyTemplateV3({
@@ -40,13 +46,22 @@ export default function PropertyTemplateV3({
 
   // Convenience hero strings
   const formatted: string =
-    order.propertyFormattedAddress || order.propertyAddress || '';
+    order.propertyFormattedAddress ||
+    order.propertyAddressOverride ||
+    order.propertyAddress ||
+    '';
   const street: string =
+    (order.propertyAddressOverride &&
+      order.propertyAddressOverride.split(',')[0]) ||
     (order.propertyAddress && order.propertyAddress.split(',')[0]) ||
     (formatted && formatted.split(',')[0]) ||
     '';
   const cityLine: string =
-    [order.propertyCity, order.propertyProvince, order.propertyPostalCode]
+    [
+      order.propertyCityOverride || order.propertyCity,
+      order.propertyProvince,
+      order.propertyPostalCodeOverride || order.propertyPostalCode,
+    ]
       .filter(Boolean)
       .join(', ') ||
     (formatted
@@ -315,6 +330,87 @@ export default function PropertyTemplateV3({
                       height={60}
                       className="h-10 w-auto object-contain"
                     />
+                  </div>
+                )}
+
+                {(order.realtor.facebookUrl ||
+                  order.realtor.linkedinUrl ||
+                  order.realtor.instagramUrl ||
+                  order.realtor.youtubeUrl ||
+                  order.realtor.twitterUrl ||
+                  order.realtor.pinterestUrl ||
+                  order.realtor.vimeoUrl) && (
+                  <div className="mt-3 flex flex-wrap gap-3 text-gray-600">
+                    {order.realtor.facebookUrl && (
+                      <a
+                        href={order.realtor.facebookUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Facebook"
+                      >
+                        <Facebook className="h-5 w-5" />
+                      </a>
+                    )}
+                    {order.realtor.linkedinUrl && (
+                      <a
+                        href={order.realtor.linkedinUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="LinkedIn"
+                      >
+                        <Linkedin className="h-5 w-5" />
+                      </a>
+                    )}
+                    {order.realtor.instagramUrl && (
+                      <a
+                        href={order.realtor.instagramUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Instagram"
+                      >
+                        <Instagram className="h-5 w-5" />
+                      </a>
+                    )}
+                    {order.realtor.youtubeUrl && (
+                      <a
+                        href={order.realtor.youtubeUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="YouTube"
+                      >
+                        <Youtube className="h-5 w-5" />
+                      </a>
+                    )}
+                    {order.realtor.twitterUrl && (
+                      <a
+                        href={order.realtor.twitterUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Twitter/X"
+                      >
+                        <Twitter className="h-5 w-5" />
+                      </a>
+                    )}
+                    {order.realtor.pinterestUrl && (
+                      <a
+                        href={order.realtor.pinterestUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Pinterest"
+                      >
+                        <Link2 className="h-5 w-5" />
+                      </a>
+                    )}
+                    {order.realtor.vimeoUrl && (
+                      <a
+                        href={order.realtor.vimeoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Vimeo"
+                      >
+                        <Link2 className="h-5 w-5" />
+                      </a>
+                    )}
                   </div>
                 )}
               </div>

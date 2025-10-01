@@ -38,24 +38,34 @@ model User {
   BlackoutDate          BlackoutDate[]
   CalendarAccount       CalendarAccount[]
   AdminBookingSettings  AdminBookingSettings?
+  PromoCode             PromoCode[]
+  Account               Account[]
+  Session               Session[]
 }
 
 model Realtor {
-  id          String       @id @default(cuid())
-  firstName   String
-  lastName    String
-  email       String       @unique
-  phone       String?
-  headshot    String? // S3 URL for headshot image
-  companyName String?
-  companyLogo String?
-  userId      String // Admin who created this realtor
-  user        User         @relation("RealtorCreatedBy", fields: [userId], references: [id])
-  users       User[]       @relation("RealtorMembers") // Users (REALTOR role) linked to this Realtor
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  orders      Order[]
-  invites     Invitation[] @relation("RealtorInvites")
+  id           String       @id @default(cuid())
+  firstName    String
+  lastName     String
+  email        String       @unique
+  phone        String?
+  headshot     String? // S3 URL for headshot image
+  companyName  String?
+  companyLogo  String?
+  facebookUrl  String?
+  linkedinUrl  String?
+  instagramUrl String?
+  youtubeUrl   String?
+  twitterUrl   String?
+  pinterestUrl String?
+  vimeoUrl     String?
+  userId       String // Admin who created this realtor
+  user         User         @relation("RealtorCreatedBy", fields: [userId], references: [id])
+  users        User[]       @relation("RealtorMembers") // Users (REALTOR role) linked to this Realtor
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  orders       Order[]
+  invites      Invitation[] @relation("RealtorInvites")
 
   // Realtors ↔ Admins assignments (as Realtor)
   assignedAdmins RealtorAssignment[] @relation("RealtorAdmins")
@@ -92,14 +102,22 @@ model Order {
   propertyCountry          String?
   propertyPlaceId          String?
 
-  propertySize Int?
-  yearBuilt    Int?
-  mlsNumber    String?
-  listPrice    Int?
-  bedrooms     Int?
-  bathrooms    Int?
-  featuresText String?
-  description  String?
+  // Public display overrides (do not affect map/location)
+  propertyAddressOverride    String?
+  propertyCityOverride       String?
+  propertyPostalCodeOverride String?
+
+  propertySize       Int?
+  yearBuilt          Int?
+  mlsNumber          String?
+  listPrice          Int?
+  bedrooms           String?
+  bathrooms          String?
+  featuresText       String?
+  description        String?
+  appliedPromoCodeId String?
+  discountCents      Int        @default(0)
+  appliedPromoCode   PromoCode? @relation(fields: [appliedPromoCodeId], references: [id])
 
   // Media relations
   photos        Photo[]
@@ -236,32 +254,36 @@ model ServiceCategory {
   description String?
   iconUrl     String?
   iconKey     String?
+  featured    Boolean   @default(false)
   active      Boolean   @default(true)
+  sortOrder   Int       @default(0)
   services    Service[]
 
   @@unique([adminId, slug])
   @@index([adminId, name])
+  @@index([adminId, sortOrder])
 }
 
 model Service {
-  id              String           @id @default(cuid())
-  adminId         String
-  admin           User             @relation(fields: [adminId], references: [id])
-  categoryId      String
-  category        ServiceCategory  @relation(fields: [categoryId], references: [id])
-  name            String
-  slug            String
-  description     String?
-  priceCents      Int
-  durationMin     Int
-  bufferBeforeMin Int              @default(0)
-  bufferAfterMin  Int              @default(0)
-  minSqFt         Int?
-  maxSqFt         Int?
-  active          Boolean          @default(true)
-  sortOrder       Int              @default(0)
-  taxes           ServiceTax[]
-  bookingItems    BookingService[]
+  id               String             @id @default(cuid())
+  adminId          String
+  admin            User               @relation(fields: [adminId], references: [id])
+  categoryId       String
+  category         ServiceCategory    @relation(fields: [categoryId], references: [id])
+  name             String
+  slug             String
+  description      String?
+  priceCents       Int
+  durationMin      Int
+  bufferBeforeMin  Int                @default(0)
+  bufferAfterMin   Int                @default(0)
+  minSqFt          Int?
+  maxSqFt          Int?
+  active           Boolean            @default(true)
+  sortOrder        Int                @default(0)
+  taxes            ServiceTax[]
+  bookingItems     BookingService[]
+  PromoCodeService PromoCodeService[]
 
   @@unique([adminId, slug])
   @@index([adminId, sortOrder])
@@ -322,9 +344,14 @@ model Booking {
   notes        String?
 
   // Pricing snapshot
-  subtotalCents Int @default(0)
-  taxCents      Int @default(0)
-  totalCents    Int @default(0)
+  subtotalCents      Int        @default(0)
+  taxCents           Int        @default(0)
+  totalCents         Int        @default(0)
+  // Promo code application
+  appliedPromoCodeId String?
+  appliedPromoCode   PromoCode? @relation(fields: [appliedPromoCodeId], references: [id])
+  promoCodeCode      String?
+  discountCents      Int        @default(0)
 
   // Calendar integration
   googleEventId String?
@@ -387,12 +414,89 @@ model CalendarAccount {
   @@unique([adminId, provider])
 }
 
+// Promo codes
+
+enum PromoDiscountType {
+  PERCENT
+  AMOUNT
+}
+
+model PromoCode {
+  id                 String             @id @default(cuid())
+  adminId            String
+  admin              User               @relation(fields: [adminId], references: [id])
+  displayName        String
+  code               String
+  startDate          DateTime?
+  endDate            DateTime?
+  maxUsesPerRealtor  Int?
+  maxUsesTotal       Int?
+  discountType       PromoDiscountType
+  discountRateBps    Int?
+  discountValueCents Int?
+  active             Boolean            @default(true)
+  services           PromoCodeService[]
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  Order              Order[]
+  Booking            Booking[]
+
+  @@unique([adminId, code])
+}
+
+model PromoCodeService {
+  promoCodeId String
+  serviceId   String
+  promoCode   PromoCode @relation(fields: [promoCodeId], references: [id])
+  service     Service   @relation(fields: [serviceId], references: [id])
+
+  @@id([promoCodeId, serviceId])
+}
+
 model AdminBookingSettings {
-  id               String @id @default(cuid())
-  adminId          String @unique
-  admin            User   @relation(fields: [adminId], references: [id])
+  id               String  @id @default(cuid())
+  adminId          String  @unique
+  admin            User    @relation(fields: [adminId], references: [id])
   timeZone         String
-  leadTimeMin      Int    @default(0)
-  maxAdvanceDays   Int    @default(60)
-  defaultBufferMin Int    @default(0)
+  leadTimeMin      Int     @default(0)
+  maxAdvanceDays   Int     @default(60)
+  defaultBufferMin Int     @default(0)
+  googleCalendarId String?
+}
+
+// Auth.js Prisma Adapter models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
