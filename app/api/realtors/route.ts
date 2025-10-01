@@ -3,6 +3,9 @@ import { auth } from "@/lib/auth/auth";
 import { prisma } from "@/lib/db/prisma";
 import { z } from "zod";
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 // Schema for creating/updating a realtor
 const realtorSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -26,7 +29,7 @@ const realtorSchema = z.object({
 export async function GET() {
   try {
     const session = await auth();
-    
+
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: "Unauthorized" },
@@ -72,7 +75,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
-    
+
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: "Unauthorized" },
@@ -81,10 +84,10 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    
+
     // Validate input
     const validatedFields = realtorSchema.safeParse(body);
-    
+
     if (!validatedFields.success) {
       return NextResponse.json(
         { error: "Invalid fields", details: validatedFields.error.flatten() },

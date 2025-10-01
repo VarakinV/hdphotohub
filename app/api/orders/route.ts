@@ -3,6 +3,9 @@ import { prisma } from '@/lib/db/prisma';
 import { auth } from '@/lib/auth/auth';
 import { z } from 'zod';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 const createSchema = z.object({
   realtorId: z.string().min(1),
   propertyAddress: z.string().min(1),
