@@ -1,24 +1,33 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { Toaster } from "@/components/ui/sonner";
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import { Toaster } from '@/components/ui/sonner';
 
-import { PhotosUploader } from "@/components/orders/photos-uploader";
-import { PhotosGrid } from "@/components/orders/photos-grid";
-import { VideosUploader } from "@/components/orders/videos-uploader";
-import { VideosGrid } from "@/components/orders/videos-grid";
-import { FloorplansUploader } from "@/components/orders/floorplans-uploader";
-import { FloorplansGrid } from "@/components/orders/floorplans-grid";
-import { AttachmentsUploader } from "@/components/orders/attachments-uploader";
-import { AttachmentsList } from "@/components/orders/attachments-list";
-import { EmbedsForm } from "@/components/orders/embeds-form";
-import { EmbedsList } from "@/components/orders/embeds-list";
-import { sanitizeDescription } from "@/lib/sanitize";
-import PlacesAddressInput from "@/components/admin/PlacesAddressInput";
-import DescriptionEditor from "@/components/admin/DescriptionEditor";
+import { PhotosUploader } from '@/components/orders/photos-uploader';
+import { PhotosGrid } from '@/components/orders/photos-grid';
+import { VideosUploader } from '@/components/orders/videos-uploader';
+import { VideosGrid } from '@/components/orders/videos-grid';
+import { FloorplansUploader } from '@/components/orders/floorplans-uploader';
+import { FloorplansGrid } from '@/components/orders/floorplans-grid';
+import { AttachmentsUploader } from '@/components/orders/attachments-uploader';
+import { AttachmentsList } from '@/components/orders/attachments-list';
+import { EmbedsForm } from '@/components/orders/embeds-form';
+import { EmbedsList } from '@/components/orders/embeds-list';
+import { sanitizeDescription } from '@/lib/sanitize';
+import PlacesAddressInput from '@/components/admin/PlacesAddressInput';
+import DescriptionEditor from '@/components/admin/DescriptionEditor';
+import {
+  Loader2,
+  Home,
+  Images,
+  Film,
+  Ruler,
+  Paperclip,
+  Link2,
+} from 'lucide-react';
 
 interface Order {
   id: string;
@@ -32,41 +41,71 @@ interface Order {
   propertyPostalCode?: string | null;
   propertyCountry?: string | null;
   propertyPlaceId?: string | null;
+  propertyAddressOverride?: string | null;
+  propertyCityOverride?: string | null;
+  propertyPostalCodeOverride?: string | null;
   propertySize?: number | null;
   yearBuilt?: number | null;
   mlsNumber?: string | null;
   listPrice?: number | null;
-  bedrooms?: number | null;
-  bathrooms?: number | null;
+  bedrooms?: string | null;
+  bathrooms?: string | null;
   featuresText?: string | null;
   description?: string | null;
-  status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
   slug: string;
 }
 
 export function PortalOrderDetails({ orderId }: { orderId: string }) {
   const [order, setOrder] = useState<Order | null>(null);
   const [tab, setTab] = useState<
-    "property" | "photos" | "videos" | "floor" | "attach" | "embed"
-  >("property");
+    'property' | 'photos' | 'videos' | 'floor' | 'attach' | 'embed'
+  >('property');
   const [photoRefresh, setPhotoRefresh] = useState(0);
   const [videoRefresh, setVideoRefresh] = useState(0);
   const [floorRefresh, setFloorRefresh] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  type TabKey = 'property' | 'photos' | 'videos' | 'floor' | 'attach' | 'embed';
+  type TabDef = { key: TabKey; label: string; icon: React.ElementType };
+
+  const tabsList: TabDef[] = [
+    { key: 'property', label: 'Property Info', icon: Home },
+    { key: 'photos', label: 'Photos', icon: Images },
+    { key: 'videos', label: 'Videos', icon: Film },
+    { key: 'floor', label: 'Floor Plans', icon: Ruler },
+    { key: 'attach', label: 'PDFs', icon: Paperclip },
+    { key: 'embed', label: 'iGUIDE', icon: Link2 },
+  ];
+
   const [attachRefresh, setAttachRefresh] = useState(0);
   const [embedRefresh, setEmbedRefresh] = useState(0);
   const [editing, setEditing] = useState(false);
-  const [preview, setPreview] = useState<{ lat: number | null; lng: number | null } | null>(null);
+  const [preview, setPreview] = useState<{
+    lat: number | null;
+    lng: number | null;
+  } | null>(null);
 
   useEffect(() => {
     if (!orderId) return;
     (async () => {
-      const res = await fetch(`/api/orders/${orderId}`);
-      if (res.ok) setOrder(await res.json());
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/orders/${orderId}`);
+        if (res.ok) setOrder(await res.json());
+        else toast.error('Failed to load order');
+      } finally {
+        setLoading(false);
+      }
     })();
   }, [orderId]);
 
   useEffect(() => {
-    if (order) setPreview({ lat: order.propertyLat ?? null, lng: order.propertyLng ?? null });
+    if (order)
+      setPreview({
+        lat: order.propertyLat ?? null,
+        lng: order.propertyLng ?? null,
+      });
   }, [order]);
 
   return (
@@ -77,7 +116,7 @@ export function PortalOrderDetails({ orderId }: { orderId: string }) {
           <p className="text-sm text-gray-600">
             {order
               ? `${order.realtor.firstName} ${order.realtor.lastName} — ${order.propertyAddress}`
-              : ""}
+              : ''}
           </p>
         </div>
         <div className="flex gap-2">
@@ -88,30 +127,47 @@ export function PortalOrderDetails({ orderId }: { orderId: string }) {
       </div>
 
       {/* Tabs */}
-      <div className="border-b mb-4 flex gap-4">
-        {[
-          { key: "property", label: "Property Data" },
-          { key: "photos", label: "Photos" },
-          { key: "videos", label: "Videos" },
-          { key: "floor", label: "Floor Plans" },
-          { key: "attach", label: "Attachments" },
-          { key: "embed", label: "Embedded Media" },
-        ].map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key as any)}
-            className={`pb-2 border-b-2 -mb-px ${
-              tab === t.key ? "border-primary" : "border-transparent text-gray-500"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
+      <div className="border-b border-gray-200 mb-4">
+        <ul className="flex flex-wrap justify-center -mb-px text-sm font-medium text-gray-500 text-center gap-x-2 gap-y-2 sm:flex-nowrap">
+          {tabsList.map((t) => {
+            const active = tab === t.key;
+            const Icon = t.icon;
+            return (
+              <li key={t.key} className="mr-2 mb-2">
+                <button
+                  onClick={() => setTab(t.key as any)}
+                  className={`inline-flex items-center justify-center px-3 py-2 border-b-2 rounded-t-lg group whitespace-nowrap ${
+                    active
+                      ? 'text-primary border-primary'
+                      : 'text-gray-500 border-transparent hover:text-gray-600 hover:border-gray-300'
+                  }`}
+                  aria-current={active ? 'page' : undefined}
+                >
+                  <Icon
+                    className={`w-4 h-4 mr-2 ${
+                      active
+                        ? 'text-primary'
+                        : 'text-gray-400 group-hover:text-gray-500'
+                    }`}
+                  />
+                  {t.label}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
       </div>
+
+      {/* Loading indicator */}
+      {loading && (
+        <div className="bg-white rounded-lg border p-6 mb-4 flex justify-center items-center">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        </div>
+      )}
 
       {/* Tab content */}
       <div className="bg-white rounded-lg border p-6">
-        {tab === "property" && order && (
+        {tab === 'property' && order && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -128,27 +184,27 @@ export function PortalOrderDetails({ orderId }: { orderId: string }) {
               </div>
               <div>
                 <div className="text-xs text-gray-500">MLS #</div>
-                <div className="font-medium">{order.mlsNumber || "—"}</div>
+                <div className="font-medium">{order.mlsNumber || '—'}</div>
               </div>
               <div>
                 <div className="text-xs text-gray-500">Size (sqft)</div>
-                <div className="font-medium">{order.propertySize ?? "—"}</div>
+                <div className="font-medium">{order.propertySize ?? '—'}</div>
               </div>
               <div>
                 <div className="text-xs text-gray-500">Year Built</div>
-                <div className="font-medium">{order.yearBuilt ?? "—"}</div>
+                <div className="font-medium">{order.yearBuilt ?? '—'}</div>
               </div>
               <div>
                 <div className="text-xs text-gray-500">List Price</div>
-                <div className="font-medium">{order.listPrice ?? "—"}</div>
+                <div className="font-medium">{order.listPrice ?? '—'}</div>
               </div>
               <div>
                 <div className="text-xs text-gray-500">Bedrooms</div>
-                <div className="font-medium">{order.bedrooms ?? "—"}</div>
+                <div className="font-medium">{order.bedrooms ?? '—'}</div>
               </div>
               <div>
                 <div className="text-xs text-gray-500">Bathrooms</div>
-                <div className="font-medium">{order.bathrooms ?? "—"}</div>
+                <div className="font-medium">{order.bathrooms ?? '—'}</div>
               </div>
               <div className="sm:col-span-2">
                 <div className="text-xs text-gray-500">Description</div>
@@ -158,12 +214,15 @@ export function PortalOrderDetails({ orderId }: { orderId: string }) {
                       className="text-gray-800 leading-7 [&_*+_*]:mt-3 [&_h1]:text-2xl [&_h1]:font-semibold [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:text-lg [&_h3]:font-semibold [&_p]:text-base [&_ul]:list-disc [&_ol]:list-decimal [&_ul]:pl-5 [&_ol]:pl-5"
                       dangerouslySetInnerHTML={{
                         __html: sanitizeDescription(
-                          String(order.description).replace(/^(<br\s*\/?\>)+/i, "")
+                          String(order.description).replace(
+                            /^(<br\s*\/?\>)+/i,
+                            ''
+                          )
                         ),
                       }}
                     />
                   ) : (
-                    "—"
+                    '—'
                   )}
                 </div>
               </div>
@@ -176,49 +235,75 @@ export function PortalOrderDetails({ orderId }: { orderId: string }) {
                   onSubmit={async (e) => {
                     e.preventDefault();
                     const form = e.currentTarget as HTMLFormElement;
-                    const payload = Object.fromEntries(new FormData(form).entries());
-                    const num = (v: any) => (v === "" || v == null ? null : Number(v));
+                    const payload = Object.fromEntries(
+                      new FormData(form).entries()
+                    );
+                    const num = (v: any) =>
+                      v === '' || v == null ? null : Number(v);
+                    const strOrNull = (v: any) =>
+                      v === '' || v == null ? null : String(v);
                     const body = {
-                      propertyAddress: String(payload.propertyAddress || order.propertyAddress),
-                      propertyFormattedAddress: String(payload.propertyFormattedAddress || "") || null,
-                      propertyLat: payload.propertyLat ? Number(payload.propertyLat) : null,
-                      propertyLng: payload.propertyLng ? Number(payload.propertyLng) : null,
-                      propertyCity: String(payload.propertyCity || "") || null,
-                      propertyProvince: String(payload.propertyProvince || "") || null,
-                      propertyPostalCode: String(payload.propertyPostalCode || "") || null,
-                      propertyCountry: String(payload.propertyCountry || "") || null,
-                      propertyPlaceId: String(payload.propertyPlaceId || "") || null,
-                      mlsNumber: String(payload.mlsNumber || "") || null,
+                      propertyAddress: String(
+                        payload.propertyAddress || order.propertyAddress
+                      ),
+                      propertyFormattedAddress: strOrNull(
+                        payload.propertyFormattedAddress
+                      ),
+                      propertyLat: payload.propertyLat
+                        ? Number(payload.propertyLat)
+                        : null,
+                      propertyLng: payload.propertyLng
+                        ? Number(payload.propertyLng)
+                        : null,
+                      propertyCity: strOrNull(payload.propertyCity),
+                      propertyProvince: strOrNull(payload.propertyProvince),
+                      propertyPostalCode: strOrNull(payload.propertyPostalCode),
+                      propertyCountry: strOrNull(payload.propertyCountry),
+                      propertyPlaceId: strOrNull(payload.propertyPlaceId),
+                      propertyAddressOverride: strOrNull(
+                        payload.propertyAddressOverride
+                      ),
+                      propertyCityOverride: strOrNull(
+                        payload.propertyCityOverride
+                      ),
+                      propertyPostalCodeOverride: strOrNull(
+                        payload.propertyPostalCodeOverride
+                      ),
+                      mlsNumber: strOrNull(payload.mlsNumber),
                       yearBuilt: num(payload.yearBuilt),
                       propertySize: num(payload.propertySize),
                       listPrice: num(payload.listPrice),
-                      bedrooms: num(payload.bedrooms),
-                      bathrooms: num(payload.bathrooms),
-                      featuresText: String(payload.featuresText || "") || null,
-                      description: String(payload.description || "") || null,
+                      bedrooms: strOrNull(payload.bedrooms),
+                      bathrooms: strOrNull(payload.bathrooms),
+                      featuresText: strOrNull(payload.featuresText),
+                      description: strOrNull(payload.description),
                       status: (payload.status as string) || order.status,
                     };
                     const res = await fetch(`/api/orders/${order.id}`, {
-                      method: "PUT",
-                      headers: { "Content-Type": "application/json" },
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify(body),
                     });
                     if (res.ok) {
                       const updated = await res.json();
                       setOrder(updated);
                       setEditing(false);
-                      toast.success("Changes saved");
+                      toast.success('Changes saved');
                     } else {
-                      toast.error("Failed to save");
+                      toast.error('Failed to save');
                     }
                   }}
                 >
                   <div>
-                    <label className="text-xs text-gray-500">Property Address</label>
+                    <label className="text-xs text-gray-500">
+                      Property Address
+                    </label>
                     <PlacesAddressInput
                       name="propertyAddress"
                       defaultValue={order.propertyAddress}
-                      defaultFormattedAddress={order.propertyFormattedAddress ?? order.propertyAddress}
+                      defaultFormattedAddress={
+                        order.propertyFormattedAddress ?? order.propertyAddress
+                      }
                       defaultLat={order.propertyLat ?? null}
                       defaultLng={order.propertyLng ?? null}
                       defaultCity={order.propertyCity ?? null}
@@ -226,7 +311,9 @@ export function PortalOrderDetails({ orderId }: { orderId: string }) {
                       defaultPostalCode={order.propertyPostalCode ?? null}
                       defaultCountry={order.propertyCountry ?? null}
                       defaultPlaceId={order.propertyPlaceId ?? null}
-                      onResolved={(d) => setPreview({ lat: d.lat ?? null, lng: d.lng ?? null })}
+                      onResolved={(d) =>
+                        setPreview({ lat: d.lat ?? null, lng: d.lng ?? null })
+                      }
                     />
                     {preview?.lat != null && preview?.lng != null && (
                       <div className="mt-3 aspect-video rounded overflow-hidden border">
@@ -239,53 +326,150 @@ export function PortalOrderDetails({ orderId }: { orderId: string }) {
                       </div>
                     )}
                   </div>
+                  {/* Public display override fields */}
+                  <div className="sm:col-span-2 mt-4">
+                    <div className="text-xs font-medium text-gray-600 mb-2">
+                      Public display overrides (optional)
+                    </div>
+                    <div className="grid grid-cols-1 gap-3">
+                      <div>
+                        <label className="text-xs text-gray-500">
+                          Override Street Address
+                        </label>
+                        <input
+                          name="propertyAddressOverride"
+                          defaultValue={order.propertyAddressOverride ?? ''}
+                          className="border rounded-md w-full p-2"
+                          placeholder="e.g., 123A Main St, Unit 402"
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs text-gray-500">
+                            Override City
+                          </label>
+                          <input
+                            name="propertyCityOverride"
+                            defaultValue={order.propertyCityOverride ?? ''}
+                            className="border rounded-md w-full p-2"
+                            placeholder="e.g., Springfield"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-500">
+                            Override Postal Code
+                          </label>
+                          <input
+                            name="propertyPostalCodeOverride"
+                            defaultValue={
+                              order.propertyPostalCodeOverride ?? ''
+                            }
+                            className="border rounded-md w-full p-2"
+                            placeholder="e.g., 12345"
+                          />
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-gray-500">
+                        These override only the address text shown on the public
+                        property page hero. Map/coordinates remain unchanged.
+                      </p>
+                    </div>
+                  </div>
+
                   <div>
                     <label className="text-xs text-gray-500">MLS #</label>
-                    <input name="mlsNumber" defaultValue={order.mlsNumber ?? ""} className="border rounded-md w-full p-2" />
+                    <input
+                      name="mlsNumber"
+                      defaultValue={order.mlsNumber ?? ''}
+                      className="border rounded-md w-full p-2"
+                    />
                   </div>
                   <div>
                     <label className="text-xs text-gray-500">Year Built</label>
-                    <input type="number" name="yearBuilt" defaultValue={order.yearBuilt ?? ""} className="border rounded-md w-full p-2" />
+                    <input
+                      type="number"
+                      name="yearBuilt"
+                      defaultValue={order.yearBuilt ?? ''}
+                      className="border rounded-md w-full p-2"
+                    />
                   </div>
                   <div>
                     <label className="text-xs text-gray-500">Size (sqft)</label>
-                    <input type="number" name="propertySize" defaultValue={order.propertySize ?? ""} className="border rounded-md w-full p-2" />
+                    <input
+                      type="number"
+                      name="propertySize"
+                      defaultValue={order.propertySize ?? ''}
+                      className="border rounded-md w-full p-2"
+                    />
                   </div>
                   <div>
                     <label className="text-xs text-gray-500">List Price</label>
-                    <input type="number" name="listPrice" defaultValue={order.listPrice ?? ""} className="border rounded-md w-full p-2" />
+                    <input
+                      type="number"
+                      name="listPrice"
+                      defaultValue={order.listPrice ?? ''}
+                      className="border rounded-md w-full p-2"
+                    />
                   </div>
                   <div>
                     <label className="text-xs text-gray-500">Bedrooms</label>
-                    <input type="number" name="bedrooms" defaultValue={order.bedrooms ?? ""} className="border rounded-md w-full p-2" />
+
+                    <input
+                      type="text"
+                      name="bedrooms"
+                      defaultValue={order.bedrooms ?? ''}
+                      className="border rounded-md w-full p-2"
+                      placeholder="e.g., 2+1"
+                    />
                   </div>
                   <div>
                     <label className="text-xs text-gray-500">Bathrooms</label>
-                    <input type="number" name="bathrooms" defaultValue={order.bathrooms ?? ""} className="border rounded-md w-full p-2" />
+                    <input
+                      type="text"
+                      name="bathrooms"
+                      defaultValue={order.bathrooms ?? ''}
+                      className="border rounded-md w-full p-2"
+                      placeholder="e.g., 2.5 or 2+2"
+                    />
                   </div>
                   <div className="sm:col-span-2">
                     <label className="text-xs text-gray-500">Description</label>
-                    <DescriptionEditor name="description" defaultValue={order.description ?? ""} />
+                    <DescriptionEditor
+                      name="description"
+                      defaultValue={order.description ?? ''}
+                    />
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="text-xs text-gray-500">Features (one per line)</label>
+                    <label className="text-xs text-gray-500">
+                      Features (one per line)
+                    </label>
                     <textarea
                       name="featuresText"
-                      defaultValue={order.featuresText ?? ""}
+                      defaultValue={order.featuresText ?? ''}
                       className="border rounded-md w-full p-2"
-                      placeholder={"E.g.\nQuartz countertops\nHardwood floors\nSouth-facing backyard"}
+                      placeholder={
+                        'E.g.\nQuartz countertops\nHardwood floors\nSouth-facing backyard'
+                      }
                     />
                   </div>
                   <div>
                     <label className="text-xs text-gray-500">Status</label>
-                    <select name="status" defaultValue={order.status} className="border rounded-md w-full p-2">
+                    <select
+                      name="status"
+                      defaultValue={order.status}
+                      className="border rounded-md w-full p-2"
+                    >
                       <option value="DRAFT">Draft</option>
                       <option value="PUBLISHED">Published</option>
                       <option value="ARCHIVED">Archived</option>
                     </select>
                   </div>
                   <div className="sm:col-span-2 flex justify-end gap-2">
-                    <Button type="button" variant="outline" onClick={() => setEditing(false)}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setEditing(false)}
+                    >
                       Cancel
                     </Button>
                     <Button type="submit">Save</Button>
@@ -302,37 +486,52 @@ export function PortalOrderDetails({ orderId }: { orderId: string }) {
           </div>
         )}
 
-        {tab === "photos" && order && (
+        {tab === 'photos' && order && (
           <div className="space-y-4">
-            <PhotosUploader orderId={order.id} onUploaded={() => setPhotoRefresh((n) => n + 1)} />
+            <PhotosUploader
+              orderId={order.id}
+              onUploaded={() => setPhotoRefresh((n) => n + 1)}
+            />
             <PhotosGrid orderId={order.id} refreshToken={photoRefresh} />
           </div>
         )}
 
-        {tab === "videos" && order && (
+        {tab === 'videos' && order && (
           <div className="space-y-4">
-            <VideosUploader orderId={order.id} onUploaded={() => setVideoRefresh((n) => n + 1)} />
+            <VideosUploader
+              orderId={order.id}
+              onUploaded={() => setVideoRefresh((n) => n + 1)}
+            />
             <VideosGrid orderId={order.id} refreshToken={videoRefresh} />
           </div>
         )}
 
-        {tab === "floor" && order && (
+        {tab === 'floor' && order && (
           <div className="space-y-4">
-            <FloorplansUploader orderId={order.id} onUploaded={() => setFloorRefresh((n) => n + 1)} />
+            <FloorplansUploader
+              orderId={order.id}
+              onUploaded={() => setFloorRefresh((n) => n + 1)}
+            />
             <FloorplansGrid orderId={order.id} refreshToken={floorRefresh} />
           </div>
         )}
 
-        {tab === "attach" && order && (
+        {tab === 'attach' && order && (
           <div className="space-y-4">
-            <AttachmentsUploader orderId={order.id} onUploaded={() => setAttachRefresh((n) => n + 1)} />
+            <AttachmentsUploader
+              orderId={order.id}
+              onUploaded={() => setAttachRefresh((n) => n + 1)}
+            />
             <AttachmentsList orderId={order.id} refreshToken={attachRefresh} />
           </div>
         )}
 
-        {tab === "embed" && order && (
+        {tab === 'embed' && order && (
           <div className="space-y-4">
-            <EmbedsForm orderId={order.id} onAdded={() => setEmbedRefresh((n) => n + 1)} />
+            <EmbedsForm
+              orderId={order.id}
+              onAdded={() => setEmbedRefresh((n) => n + 1)}
+            />
             <EmbedsList orderId={order.id} refreshToken={embedRefresh} />
           </div>
         )}
@@ -341,4 +540,3 @@ export function PortalOrderDetails({ orderId }: { orderId: string }) {
     </div>
   );
 }
-

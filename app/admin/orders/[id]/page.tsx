@@ -22,6 +22,15 @@ import { RegenerateMlsButton } from '@/components/admin/RegenerateMlsButton';
 import { sanitizeDescription } from '@/lib/sanitize';
 import PlacesAddressInput from '@/components/admin/PlacesAddressInput';
 import DescriptionEditor from '@/components/admin/DescriptionEditor';
+import {
+  Loader2,
+  Home,
+  Images,
+  Film,
+  Ruler,
+  Paperclip,
+  Link2,
+} from 'lucide-react';
 
 interface Order {
   id: string;
@@ -75,6 +84,7 @@ export default function OrderDetailsPage() {
     lat: number | null;
     lng: number | null;
   } | null>(null);
+  const [loading, setLoading] = useState(true);
   const hasOverrides = Boolean(
     order?.propertyAddressOverride ||
       order?.propertyCityOverride ||
@@ -84,8 +94,14 @@ export default function OrderDetailsPage() {
   useEffect(() => {
     if (!params?.id) return;
     (async () => {
-      const res = await fetch(`/api/orders/${params.id}`);
-      if (res.ok) setOrder(await res.json());
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/orders/${params.id}`);
+        if (res.ok) setOrder(await res.json());
+        else toast.error('Failed to load order');
+      } finally {
+        setLoading(false);
+      }
     })();
   }, [params?.id]);
 
@@ -97,6 +113,18 @@ export default function OrderDetailsPage() {
       });
     }
   }, [order]);
+
+  type TabKey = 'property' | 'photos' | 'videos' | 'floor' | 'attach' | 'embed';
+  type TabDef = { key: TabKey; label: string; icon: React.ElementType };
+
+  const tabsList: TabDef[] = [
+    { key: 'property', label: 'Property Info', icon: Home },
+    { key: 'photos', label: 'Photos', icon: Images },
+    { key: 'videos', label: 'Videos', icon: Film },
+    { key: 'floor', label: 'Floor Plans', icon: Ruler },
+    { key: 'attach', label: 'PDFs', icon: Paperclip },
+    { key: 'embed', label: 'iGUIDE', icon: Link2 },
+  ];
 
   return (
     <>
@@ -111,7 +139,7 @@ export default function OrderDetailsPage() {
                 : ''}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <Button variant="outline" asChild>
               <Link href="/admin/orders">Back to Orders</Link>
             </Button>
@@ -120,28 +148,43 @@ export default function OrderDetailsPage() {
         </div>
 
         {/* Tabs */}
-        <div className="border-b mb-4 flex gap-4">
-          {[
-            { key: 'property', label: 'Property Data' },
-            { key: 'photos', label: 'Photos' },
-            { key: 'videos', label: 'Videos' },
-            { key: 'floor', label: 'Floor Plans' },
-            { key: 'attach', label: 'Attachments' },
-            { key: 'embed', label: 'Embedded Media' },
-          ].map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key as any)}
-              className={`pb-2 border-b-2 -mb-px ${
-                tab === t.key
-                  ? 'border-primary'
-                  : 'border-transparent text-gray-500'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
+        <div className="border-b border-gray-200 mb-4">
+          <ul className="flex flex-wrap justify-center -mb-px text-sm font-medium text-gray-500 text-center gap-x-2 gap-y-2 sm:flex-nowrap">
+            {tabsList.map((t) => {
+              const active = tab === t.key;
+              const Icon = t.icon;
+              return (
+                <li key={t.key} className="mr-2 mb-2">
+                  <button
+                    onClick={() => setTab(t.key as any)}
+                    className={`inline-flex items-center justify-center px-3 py-2 border-b-2 rounded-t-lg group whitespace-nowrap ${
+                      active
+                        ? 'text-primary border-primary'
+                        : 'text-gray-500 border-transparent hover:text-gray-600 hover:border-gray-300'
+                    }`}
+                    aria-current={active ? 'page' : undefined}
+                  >
+                    <Icon
+                      className={`w-4 h-4 mr-2 ${
+                        active
+                          ? 'text-primary'
+                          : 'text-gray-400 group-hover:text-gray-500'
+                      }`}
+                    />
+                    {t.label}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
         </div>
+
+        {/* Loading indicator */}
+        {loading && (
+          <div className="bg-white rounded-lg border p-6 mb-4 flex justify-center items-center">
+            <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+          </div>
+        )}
 
         {/* Tab content */}
         <div className="bg-white rounded-lg border p-6">
@@ -150,6 +193,7 @@ export default function OrderDetailsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <div className="text-xs text-gray-500">Realtor</div>
+
                   <div className="font-medium">
                     {order.realtor.firstName} {order.realtor.lastName}
                   </div>

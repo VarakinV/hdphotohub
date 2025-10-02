@@ -122,7 +122,8 @@ export function VideosGrid({
               </>
             ) : (
               <>
-                <Trash2 className="h-4 w-4" /> Delete selected
+                <Trash2 className="h-4 w-4" />{' '}
+                <span className="hidden sm:inline">Delete selected</span>
               </>
             )}
           </Button>
