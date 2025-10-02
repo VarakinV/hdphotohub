@@ -32,6 +32,7 @@ const formSchema = z.object({
   twitterUrl: z.string().optional(),
   pinterestUrl: z.string().optional(),
   vimeoUrl: z.string().optional(),
+  tiktokUrl: z.string().optional(),
 });
 
 interface RealtorFormProps {
@@ -51,6 +52,7 @@ interface RealtorFormProps {
     twitterUrl?: string | null;
     pinterestUrl?: string | null;
     vimeoUrl?: string | null;
+    tiktokUrl?: string | null;
   };
   onSuccess?: () => void;
   onCancel?: () => void;
@@ -95,6 +97,7 @@ export function RealtorForm({
       twitterUrl: realtor?.twitterUrl || '',
       pinterestUrl: realtor?.pinterestUrl || '',
       vimeoUrl: realtor?.vimeoUrl || '',
+      tiktokUrl: realtor?.tiktokUrl || '',
     },
   });
 
@@ -631,6 +634,23 @@ export function RealtorForm({
                   <FormControl>
                     <Input
                       placeholder="https://vimeo.com/username"
+                      {...field}
+                      disabled={isLoading}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="tiktokUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>TikTok</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="https://www.tiktok.com/@username"
                       {...field}
                       disabled={isLoading}
                     />

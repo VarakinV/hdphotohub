@@ -23,6 +23,7 @@ const realtorSchema = z.object({
   twitterUrl: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional().nullable()),
   pinterestUrl: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional().nullable()),
   vimeoUrl: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional().nullable()),
+  tiktokUrl: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional().nullable()),
 });
 
 // GET /api/realtors - Get all realtors for the current user
@@ -95,7 +96,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { firstName, lastName, email, phone, headshot, companyName, companyLogo, facebookUrl, linkedinUrl, instagramUrl, youtubeUrl, twitterUrl, pinterestUrl, vimeoUrl } = validatedFields.data;
+    const { firstName, lastName, email, phone, headshot, companyName, companyLogo, facebookUrl, linkedinUrl, instagramUrl, youtubeUrl, twitterUrl, pinterestUrl, vimeoUrl, tiktokUrl } = validatedFields.data;
 
     // Check if realtor with this email already exists
     const existingRealtor = await prisma.realtor.findUnique({
@@ -126,6 +127,7 @@ export async function POST(request: NextRequest) {
         twitterUrl: twitterUrl || null,
         pinterestUrl: pinterestUrl || null,
         vimeoUrl: vimeoUrl || null,
+        tiktokUrl: tiktokUrl || null,
         userId: session.user.id,
       },
     });

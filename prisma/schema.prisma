@@ -59,6 +59,7 @@ model Realtor {
   twitterUrl   String?
   pinterestUrl String?
   vimeoUrl     String?
+  tiktokUrl    String?
   userId       String // Admin who created this realtor
   user         User         @relation("RealtorCreatedBy", fields: [userId], references: [id])
   users        User[]       @relation("RealtorMembers") // Users (REALTOR role) linked to this Realtor

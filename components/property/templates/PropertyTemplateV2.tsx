@@ -20,6 +20,7 @@ import {
   Twitter,
   Link2,
 } from 'lucide-react';
+import { TikTokIcon } from '@/components/icons/TikTokIcon';
 
 export default function PropertyTemplateV2({
   order,
@@ -382,7 +383,8 @@ export default function PropertyTemplateV2({
                   order.realtor.youtubeUrl ||
                   order.realtor.twitterUrl ||
                   order.realtor.pinterestUrl ||
-                  order.realtor.vimeoUrl) && (
+                  order.realtor.vimeoUrl ||
+                  order.realtor.tiktokUrl) && (
                   <div className="mt-3 flex flex-wrap gap-3 text-gray-600">
                     {order.realtor.facebookUrl && (
                       <a
@@ -452,6 +454,16 @@ export default function PropertyTemplateV2({
                         aria-label="Vimeo"
                       >
                         <Link2 className="h-5 w-5" />
+                      </a>
+                    )}
+                    {order.realtor.tiktokUrl && (
+                      <a
+                        href={order.realtor.tiktokUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="TikTok"
+                      >
+                        <TikTokIcon className="h-5 w-5" />
                       </a>
                     )}
                   </div>
