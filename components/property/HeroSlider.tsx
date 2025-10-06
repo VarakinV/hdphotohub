@@ -50,7 +50,7 @@ export default function HeroSlider({
 
   return (
     <div
-      className={`relative isolate w-full min-h-[55vh] md:min-h-[80vh] overflow-hidden ${
+      className={`relative isolate w-full min-h-[70vh] md:min-h-[80vh] overflow-hidden ${
         className || ''
       }`}
     >
