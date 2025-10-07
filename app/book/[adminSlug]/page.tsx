@@ -78,7 +78,7 @@ export default function PublicBookingPage() {
   const [address, setAddress] = useState('');
   const [size, setSize] = useState<number | ''>('');
   const [selectedByCategory, setSelectedByCategory] = useState<
-    Record<string, string | null>
+    Record<string, string[]>
   >({});
   const [notes, setNotes] = useState('');
   const [contact, setContact] = useState({
@@ -184,16 +184,17 @@ export default function PublicBookingPage() {
       { id: string; name: string; priceCents: number; taxRatesBps: number[] }
     >();
     for (const cat of catalog.categories) {
-      const svcId = selectedByCategory[cat.id];
-      if (!svcId) continue;
-      const s = cat.services.find((x) => x.id === svcId);
-      if (s)
-        byId.set(s.id, {
-          id: s.id,
-          name: s.name,
-          priceCents: s.priceCents,
-          taxRatesBps: s.taxRatesBps,
-        });
+      const svcIds = selectedByCategory[cat.id] || [];
+      for (const id of svcIds) {
+        const s = cat.services.find((x) => x.id === id);
+        if (s)
+          byId.set(s.id, {
+            id: s.id,
+            name: s.name,
+            priceCents: s.priceCents,
+            taxRatesBps: s.taxRatesBps,
+          });
+      }
     }
     return Array.from(byId.values());
   }, [catalog, selectedByCategory]);
@@ -431,10 +432,14 @@ export default function PublicBookingPage() {
   }
 
   function toggleService(categoryId: string, serviceId: string) {
-    setSelectedByCategory((prev) => ({
-      ...prev,
-      [categoryId]: prev[categoryId] === serviceId ? null : serviceId,
-    }));
+    setSelectedByCategory((prev) => {
+      const current = prev[categoryId] || [];
+      const exists = current.includes(serviceId);
+      const next = exists
+        ? current.filter((id) => id !== serviceId)
+        : [...current, serviceId];
+      return { ...prev, [categoryId]: next };
+    });
   }
 
   if (loading) {
@@ -620,7 +625,7 @@ export default function PublicBookingPage() {
                   const IconComp = iconFromKey(
                     cat.iconKey
                   ) as React.ElementType;
-                  const selected = selectedByCategory[cat.id] || null;
+                  const selectedIds = selectedByCategory[cat.id] || [];
                   return (
                     <div key={cat.id} className="border rounded-md p-3">
                       <div className="flex items-center gap-2 mb-2">
@@ -638,7 +643,7 @@ export default function PublicBookingPage() {
                           <label
                             key={s.id}
                             className={`w-full rounded border p-2 hover:bg-accent flex items-start justify-between gap-3 ${
-                              selected === s.id
+                              selectedIds.includes(s.id)
                                 ? 'border-primary'
                                 : 'border-border'
                             }`}
@@ -646,7 +651,7 @@ export default function PublicBookingPage() {
                             <div className="flex items-start gap-2">
                               <input
                                 type="checkbox"
-                                checked={selected === s.id}
+                                checked={selectedIds.includes(s.id)}
                                 onChange={() => toggleService(cat.id, s.id)}
                                 className="mt-1"
                                 aria-label={`Select ${s.name}`}
@@ -686,7 +691,7 @@ export default function PublicBookingPage() {
                   const IconComp = iconFromKey(
                     cat.iconKey
                   ) as React.ElementType;
-                  const selected = selectedByCategory[cat.id] || null;
+                  const selectedIds = selectedByCategory[cat.id] || [];
 
                   return (
                     <div key={cat.id} className="border rounded-md p-3">
@@ -705,7 +710,7 @@ export default function PublicBookingPage() {
                           <label
                             key={s.id}
                             className={`w-full rounded border p-2 hover:bg-accent flex items-start justify-between gap-3 ${
-                              selected === s.id
+                              selectedIds.includes(s.id)
                                 ? 'border-primary'
                                 : 'border-border'
                             }`}
@@ -713,7 +718,7 @@ export default function PublicBookingPage() {
                             <div className="flex items-start gap-2">
                               <input
                                 type="checkbox"
-                                checked={selected === s.id}
+                                checked={selectedIds.includes(s.id)}
                                 onChange={() => toggleService(cat.id, s.id)}
                                 className="mt-1"
                                 aria-label={`Select ${s.name}`}
