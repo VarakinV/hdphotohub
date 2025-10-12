@@ -14,6 +14,8 @@ import {
 } from '@/components/ui/table';
 import { OrdersSearchInput } from '@/components/portal/orders-search';
 
+import PortalTwoColumnShell from '@/components/portal/PortalTwoColumnShell';
+
 export default async function PortalOrdersPage({
   searchParams,
 }: {
@@ -56,7 +58,27 @@ export default async function PortalOrdersPage({
     <div className="min-h-screen bg-gray-50">
       <PortalNavbar />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <header className="bg-white shadow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">My Orders</h1>
+              <p className="text-sm text-gray-600 mt-1">
+                View and manage your orders
+              </p>
+            </div>
+            <div>
+              <Button asChild className="gap-2">
+                <Link href="https://photos4realestate.ca/book-online/">
+                  + Book Online
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <PortalTwoColumnShell>
         <div className="bg-white rounded-lg shadow">
           <div className="p-4 border-b flex items-center gap-3">
             <div className="ml-auto w-full sm:w-64">
@@ -79,7 +101,7 @@ export default async function PortalOrdersPage({
                     <TableCell>{o.propertyAddress}</TableCell>
                     <TableCell>{o.status}</TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end items-center gap-2">
+                      <div className="flex flex-col sm:flex-row gap-2 sm:justify-end sm:items-center">
                         <Button variant="outline" asChild size="sm">
                           <Link href={`/portal/orders/${o.id}`}>
                             Order Details
@@ -138,7 +160,7 @@ export default async function PortalOrdersPage({
             </div>
           </div>
         </div>
-      </main>
+      </PortalTwoColumnShell>
     </div>
   );
 }

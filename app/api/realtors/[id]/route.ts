@@ -21,6 +21,10 @@ const updateRealtorSchema = z.object({
   pinterestUrl: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional().nullable()),
   vimeoUrl: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional().nullable()),
   tiktokUrl: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional().nullable()),
+  points: z.preprocess(
+    (v) => (v === "" || v === null || v === undefined ? undefined : Number(v)),
+    z.number().int().min(0).optional()
+  ),
 });
 
 // GET /api/realtors/[id] - Get a single realtor
@@ -92,7 +96,7 @@ export async function PUT(
       );
     }
 
-    const { firstName, lastName, email, phone, headshot, companyName, companyLogo, facebookUrl, linkedinUrl, instagramUrl, youtubeUrl, twitterUrl, pinterestUrl, vimeoUrl, tiktokUrl } = validatedFields.data;
+    const { firstName, lastName, email, phone, headshot, companyName, companyLogo, facebookUrl, linkedinUrl, instagramUrl, youtubeUrl, twitterUrl, pinterestUrl, vimeoUrl, tiktokUrl, points } = validatedFields.data;
 
     // Check if realtor exists and belongs to the user
     const existingRealtor = await prisma.realtor.findFirst({
@@ -132,6 +136,12 @@ export async function PUT(
       await deleteFromS3(existingRealtor.companyLogo);
     }
 
+    const role = (session.user as any)?.role;
+    const canEditPoints = role === 'ADMIN' || role === 'SUPERADMIN';
+
+    const includePoints = canEditPoints && typeof points === 'number';
+    const pointsChanged = includePoints && (existingRealtor.points ?? 0) !== points;
+
     // Update realtor
     const updatedRealtor = await prisma.realtor.update({
       where: { id },
@@ -151,8 +161,41 @@ export async function PUT(
         pinterestUrl: pinterestUrl || null,
         vimeoUrl: vimeoUrl || null,
         tiktokUrl: tiktokUrl || null,
+        ...(includePoints ? { points } : {}),
       },
     });
+
+    // Sync points to Go High Level only if points changed
+    if (pointsChanged) {
+      try {
+        const apiKey = process.env.GHL_API_KEY;
+        const locationId = process.env.GHL_LOCATION_ID;
+        const apiVersion = process.env.GHL_API_VERSION || process.env.GHL_APPOINTMENTS_API_VERSION;
+        if (apiKey && locationId && apiVersion) {
+          await fetch('https://services.leadconnectorhq.com/contacts/upsert', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${apiKey}`,
+              Version: apiVersion,
+            },
+            body: JSON.stringify({
+              firstName,
+              lastName,
+              email,
+              locationId,
+              customFields: [
+                { key: 'points', field_value: points },
+              ],
+            }),
+          });
+        } else {
+          console.warn('GHL env not fully set; skipped points sync');
+        }
+      } catch (e) {
+        console.error('Failed to sync points to GHL', e);
+      }
+    }
 
     return NextResponse.json(updatedRealtor);
   } catch (error) {

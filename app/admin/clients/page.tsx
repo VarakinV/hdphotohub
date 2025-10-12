@@ -44,6 +44,7 @@ import {
 } from 'lucide-react';
 import { AdminNavbar } from '@/components/admin/admin-navbar';
 import { Input } from '@/components/ui/input';
+import { useSession } from 'next-auth/react';
 
 interface Realtor {
   id: string;
@@ -53,6 +54,7 @@ interface Realtor {
   phone?: string | null;
   headshot?: string | null;
   createdAt: string;
+  points?: number | null;
 }
 
 export default function ClientsPage() {
@@ -175,6 +177,10 @@ export default function ClientsPage() {
       setDeleteRealtor(null);
     }
   };
+
+  const { data: session } = useSession();
+  const userRole = (session?.user as any)?.role;
+  const canEditPoints = userRole === 'ADMIN' || userRole === 'SUPERADMIN';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -386,6 +392,7 @@ export default function ClientsPage() {
           <div className="pt-2 pb-4">
             <RealtorForm
               realtor={selectedRealtor || undefined}
+              canEditPoints={canEditPoints}
               onSuccess={handleCloseDialog}
               onCancel={() => setIsDialogOpen(false)}
             />

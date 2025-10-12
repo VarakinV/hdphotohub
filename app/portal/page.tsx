@@ -3,8 +3,10 @@ import { prisma } from '@/lib/db/prisma';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ExternalLink } from 'lucide-react';
+import PointsCard from '@/components/portal/PointsCard';
 import { OrdersSearchInput } from '@/components/portal/orders-search';
 import { PortalNavbar } from '@/components/portal/portal-navbar';
+import PortalTwoColumnShell from '@/components/portal/PortalTwoColumnShell';
 
 export default async function PortalHomePage({
   searchParams,
@@ -56,11 +58,47 @@ export default async function PortalHomePage({
 
   const totalPages = Math.max(1, Math.ceil(total / perPage));
 
+  // Fetch points for client (only if user is linked to a Realtor)
+  let points = 0;
+  if (user.realtorId) {
+    const realtor = await prisma.realtor.findUnique({
+      where: { id: user.realtorId },
+      select: { points: true },
+    });
+    points = realtor?.points ?? 0;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <PortalNavbar />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <header className="bg-white shadow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Customer Portal
+              </h1>
+              <p className="text-sm text-gray-600 mt-1">
+                Access your recent orders and tools
+              </p>
+            </div>
+            <div>
+              <Button asChild className="gap-2">
+                <Link href="https://photos4realestate.ca/book-online/">
+                  + Book Online
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <PortalTwoColumnShell>
+        {/* Your Points card */}
+        {user.realtorId && <PointsCard points={points} />}
+
+        {/* Recent Orders card */}
         <div className="bg-white rounded-lg shadow p-4">
           <div className="flex items-center gap-3 mb-3">
             <h2 className="text-lg font-medium">Recent Orders</h2>
@@ -83,7 +121,7 @@ export default async function PortalHomePage({
                       Status: {o.status}
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
                     <Button variant="outline" asChild size="sm">
                       <Link href={`/portal/orders/${o.id}`}>Order Details</Link>
                     </Button>
@@ -137,7 +175,7 @@ export default async function PortalHomePage({
             </div>
           </div>
         </div>
-      </main>
+      </PortalTwoColumnShell>
     </div>
   );
 }

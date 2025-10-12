@@ -33,7 +33,14 @@ const formSchema = z.object({
   pinterestUrl: z.string().optional(),
   vimeoUrl: z.string().optional(),
   tiktokUrl: z.string().optional(),
+  points: z
+    .number()
+    .int()
+    .min(0, 'Points must be a non-negative integer')
+    .optional(),
 });
+
+type FormValues = z.infer<typeof formSchema> & { points?: number };
 
 interface RealtorFormProps {
   realtor?: {
@@ -53,13 +60,16 @@ interface RealtorFormProps {
     pinterestUrl?: string | null;
     vimeoUrl?: string | null;
     tiktokUrl?: string | null;
+    points?: number | null;
   };
+  canEditPoints?: boolean;
   onSuccess?: () => void;
   onCancel?: () => void;
 }
 
 export function RealtorForm({
   realtor,
+  canEditPoints = false,
   onSuccess,
   onCancel,
 }: RealtorFormProps) {
@@ -82,8 +92,8 @@ export function RealtorForm({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileLogoInputRef = useRef<HTMLInputElement>(null);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<FormValues>({
+    resolver: zodResolver<FormValues, any, FormValues>(formSchema),
     defaultValues: {
       firstName: realtor?.firstName || '',
       lastName: realtor?.lastName || '',
@@ -98,6 +108,7 @@ export function RealtorForm({
       pinterestUrl: realtor?.pinterestUrl || '',
       vimeoUrl: realtor?.vimeoUrl || '',
       tiktokUrl: realtor?.tiktokUrl || '',
+      points: realtor?.points ?? 0,
     },
   });
 
@@ -270,16 +281,21 @@ export function RealtorForm({
 
       const method = realtor ? 'PUT' : 'POST';
 
+      const payload: any = {
+        ...values,
+        headshot: headshotUrl,
+        companyLogo: companyLogoUrl,
+      };
+      if (!canEditPoints) {
+        delete payload.points;
+      }
+
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...values,
-          headshot: headshotUrl,
-          companyLogo: companyLogoUrl,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -518,6 +534,35 @@ export function RealtorForm({
             </FormItem>
           )}
         />
+
+        {canEditPoints && (
+          <FormField
+            control={form.control}
+            name="points"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Points</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    step={100}
+                    {...field}
+                    onChange={(e) =>
+                      field.onChange(
+                        e.target.value === ''
+                          ? undefined
+                          : Number(e.target.value)
+                      )
+                    }
+                    disabled={isLoading}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         {/* Social Media Profiles */}
         <div className="mt-6">
