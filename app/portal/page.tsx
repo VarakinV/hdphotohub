@@ -1,17 +1,19 @@
 import { auth } from '@/lib/auth/auth';
 import { prisma } from '@/lib/db/prisma';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ExternalLink } from 'lucide-react';
 import PointsCard from '@/components/portal/PointsCard';
 import { OrdersSearchInput } from '@/components/portal/orders-search';
 import { PortalNavbar } from '@/components/portal/portal-navbar';
 import PortalTwoColumnShell from '@/components/portal/PortalTwoColumnShell';
+import LoginSuccessToaster from '@/components/portal/LoginSuccessToaster';
 
 export default async function PortalHomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; q?: string }>;
+  searchParams: Promise<{ page?: string; q?: string; loginSuccess?: string }>;
 }) {
   const session = await auth();
   const user = session?.user as any;
@@ -30,9 +32,17 @@ export default async function PortalHomePage({
     );
   }
 
-  const isAdmin = user.role === 'ADMIN' || user.role === 'SUPERADMIN';
+  const sp = await searchParams;
+  const loginSuccess = sp?.loginSuccess;
 
-  const { page: pageParam, q: qParam } = await searchParams;
+  const isAdmin = user.role === 'ADMIN' || user.role === 'SUPERADMIN';
+  if (isAdmin) {
+    // Admins land on the dashboard instead of the portal home
+    const suffix = loginSuccess ? `?loginSuccess=1` : '';
+    redirect(`/admin/dashboard${suffix}`);
+  }
+
+  const { page: pageParam, q: qParam } = sp;
   const page = Math.max(1, Number(pageParam) || 1);
   const q = (qParam || '').trim();
   const perPage = 10;
@@ -71,6 +81,7 @@ export default async function PortalHomePage({
   return (
     <div className="min-h-screen bg-gray-50">
       <PortalNavbar />
+      <LoginSuccessToaster />
 
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">

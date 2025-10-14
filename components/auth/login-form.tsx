@@ -1,8 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { useForm as useForm2 } from 'react-hook-form';
+import * as z2 from 'zod';
+
 import { useRouter } from 'next/navigation';
-import { signIn, getSession } from 'next-auth/react';
+import { signIn } from 'next-auth/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -30,6 +33,8 @@ const formSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+import MagicLinkLogin from './MagicLinkLogin';
+
 export function LoginForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -46,26 +51,12 @@ export function LoginForm() {
     setIsLoading(true);
 
     try {
-      const result = await signIn('credentials', {
+      await signIn('credentials', {
         email: values.email,
         password: values.password,
-        redirect: false,
+        redirect: true,
+        callbackUrl: '/portal?loginSuccess=1', // Admins will be redirected to /admin/dashboard by the portal page (param propagated)
       });
-
-      if (result?.error) {
-        toast.error('Invalid email or password');
-      } else {
-        toast.success('Login successful!');
-        // Fetch session to determine role and redirect accordingly
-        const session = await getSession();
-        const role = (session?.user as any)?.role as string | undefined;
-        if (role === 'ADMIN' || role === 'SUPERADMIN') {
-          router.push('/admin/dashboard');
-        } else {
-          router.push('/portal');
-        }
-        router.refresh();
-      }
     } catch (error) {
       toast.error('An error occurred. Please try again.');
     } finally {
@@ -125,6 +116,17 @@ export function LoginForm() {
             </Button>
           </form>
         </Form>
+
+        {/* Divider */}
+        <div className="my-6 flex items-center gap-4 text-xs text-gray-500">
+          <div className="h-px flex-1 bg-gray-200" />
+          <span>or</span>
+          <div className="h-px flex-1 bg-gray-200" />
+        </div>
+
+        {/* Magic Link section */}
+        <MagicLinkLogin />
+
         <div className="mt-4 text-center text-sm text-muted-foreground">
           Don&apos;t have an account?{' '}
           <a href="/register" className="text-primary hover:underline">

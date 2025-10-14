@@ -277,14 +277,31 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
     try {
       const eventStart = new Date(start.getTime());
       const eventEnd = new Date(start.getTime() + (coreDurationMin) * 60 * 1000);
+      const svcLines = svcRows.map((s) => {
+        const catName = s.category?.name || '';
+        const catDesc = s.category?.description || '';
+        const parts = [
+          `• ${s.name}`,
+          catName ? `  Category: ${catName}` : null,
+          catDesc ? `  ${catDesc}` : null,
+        ].filter(Boolean);
+        return parts.join('\n');
+      });
+
+      const description = [
+        `Client: ${contactFirstName} ${contactLastName}${contactPhone ? ` (${contactPhone})` : ''}`,
+        notes ? `Client notes: ${notes}` : null,
+        '---------',
+        'Selected Services:',
+        ...svcLines,
+        '',
+        `Total price: ${money(finalTotalCents)}`,
+      ].filter(Boolean).join('\n');
+
       const event = await createEventForAdmin(admin.id, {
         calendarId: settings.googleCalendarId || undefined,
         summary: `${formattedAddress || address} - ${contactFirstName} ${contactLastName}`,
-        description: [
-          `Client: ${contactFirstName} ${contactLastName} (${contactEmail}${contactPhone ? ", "+contactPhone : ''})`,
-          company ? `Company: ${company}` : null,
-          notes ? `Notes: ${notes}` : null,
-        ].filter(Boolean).join("\n"),
+        description: description,
         startISO: eventStart.toISOString(),
         endISO: eventEnd.toISOString(),
         timeZone: settings.timeZone,

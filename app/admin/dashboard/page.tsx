@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -18,6 +18,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { PlusCircle, UserPlus, ExternalLink } from 'lucide-react';
+import LoginSuccessToaster from '@/components/portal/LoginSuccessToaster';
 import {
   Tooltip,
   TooltipContent,
@@ -184,6 +185,9 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <AdminNavbar />
+      <Suspense>
+        <LoginSuccessToaster />
+      </Suspense>
 
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">

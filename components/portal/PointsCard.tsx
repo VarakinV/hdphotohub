@@ -110,6 +110,9 @@ export default function PointsCard({ points }: PointsCardProps) {
       <div className="mt-4 rounded-lg border border-gray-200 p-3 bg-white/50">
         <div className="text-lg font-medium mb-1">How to Earn Points</div>
         <ul className="text-sm text-gray-600 space-y-1">
+          <li>
+            📸 Place orders with us and earn points for every completed service
+          </li>
           <li>⭐ Write a 5-star review → 3,500 points</li>
           <li>🤝 Refer our business → 5,000 points</li>
         </ul>
