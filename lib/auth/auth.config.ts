@@ -224,6 +224,20 @@ export default {
       // Public and other routes
       return true;
     },
+    // Force redirects to stay on the current origin (preview, production, or local)
+    redirect({ url, baseUrl }) {
+      try {
+        // If a relative URL is provided, prefix with the current baseUrl
+        if (url.startsWith('/')) return `${baseUrl}${url}`;
+        const u = new URL(url);
+        // Allow same-origin absolute URLs
+        if (u.origin === baseUrl) return url;
+        // Otherwise, fallback to baseUrl (prevents jumping to production from preview)
+        return baseUrl;
+      } catch {
+        return baseUrl;
+      }
+    },
     jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = (user as any).id;
