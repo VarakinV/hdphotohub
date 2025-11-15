@@ -24,6 +24,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { getRecaptchaToken } from '@/lib/recaptcha/client';
 
 const formSchema = z
   .object({
@@ -55,6 +56,7 @@ export function RegisterForm() {
     setIsLoading(true);
 
     try {
+      const recaptchaToken = await getRecaptchaToken('register');
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
@@ -64,6 +66,7 @@ export function RegisterForm() {
           name: values.name,
           email: values.email,
           password: values.password,
+          recaptchaToken: recaptchaToken || undefined,
         }),
       });
 

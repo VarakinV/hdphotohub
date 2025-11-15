@@ -19,6 +19,14 @@ import { AttachmentsList } from '@/components/orders/attachments-list';
 import { EmbedsForm } from '@/components/orders/embeds-form';
 import { EmbedsList } from '@/components/orders/embeds-list';
 import { RegenerateMlsButton } from '@/components/admin/RegenerateMlsButton';
+import { ReelImagesUploader } from '@/components/orders/reel-images-uploader';
+import { ReelImagesGrid } from '@/components/orders/reel-images-grid';
+import { GenerateReelsButton } from '@/components/orders/generate-reels-button';
+import { GenerateReelsJ2VButton } from '@/components/orders/generate-reels-j2v-button';
+import ReelsList from '@/components/orders/reels-list';
+import { GenerateFlyersButton } from '@/components/orders/generate-flyers-button';
+import FlyersList from '@/components/orders/flyers-list';
+
 import { sanitizeDescription } from '@/lib/sanitize';
 import PlacesAddressInput from '@/components/admin/PlacesAddressInput';
 import DescriptionEditor from '@/components/admin/DescriptionEditor';
@@ -27,9 +35,11 @@ import {
   Home,
   Images,
   Film,
+  PlaySquare,
   Ruler,
   Paperclip,
   Link2,
+  FileText,
 } from 'lucide-react';
 
 interface Order {
@@ -72,13 +82,23 @@ export default function OrderDetailsPage() {
   const router = useRouter();
   const [order, setOrder] = useState<Order | null>(null);
   const [tab, setTab] = useState<
-    'property' | 'photos' | 'videos' | 'floor' | 'attach' | 'embed'
+    | 'property'
+    | 'photos'
+    | 'videos'
+    | 'reels'
+    | 'flyers'
+    | 'floor'
+    | 'attach'
+    | 'embed'
   >('property');
   const [photoRefresh, setPhotoRefresh] = useState(0);
   const [videoRefresh, setVideoRefresh] = useState(0);
   const [floorRefresh, setFloorRefresh] = useState(0);
   const [attachRefresh, setAttachRefresh] = useState(0);
+  const [flyerRefresh, setFlyerRefresh] = useState(0);
+
   const [embedRefresh, setEmbedRefresh] = useState(0);
+  const [reelRefresh, setReelRefresh] = useState(0);
   const [editing, setEditing] = useState(false);
   const [preview, setPreview] = useState<{
     lat: number | null;
@@ -114,13 +134,23 @@ export default function OrderDetailsPage() {
     }
   }, [order]);
 
-  type TabKey = 'property' | 'photos' | 'videos' | 'floor' | 'attach' | 'embed';
+  type TabKey =
+    | 'property'
+    | 'photos'
+    | 'videos'
+    | 'reels'
+    | 'flyers'
+    | 'floor'
+    | 'attach'
+    | 'embed';
   type TabDef = { key: TabKey; label: string; icon: React.ElementType };
 
   const tabsList: TabDef[] = [
     { key: 'property', label: 'Property Info', icon: Home },
     { key: 'photos', label: 'Photos', icon: Images },
     { key: 'videos', label: 'Videos', icon: Film },
+    { key: 'reels', label: 'Reels', icon: PlaySquare },
+    { key: 'flyers', label: 'Flyers', icon: FileText },
     { key: 'floor', label: 'Floor Plans', icon: Ruler },
     { key: 'attach', label: 'PDFs', icon: Paperclip },
     { key: 'embed', label: 'iGUIDE', icon: Link2 },
@@ -556,6 +586,42 @@ export default function OrderDetailsPage() {
                 onUploaded={() => setVideoRefresh((n) => n + 1)}
               />
               <VideosGrid orderId={order.id} refreshToken={videoRefresh} />
+            </div>
+          )}
+
+          {tab === 'reels' && order && (
+            <div className="space-y-4">
+              <ReelImagesUploader
+                orderId={order.id}
+                onUploaded={() => setReelRefresh((n) => n + 1)}
+              />
+              <ReelImagesGrid orderId={order.id} refreshToken={reelRefresh} />
+              <div className="hidden">
+                <GenerateReelsButton
+                  orderId={order.id}
+                  onStarted={() => setReelRefresh((n) => n + 1)}
+                />
+              </div>
+              <GenerateReelsJ2VButton
+                orderId={order.id}
+                onStarted={() => setReelRefresh((n) => n + 1)}
+              />
+              <ReelsList orderId={order.id} refreshToken={reelRefresh} />
+            </div>
+          )}
+
+          {tab === 'flyers' && order && (
+            <div className="space-y-4">
+              <ReelImagesUploader
+                orderId={order.id}
+                onUploaded={() => setFlyerRefresh((n) => n + 1)}
+              />
+              <ReelImagesGrid orderId={order.id} refreshToken={flyerRefresh} />
+              <GenerateFlyersButton
+                orderId={order.id}
+                onStarted={() => setFlyerRefresh((n) => n + 1)}
+              />
+              <FlyersList orderId={order.id} refreshToken={flyerRefresh} />
             </div>
           )}
 

@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { getRecaptchaToken } from '@/lib/recaptcha/client';
 import { signIn } from 'next-auth/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -30,6 +31,13 @@ export default function MagicLinkLogin() {
   async function onMagicSubmit(values: z.infer<typeof magicSchema>) {
     setIsSending(true);
     try {
+      const token = await getRecaptchaToken('magic_link');
+      if (token) {
+        // short-lived cookie so the NextAuth email provider can read and verify
+        document.cookie = `recaptcha_v3_token=${encodeURIComponent(
+          token
+        )}; Max-Age=120; Path=/`;
+      }
       await signIn('email', {
         email: values.email,
         redirect: false,

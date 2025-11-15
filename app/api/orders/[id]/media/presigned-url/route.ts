@@ -24,7 +24,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { category, fileName, fileType } = await req.json();
     if (!category || !fileName || !fileType) return NextResponse.json({ error: 'Invalid body' }, { status: 400 });
 
-    if (!['photos', 'videos', 'floorplans', 'attachments'].includes(category)) {
+    if (!['photos', 'videos', 'floorplans', 'attachments', 'reels-sources'].includes(category)) {
       return NextResponse.json({ error: 'Invalid category' }, { status: 400 });
     }
 

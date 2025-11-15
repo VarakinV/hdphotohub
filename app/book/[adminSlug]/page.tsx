@@ -14,6 +14,8 @@ import PlacesAddressInput from '@/components/admin/PlacesAddressInput';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 
+import { getRecaptchaToken } from '@/lib/recaptcha/client';
+
 // Types for catalog payload
 type Catalog = {
   admin: {
@@ -384,6 +386,7 @@ export default function PublicBookingPage() {
       setSubmitError(null);
       setSubmitting(true);
       const serviceIds = selectedServices.map((s) => s.id);
+      const recaptchaToken = await getRecaptchaToken('booking');
       const body = {
         address,
         formattedAddress: formattedAddress || address,
@@ -404,6 +407,7 @@ export default function PublicBookingPage() {
         serviceIds,
         slotStart: selectedSlotISO,
         promoCode: promoCode.trim() || undefined,
+        recaptchaToken: recaptchaToken || undefined,
       };
       const res = await fetch(`/api/public/booking/submit/${adminSlug}`, {
         method: 'POST',

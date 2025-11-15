@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 
+import { getRecaptchaToken } from '@/lib/recaptcha/client';
+
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -16,10 +18,14 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     try {
       setLoading(true);
+      const recaptchaToken = await getRecaptchaToken('forgot_password');
       const res = await fetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({
+          email,
+          recaptchaToken: recaptchaToken || undefined,
+        }),
       });
       // Always display the same confirmation to prevent enumeration
       setSent(true);
@@ -41,7 +47,8 @@ export default function ForgotPasswordPage() {
         <CardContent>
           {sent ? (
             <p className="text-sm text-gray-700">
-              If this email exists, we&apos;ve sent you a reset link. Please check your inbox.
+              If this email exists, we&apos;ve sent you a reset link. Please
+              check your inbox.
             </p>
           ) : (
             <form onSubmit={onSubmit} className="grid gap-4">
@@ -66,4 +73,3 @@ export default function ForgotPasswordPage() {
     </div>
   );
 }
-

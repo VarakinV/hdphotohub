@@ -131,6 +131,9 @@ model Order {
   embeds        Embed[]
   propertyPages PropertyPage[]
   inquiries     PropertyInquiry[]
+  reels         OrderReel[]
+  reelSources   OrderReelSourceImage[]
+  flyers        OrderFlyer[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -183,6 +186,54 @@ model Embed {
   title     String
   embedUrl  String
   createdAt DateTime @default(now())
+}
+
+model OrderReel {
+  id         String     @id @default(cuid())
+  orderId    String
+  order      Order      @relation(fields: [orderId], references: [id])
+  variantKey String
+  provider   String
+  renderId   String
+  status     ReelStatus
+  url        String?
+  thumbnail  String?
+  width      Int?
+  height     Int?
+  error      String?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@index([orderId, status])
+}
+
+model OrderReelSourceImage {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id])
+  url       String
+  filename  String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([orderId, sortOrder])
+}
+
+model OrderFlyer {
+  id         String     @id @default(cuid())
+  orderId    String
+  order      Order      @relation(fields: [orderId], references: [id])
+  variantKey String
+  status     ReelStatus
+  url        String?
+  previewUrl String?
+  pageWidth  Int?
+  pageHeight Int?
+  error      String?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@index([orderId, status])
 }
 
 model Invitation {
@@ -503,4 +554,144 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+enum ReelStatus {
+  QUEUED
+  RENDERING
+  COMPLETE
+  FAILED
+}
+
+// Free Reels funnel models
+
+enum FreeLeadStatus {
+  DRAFT
+  GENERATING
+  COMPLETE
+  FAILED
+}
+
+model FreeReelsLead {
+  id        String  @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String
+  phone     String?
+
+  // Property details
+  propertyAddress    String
+  propertyCity       String?
+  propertyPostalCode String?
+  bedrooms           String?
+  bathrooms          String?
+
+  // Assets
+  headshotUrl   String?
+  agencyLogoUrl String?
+
+  // Status & integrations
+  status       FreeLeadStatus @default(DRAFT)
+  ghlContactId String?
+
+  // Relations
+  images FreeReelsSourceImage[]
+  reels  FreeReel[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FreeReelsSourceImage {
+  id        String        @id @default(cuid())
+  leadId    String
+  lead      FreeReelsLead @relation(fields: [leadId], references: [id])
+  url       String
+  filename  String?
+  sortOrder Int           @default(0)
+  createdAt DateTime      @default(now())
+
+  @@index([leadId, sortOrder])
+}
+
+model FreeReel {
+  id         String        @id @default(cuid())
+  leadId     String
+  lead       FreeReelsLead @relation(fields: [leadId], references: [id])
+  variantKey String
+  provider   String
+  renderId   String
+  status     ReelStatus
+  url        String?
+  thumbnail  String?
+  width      Int?
+  height     Int?
+  error      String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@unique([provider, renderId])
+  @@index([leadId, status])
+}
+
+// Free Flyers funnel models
+model FreeFlyersLead {
+  id        String  @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String
+  phone     String?
+
+  // Property details
+  propertyAddress    String
+  propertyCity       String?
+  propertyPostalCode String?
+  bedrooms           String?
+  bathrooms          String?
+  sizeSqFt           String?
+  propertySiteUrl    String?
+
+  // Assets
+  headshotUrl   String?
+  agencyLogoUrl String?
+
+  // Status & integrations
+  status       FreeLeadStatus @default(DRAFT)
+  ghlContactId String?
+
+  // Relations
+  images FreeFlyersSourceImage[]
+  flyers FreeFlyer[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FreeFlyersSourceImage {
+  id        String         @id @default(cuid())
+  leadId    String
+  lead      FreeFlyersLead @relation(fields: [leadId], references: [id])
+  url       String
+  filename  String?
+  sortOrder Int            @default(0)
+  createdAt DateTime       @default(now())
+
+  @@index([leadId, sortOrder])
+}
+
+model FreeFlyer {
+  id         String         @id @default(cuid())
+  leadId     String
+  lead       FreeFlyersLead @relation(fields: [leadId], references: [id])
+  variantKey String
+  status     ReelStatus
+  url        String?
+  previewUrl String?
+  pageWidth  Int?
+  pageHeight Int?
+  error      String?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@index([leadId, status])
 }

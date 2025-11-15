@@ -4,15 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Toaster } from '@/components/ui/sonner';
-import Script from 'next/script';
-
-declare global {
-  interface Window {
-    grecaptcha?: any;
-  }
-}
-
-const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+import { getRecaptchaToken } from '@/lib/recaptcha/client';
 
 export default function ContactForm({
   orderId,
@@ -31,17 +23,7 @@ export default function ContactForm({
     setStatus('sending');
     setError(null);
     const fd = new FormData(e.currentTarget);
-    let recaptchaToken: string | undefined = undefined;
-    if (siteKey && typeof window !== 'undefined' && window.grecaptcha) {
-      try {
-        await new Promise<void>((resolve) =>
-          window.grecaptcha!.ready(() => resolve())
-        );
-        recaptchaToken = await window.grecaptcha.execute(siteKey, {
-          action: 'property_contact',
-        });
-      } catch {}
-    }
+    const recaptchaToken = await getRecaptchaToken('property_contact');
 
     const body = {
       name: String(fd.get('name') || ''),
@@ -72,12 +54,7 @@ export default function ContactForm({
   return (
     <>
       <Toaster />
-      {siteKey && (
-        <Script
-          src={`https://www.google.com/recaptcha/api.js?render=${siteKey}`}
-          strategy="afterInteractive"
-        />
-      )}
+
       <form onSubmit={onSubmit} className="space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
@@ -131,7 +108,7 @@ export default function ContactForm({
           </Button>
           {status === 'sent' && (
             <span className="text-green-600 text-sm">
-              Sent! We\'ll be in touch.
+              Sent! We&apos;ll be in touch.
             </span>
           )}
           {status === 'error' && (

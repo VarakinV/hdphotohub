@@ -2,16 +2,24 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import crypto from "crypto";
 import { sendPasswordResetEmail } from "@/lib/utils/password-reset";
+import { verifyRecaptchaServer } from "@/lib/recaptcha/verify";
+
 
 export async function POST(req: NextRequest) {
   try {
-    const { email } = (await req.json().catch(() => ({}))) as { email?: string };
+    const { email, recaptchaToken } = (await req.json().catch(() => ({}))) as { email?: string; recaptchaToken?: string };
 
     // Always return success message regardless of input to avoid email enumeration
     const successResponse = NextResponse.json(
       { message: "If this email exists, we’ve sent you a reset link." },
       { status: 200 }
     );
+
+    // reCAPTCHA v3 verification (if configured). On failure, return generic success to avoid enumeration.
+    const recaptcha = await verifyRecaptchaServer(recaptchaToken, 'forgot_password');
+    if (!recaptcha.ok) {
+      return successResponse;
+    }
 
     if (!email || typeof email !== "string") {
       return successResponse;

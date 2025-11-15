@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { Card } from '@/components/ui/card';
@@ -10,6 +10,123 @@ function formatDateLongWithComma(d: Date) {
   const day = d.getDate();
   const year = d.getFullYear();
   return `${month}, ${day}, ${year}`;
+}
+
+function ConfettiBurst() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const ctxEl = ctx as CanvasRenderingContext2D;
+    const canvasEl = canvas as HTMLCanvasElement;
+    let raf = 0;
+
+    function resize() {
+      const c = canvasRef.current;
+      if (!c) return;
+      c.width = window.innerWidth;
+      c.height = window.innerHeight;
+    }
+    resize();
+
+    const colors = ['#ca4153', '#00C2FF', '#FFD166', '#06D6A0', '#EF476F'];
+    type P = {
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      size: number;
+      life: number;
+      ttl: number;
+      color: string;
+      rot: number;
+      vr: number;
+    };
+    const parts: P[] = [];
+
+    function spawnBurst(x: number, y: number, count = 120) {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI - Math.PI / 2; // upward fan
+        const speed = 6 + Math.random() * 6;
+        parts.push({
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 2,
+          size: 6 + Math.random() * 6,
+          life: 0,
+          ttl: 120 + Math.random() * 40,
+          color: colors[(Math.random() * colors.length) | 0],
+          rot: Math.random() * Math.PI,
+          vr: (Math.random() - 0.5) * 0.2,
+        });
+      }
+    }
+
+    // Two quick bursts from left/right, then a sprinkle
+    const midY = canvasEl.height * 0.25;
+    spawnBurst(canvasEl.width * 0.15, midY, 140);
+    spawnBurst(canvasEl.width * 0.85, midY, 140);
+    const sprinkle = setInterval(
+      () =>
+        spawnBurst(
+          canvasEl.width * Math.random(),
+          canvasEl.height * 0.1 + Math.random() * 80,
+          40
+        ),
+      450
+    );
+    const stopAt = performance.now() + 2500; // spawn ~2.5s
+
+    function tick(t: number) {
+      if (t > stopAt) {
+        clearInterval(sprinkle);
+      }
+      ctxEl.clearRect(0, 0, canvasEl.width, canvasEl.height);
+      // physics
+      for (let i = parts.length - 1; i >= 0; i--) {
+        const p = parts[i];
+        p.life++;
+        if (p.life > p.ttl) {
+          parts.splice(i, 1);
+          continue;
+        }
+        p.vy += 0.12; // gravity
+        p.vx *= 0.995; // air drag
+
+        p.vy *= 0.995;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rot += p.vr;
+        // draw
+        ctxEl.save();
+        ctxEl.translate(p.x, p.y);
+        ctxEl.rotate(p.rot);
+        ctxEl.fillStyle = p.color;
+        ctxEl.globalAlpha = Math.max(0, 1 - p.life / p.ttl);
+        ctxEl.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+        ctxEl.restore();
+      }
+      raf = requestAnimationFrame(tick);
+    }
+    raf = requestAnimationFrame(tick);
+    window.addEventListener('resize', resize);
+    return () => {
+      window.removeEventListener('resize', resize);
+      clearInterval(sprinkle);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="fixed inset-0 pointer-events-none z-[60]"
+      aria-hidden="true"
+    />
+  );
 }
 
 function formatTime12h(d: Date, tz?: string) {
@@ -93,10 +210,12 @@ function BookingConfirmationInner() {
 
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         <Card className="p-6 bg-[#d5f7dc]">
+          <ConfettiBurst />
+
           <h1 className="text-2xl font-bold mb-2">Booking Confirmed!</h1>
           <p className="text-sm text-muted-foreground mb-4">
-            We've received your booking request. A confirmation email has been
-            sent.
+            We&apos;ve received your booking request. A confirmation email has
+            been sent.
           </p>
 
           <div className="grid sm:grid-cols-2 gap-4 text-sm">

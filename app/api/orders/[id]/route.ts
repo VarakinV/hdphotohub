@@ -14,7 +14,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
     const order = await prisma.order.findUnique({
       where: { id },
-      include: { realtor: { select: { id: true, firstName: true, lastName: true } } },
+      include: { realtor: { select: { id: true, firstName: true, lastName: true, email: true, phone: true, headshot: true, companyName: true, companyLogo: true } } },
     });
 
     if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
@@ -81,7 +81,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         description: body.description ?? null,
         status: body.status ?? undefined,
       },
-      include: { realtor: { select: { id: true, firstName: true, lastName: true } } },
+      include: { realtor: { select: { id: true, firstName: true, lastName: true, email: true, phone: true, headshot: true, companyName: true, companyLogo: true } } },
     });
 
     return NextResponse.json(updated);
@@ -175,7 +175,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const updated = await prisma.order.update({
       where: { id },
       data,
-      include: { realtor: { select: { id: true, firstName: true, lastName: true } } },
+      include: { realtor: { select: { id: true, firstName: true, lastName: true, email: true, phone: true, headshot: true, companyName: true, companyLogo: true } } },
     });
 
     return NextResponse.json(updated);
@@ -206,11 +206,12 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     }
 
     // Fetch related media to delete from S3
-    const [photos, videos, floors, attaches] = await Promise.all([
+    const [photos, videos, floors, attaches, reelSources] = await Promise.all([
       prisma.photo.findMany({ where: { orderId: id } }),
       prisma.video.findMany({ where: { orderId: id } }),
       prisma.floorPlan.findMany({ where: { orderId: id } }),
       prisma.attachment.findMany({ where: { orderId: id } }),
+      prisma.orderReelSourceImage.findMany({ where: { orderId: id } }),
     ]);
 
     // Best-effort S3 cleanup (non-blocking failures)
@@ -219,6 +220,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
       ...videos.map(async (v) => { try { await deleteFromS3(v.url); } catch {} }),
       ...floors.map(async (f) => { try { await deleteFromS3(f.url); } catch {} }),
       ...attaches.map(async (a) => { try { await deleteFromS3(a.url); } catch {} }),
+      ...reelSources.map(async (s) => { try { await deleteFromS3(s.url); } catch {} }),
     ]);
 
     // Delete DB records in a transaction (delete children first to satisfy FK constraints)
@@ -228,6 +230,8 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
       prisma.floorPlan.deleteMany({ where: { orderId: id } }),
       prisma.attachment.deleteMany({ where: { orderId: id } }),
       prisma.embed.deleteMany({ where: { orderId: id } }),
+      prisma.orderReelSourceImage.deleteMany({ where: { orderId: id } }),
+      prisma.orderReel.deleteMany({ where: { orderId: id } }),
       prisma.propertyInquiry.deleteMany({ where: { orderId: id } }),
       prisma.propertyPage.deleteMany({ where: { orderId: id } }),
       prisma.order.delete({ where: { id } }),

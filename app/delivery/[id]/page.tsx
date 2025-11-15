@@ -20,10 +20,12 @@ async function getOrder(id: string) {
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
       },
       videos: true,
+      reels: true,
       floorPlans: true,
       attachments: true,
       embeds: true,
       propertyPages: true,
+      flyers: true,
     },
   });
   return order;
@@ -119,7 +121,14 @@ export default async function DeliveryPage({
             {/* Right: Address */}
             <div className="text-right">
               <h1 className="text-white text-4xl md:text-6xl font-semibold leading-tight">
-                {order.propertyAddress}
+                {
+                  (
+                    order.propertyAddressOverride ||
+                    order.propertyAddress ||
+                    order.propertyFormattedAddress ||
+                    ''
+                  ).split(',')[0]
+                }
               </h1>
             </div>
           </div>
@@ -192,12 +201,14 @@ export default async function DeliveryPage({
               <h2 className="text-2xl md:text-3xl font-semibold">Videos</h2>
               <div className="h-px bg-gray-200/80" />
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-4">
               {order.videos.map((v) => (
                 <div key={v.id} className="border rounded-md overflow-hidden">
-                  <video controls className="w-full h-32 object-cover">
-                    <source src={v.url} type="video/mp4" />
-                  </video>
+                  <div className="aspect-video bg-black/5">
+                    <video controls className="w-full h-full object-cover">
+                      <source src={v.url} type="video/mp4" />
+                    </video>
+                  </div>
                   <div className="p-2 text-center">
                     <DownloadLinkButton
                       url={v.url}
@@ -210,6 +221,85 @@ export default async function DeliveryPage({
                   </div>
                 </div>
               ))}
+            </div>
+          </section>
+        )}
+
+        {/* Reels */}
+        {!!order.reels?.filter((r: any) => r.status === 'COMPLETE').length && (
+          <section id="reels" className="space-y-3 scroll-mt-24">
+            <div className="space-y-2">
+              <h2 className="text-2xl md:text-3xl font-semibold">
+                Social Media Reels
+              </h2>
+              <div className="h-px bg-gray-200/80" />
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-3">
+              {(() => {
+                const orderKeys = [
+                  'v1-9x16',
+                  'v2-9x16',
+                  'v3-9x16',
+                  'v4-9x16',
+                  'v5-9x16',
+                  'v6-9x16',
+                  'v7-9x16',
+                  'v8-9x16',
+                  'v9-9x16',
+                ];
+                const labelMap: Record<string, string> = {
+                  'v1-9x16': 'Vertical Reel 1 - Just Listed',
+                  'v2-9x16': 'Vertical Reel 2 - For Sale',
+                  'v3-9x16': 'Vertical Reel 3 - For Sale',
+                  'v4-9x16': 'Vertical Reel 4 - Just Listed',
+                  'v5-9x16': 'Vertical Reel 5 - For Sale',
+                  'v6-9x16': 'Vertical Reel 6 - New On The Market',
+                  'v7-9x16': 'Seasonal 1 - For Sale',
+                  'v8-9x16': 'Seasonal 2 - New Listing',
+                  'v9-9x16': 'Seasonal 3 - For Sale',
+                };
+                const idx = (k: string) => {
+                  const i = orderKeys.indexOf((k || '').toLowerCase());
+                  return i >= 0 ? i : 999;
+                };
+                const reelsSorted = order.reels
+                  .filter((r: any) => r.status === 'COMPLETE')
+                  .slice()
+                  .sort(
+                    (a: any, b: any) => idx(a.variantKey) - idx(b.variantKey)
+                  );
+                return reelsSorted.map((r: any) => (
+                  <div key={r.id} className="border rounded-md overflow-hidden">
+                    <div className="aspect-[9/16] bg-black/5">
+                      <video
+                        controls
+                        className="w-full h-full object-cover"
+                        poster={r.thumbnail || heroUrl || undefined}
+                      >
+                        <source src={r.url} type="video/mp4" />
+                      </video>
+                    </div>
+                    <div className="px-2 pt-2 text-xs text-gray-600 flex items-center justify-between">
+                      <span className="truncate">
+                        {labelMap[(r.variantKey || '').toLowerCase()] ||
+                          (r.variantKey || '').toUpperCase()}
+                      </span>
+                      {r.width && r.height && (
+                        <span className="ml-2 whitespace-nowrap">
+                          {r.width}×{r.height}
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-2 text-center">
+                      <DownloadLinkButton
+                        url={r.url}
+                        label="Download"
+                        fileName={`reel-${r.variantKey}.mp4`}
+                      />
+                    </div>
+                  </div>
+                ));
+              })()}
             </div>
           </section>
         )}
@@ -304,6 +394,55 @@ export default async function DeliveryPage({
                   </div>
                 </div>
               ))}
+            </div>
+          </section>
+        )}
+
+        {/* Property Flyers */}
+        {!!order.flyers?.filter((f: any) => f.status === 'COMPLETE' && f.url)
+          .length && (
+          <section id="property-flyers" className="space-y-3 scroll-mt-24">
+            <div className="space-y-2">
+              <h2 className="text-2xl md:text-3xl font-semibold">
+                Property Flyers
+              </h2>
+              <div className="h-px bg-gray-200/80" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {order.flyers
+                .filter((f: any) => f.status === 'COMPLETE' && f.url)
+                .map((f: any) => (
+                  <div key={f.id} className="border rounded-md overflow-hidden">
+                    <div className="relative aspect-[8.5/11] bg-black/5">
+                      {f.previewUrl ? (
+                        <Image
+                          src={f.previewUrl}
+                          alt="Flyer preview"
+                          fill
+                          className="object-cover"
+                        />
+                      ) : heroUrl ? (
+                        <Image
+                          src={heroUrl}
+                          alt="Flyer preview"
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400">
+                          No preview
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-2 text-center">
+                      <DownloadLinkButton
+                        url={f.url}
+                        label="Download PDF"
+                        fileName={`flyer-${f.variantKey}.pdf`}
+                      />
+                    </div>
+                  </div>
+                ))}
             </div>
           </section>
         )}

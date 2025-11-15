@@ -27,6 +27,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { getRecaptchaToken } from '@/lib/recaptcha/client';
 
 const formSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -51,9 +52,11 @@ export function LoginForm() {
     setIsLoading(true);
 
     try {
+      const recaptchaToken = await getRecaptchaToken('login');
       await signIn('credentials', {
         email: values.email,
         password: values.password,
+        recaptchaToken: recaptchaToken || undefined,
         redirect: true,
         callbackUrl: '/portal?loginSuccess=1', // Admins will be redirected to /admin/dashboard by the portal page (param propagated)
       });

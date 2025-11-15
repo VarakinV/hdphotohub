@@ -15,6 +15,8 @@ import {
   Settings as SettingsIcon,
   Ban,
   Tag,
+  Clapperboard,
+  FileText,
 } from 'lucide-react';
 
 const items = [
@@ -33,6 +35,16 @@ const items = [
   { href: '/admin/services', label: 'Services', Icon: Wrench },
   { href: '/admin/taxes', label: 'Taxes', Icon: Percent },
   { href: '/admin/promo-codes', label: 'Promo Codes', Icon: Tag },
+  {
+    href: '/admin/free-reels-orders',
+    label: 'Free Reels Orders',
+    Icon: Clapperboard,
+  },
+  {
+    href: '/admin/free-flyers-orders',
+    label: 'Free Flyers Orders',
+    Icon: FileText,
+  },
 ];
 
 export default function AdminNavCard() {

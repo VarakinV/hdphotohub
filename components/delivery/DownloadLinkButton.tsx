@@ -22,6 +22,9 @@ export function DownloadLinkButton({
   async function onClick() {
     try {
       setLoading(true);
+      if (!url || typeof url !== 'string' || url.trim() === '') {
+        throw new Error('File is not available yet. Please try again shortly.');
+      }
       // Route through our API when URL is external
       const isExternal =
         /^https?:\/\//i.test(url) && !url.startsWith(window.location.origin);
@@ -54,10 +57,10 @@ export function DownloadLinkButton({
       variant="outline"
       size="sm"
       onClick={onClick}
-      disabled={loading}
       className={`${
         fullWidth ? 'w-full' : ''
       } justify-center whitespace-nowrap ${className || ''}`}
+      disabled={!url || loading}
     >
       {loading ? (
         <Loader2 className="h-4 w-4 animate-spin" />

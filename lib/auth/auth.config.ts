@@ -12,6 +12,8 @@ import { prisma } from "@/lib/db/prisma";
 import { verifyPassword } from "@/lib/utils/password";
 import { Resend } from "resend";
 
+import { verifyRecaptchaServer } from "@/lib/recaptcha/verify";
+
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1, "Password is required"),
@@ -95,6 +97,19 @@ export default {
         try {
           const email = identifier.trim().toLowerCase();
 
+          // reCAPTCHA v3 validation from short-lived cookie set by client
+          try {
+            const { cookies } = await import('next/headers');
+            const cookieStore = await cookies();
+            const token = cookieStore.get('recaptcha_v3_token')?.value;
+            const recaptcha = await verifyRecaptchaServer(token, 'magic_link');
+            if (!recaptcha.ok) {
+              return; // silently drop to avoid enumeration
+            }
+          } catch (e) {
+            // If headers() is unavailable here, fail open in dev; verifyRecaptchaServer also fails open without env
+          }
+
           // Allow-list: existing Users, valid Invites, or existing Realtors
           const user = await prisma.user.findUnique({ where: { email } });
           const invite = await prisma.invitation.findFirst({
@@ -158,6 +173,13 @@ export default {
         const { email, password } = validatedFields.data;
 
         try {
+          // reCAPTCHA v3 verification for credentials login (if configured)
+          const recaptchaToken = (credentials as any)?.recaptchaToken as string | undefined;
+          const recaptcha = await verifyRecaptchaServer(recaptchaToken, 'login');
+          if (!recaptcha.ok) {
+            return null;
+          }
+
           const user = await prisma.user.findUnique({
             where: { email }
           });

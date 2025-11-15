@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db/prisma";
 import { Resend } from "resend";
 import { createEventForAdmin } from "@/lib/google/calendar";
 import { sendBookingToGhl } from "@/lib/ghl";
+import { verifyRecaptchaServer } from "@/lib/recaptcha/verify";
 
 function money(cents: number) { return `$${(cents/100).toFixed(2)}`; }
 function slugify(text: string) {
@@ -50,10 +51,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
       serviceIds,
       slotStart,
       promoCode,
+      recaptchaToken,
     } = body as any;
 
     if (!adminSlug) return NextResponse.json({ error: "Missing adminSlug" }, { status: 400 });
     if (!address || !contactFirstName || !contactLastName || !contactEmail) return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    // reCAPTCHA v3 verification (if configured)
+    const recaptcha = await verifyRecaptchaServer(recaptchaToken, 'booking');
+    if (!recaptcha.ok) {
+      return NextResponse.json({ error: 'reCAPTCHA failed' }, { status: 400 });
+    }
+
     if (!Array.isArray(serviceIds) || serviceIds.length === 0) return NextResponse.json({ error: "No services selected" }, { status: 400 });
 
     const idOrSlug = adminSlug;

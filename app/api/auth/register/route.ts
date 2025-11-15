@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { hashPassword, validatePassword } from "@/lib/utils/password";
+import { verifyRecaptchaServer } from "@/lib/recaptcha/verify";
+
 
 const registerSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -12,19 +14,26 @@ const registerSchema = z.object({
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    
+
+    // reCAPTCHA v3 verification (if configured)
+    const recaptchaToken = (body as any)?.recaptchaToken as string | undefined;
+    const recaptcha = await verifyRecaptchaServer(recaptchaToken, 'register');
+    if (!recaptcha.ok) {
+      return NextResponse.json({ error: 'reCAPTCHA failed' }, { status: 400 });
+    }
+
     // Validate input
     const validatedFields = registerSchema.safeParse(body);
-    
+
     if (!validatedFields.success) {
       return NextResponse.json(
         { error: "Invalid fields", details: validatedFields.error.flatten() },
         { status: 400 }
       );
     }
-    
+
     const { email, password, name } = validatedFields.data;
-    
+
     // Validate password strength
     const passwordValidation = validatePassword(password);
     if (!passwordValidation.isValid) {
@@ -33,22 +42,22 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    
+
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email }
     });
-    
+
     if (existingUser) {
       return NextResponse.json(
         { error: "User already exists with this email" },
         { status: 409 }
       );
     }
-    
+
     // Hash password
     const hashedPassword = await hashPassword(password);
-    
+
     // Create user
     const user = await prisma.user.create({
       data: {
@@ -64,7 +73,7 @@ export async function POST(request: Request) {
         role: true,
       }
     });
-    
+
     return NextResponse.json(
       { message: "User created successfully", user },
       { status: 201 }

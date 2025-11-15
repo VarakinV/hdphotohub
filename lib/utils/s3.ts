@@ -65,7 +65,7 @@ export async function getPresignedUploadUrlForPath(
  */
 export async function getOrderMediaPresignedUrl(
   orderId: string,
-  category: 'photos' | 'videos' | 'floorplans' | 'attachments',
+  category: 'photos' | 'videos' | 'floorplans' | 'attachments' | 'reels-sources',
   fileName: string,
   fileType: string
 ): Promise<{ uploadUrl: string; fileKey: string; fileUrl: string }> {
