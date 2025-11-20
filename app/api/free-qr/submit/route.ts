@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
 import { verifyRecaptchaServer } from '@/lib/recaptcha/verify';
 import { isS3Available, uploadBufferToS3WithPath } from '@/lib/utils/s3';
@@ -146,7 +146,7 @@ export async function POST(req: NextRequest) {
       select: { id: true },
     });
     if (existingAny) {
-      return NextResponse.json({ ok: true, id });
+      // Records already exist; continue to (re)process in background if not COMPLETE
     }
 
     // Pre-normalize logo URL once to a data URL for reliable headless rendering
@@ -164,19 +164,26 @@ export async function POST(req: NextRequest) {
       precomputedLogoDataUrl = logoDataUrl;
     }
 
-    // Kick off generation asynchronously so UI can show progress page
-    setTimeout(async () => {
-      try {
-        // initialize/queue records to show immediate progress
-        for (const variant of VARIANTS) {
-          await prisma.freeQr.upsert({
-            where: { leadId_variantKey: { leadId: id, variantKey: variant } },
-            create: { leadId: id, variantKey: variant, status: 'QUEUED' },
-            update: { status: 'QUEUED' },
-          });
-        }
+    // Initialize/queue records immediately so UI can show progress on first poll
+    for (const variant of VARIANTS) {
+      await prisma.freeQr.upsert({
+        where: { leadId_variantKey: { leadId: id, variantKey: variant } },
+        create: { leadId: id, variantKey: variant, status: 'QUEUED' },
+        update: { status: 'QUEUED' },
+      });
+    }
 
+    // Kick off generation asynchronously using Next.js background task
+    after(async () => {
+      try {
         for (const variant of VARIANTS) {
+          // Skip if already complete
+          const rec = await prisma.freeQr.findUnique({
+            where: { leadId_variantKey: { leadId: id, variantKey: variant } },
+            select: { status: true },
+          });
+          if (rec?.status === 'COMPLETE') continue;
+
           await prisma.freeQr.update({
             where: { leadId_variantKey: { leadId: id, variantKey: variant } },
             data: { status: 'RENDERING' },
@@ -250,12 +257,12 @@ export async function POST(req: NextRequest) {
           console.warn('[FreeQr] GHL integration failed; continuing', e);
         }
       } catch (err) {
-        console.error('Free QR async generation failed', err);
+        console.error('Free QR background generation failed', err);
         try {
           await prisma.freeQrLead.update({ where: { id }, data: { status: 'FAILED' } });
         } catch {}
       }
-    }, 0);
+    });
 
     // Return immediately so the UI can show the progress phase
     return NextResponse.json({ ok: true, id });
