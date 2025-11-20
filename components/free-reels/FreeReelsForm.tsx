@@ -63,6 +63,7 @@ export function FreeReelsForm() {
   const router = useRouter();
   const [leadId, setLeadId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const submitLockRef = useRef(false);
 
   // Contact
   const [firstName, setFirstName] = useState('');
@@ -272,8 +273,15 @@ export function FreeReelsForm() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    // Hard guard against rapid double-clicks
+    if (submitLockRef.current || submitting) return;
+    submitLockRef.current = true;
+
     const id = leadId || (await ensureLead());
-    if (!id) return;
+    if (!id) {
+      submitLockRef.current = false;
+      return;
+    }
     const errs: Record<string, string> = {};
     if (!firstName) errs.firstName = 'First name is required';
     if (!lastName) errs.lastName = 'Last name is required';
@@ -288,7 +296,10 @@ export function FreeReelsForm() {
     const imageUrls = images.map((i) => i.url).filter(Boolean) as string[];
     if (imageUrls.length < 3) errs.images = 'Please upload at least 3 images';
     setErrors(errs);
-    if (Object.keys(errs).length) return;
+    if (Object.keys(errs).length) {
+      submitLockRef.current = false;
+      return;
+    }
 
     // reCAPTCHA v3 token (execute on submit)
     const recaptchaV3Token = await getRecaptchaToken('free_reels_submit');
@@ -297,6 +308,7 @@ export function FreeReelsForm() {
         ...e,
         recaptcha: 'reCAPTCHA failed, please retry.',
       }));
+      submitLockRef.current = false;
       return;
     }
 
@@ -333,8 +345,8 @@ export function FreeReelsForm() {
         ...x,
         form: 'Submission failed, please try again.',
       }));
-    } finally {
       setSubmitting(false);
+      submitLockRef.current = false;
     }
   }
 
@@ -862,6 +874,13 @@ export function FreeReelsForm() {
         {errors.recaptcha ? (
           <p className="text-red-600 text-sm">{errors.recaptcha}</p>
         ) : null}
+        {submitting && (
+          <div className="rounded-md border border-yellow-300 bg-yellow-50 text-yellow-800 p-3 flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Generating… Please keep this tab open.</span>
+          </div>
+        )}
+
         <Button
           type="submit"
           disabled={!isFormReady || submitting}

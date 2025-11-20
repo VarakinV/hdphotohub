@@ -133,10 +133,26 @@ export async function POST(req: NextRequest) {
       { find: 'AGENCY_LOGO', replace: agencyLogoUrl || '' },
     ];
 
-    // Render each variant first, then create DB rows with actual renderIds to
-    // avoid unique(provider, renderId) collisions.
+    // Idempotency: only render variants that aren't already in progress or complete
+    const desiredKeys = VARIANTS.map((v) => v.key);
+    const existing = await prisma.freeReel.findMany({
+      where: { leadId, variantKey: { in: desiredKeys } },
+      select: { variantKey: true, status: true },
+    });
+    const activeKeys = new Set(
+      existing
+        .filter((r: any) => ['QUEUED', 'RENDERING', 'COMPLETE'].includes(String(r.status)))
+        .map((r) => r.variantKey)
+    );
+    const toCreate = VARIANTS.filter((v) => !activeKeys.has(v.key));
+
+    if (toCreate.length === 0) {
+      return NextResponse.json({ ok: true, id: leadId });
+    }
+
+    // Render each missing variant, then create DB rows with actual renderIds
     await Promise.all(
-      VARIANTS.map(async (v) => {
+      toCreate.map(async (v) => {
         try {
           const { renderId } = await provider.render({
             images,

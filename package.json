@@ -44,6 +44,7 @@
     "nodemailer": "^6.10.1",
     "prisma": "^6.14.0",
     "puppeteer-core": "^24.26.1",
+    "qr-code-styling": "^1.6.0-rc.1",
     "qrcode": "^1.5.4",
     "react": "19.1.0",
     "react-dom": "19.1.0",

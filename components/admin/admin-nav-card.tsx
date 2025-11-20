@@ -17,6 +17,7 @@ import {
   Tag,
   Clapperboard,
   FileText,
+  QrCode,
 } from 'lucide-react';
 
 const items = [
@@ -44,6 +45,11 @@ const items = [
     href: '/admin/free-flyers-orders',
     label: 'Free Flyers Orders',
     Icon: FileText,
+  },
+  {
+    href: '/admin/free-qr-orders',
+    label: 'Free QR Orders',
+    Icon: QrCode,
   },
 ];
 

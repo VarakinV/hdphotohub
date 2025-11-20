@@ -65,14 +65,26 @@ export async function POST(req: NextRequest) {
       prisma.freeFlyersSourceImage.createMany({ data: images.map((url: string, i: number) => ({ leadId, url, sortOrder: i })) }),
     ]);
 
-    // Seed placeholder flyer rows and return immediately; actual rendering will be
-    // kicked off from the lead page (/free-flyers/[id]) via /api/free-flyers/[id]/start
+    // Seed placeholder flyer rows idempotently; create only missing variants.
+    // Do not delete existing in-progress or completed rows.
     const variants: Array<'f1' | 'f2' | 'f3'> = ['f1', 'f2', 'f3'];
-    // Clear any existing rows to avoid duplicates
-    await prisma.freeFlyer.deleteMany({ where: { leadId } });
-    await prisma.freeFlyer.createMany({
-      data: variants.map((v) => ({ leadId, variantKey: v, status: 'QUEUED' })),
+
+    const existing = await prisma.freeFlyer.findMany({
+      where: {
+        leadId,
+        variantKey: { in: variants },
+        status: { in: ['QUEUED', 'RENDERING', 'COMPLETE'] as any },
+      },
+      select: { variantKey: true },
     });
+    const existingKeys = new Set(existing.map((r) => r.variantKey));
+    const toCreate = variants.filter((v) => !existingKeys.has(v));
+
+    if (toCreate.length > 0) {
+      await prisma.freeFlyer.createMany({
+        data: toCreate.map((v) => ({ leadId, variantKey: v, status: 'QUEUED' })),
+      });
+    }
 
     return NextResponse.json({ ok: true, id: leadId });
   } catch (e) {

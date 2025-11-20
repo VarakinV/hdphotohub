@@ -695,3 +695,38 @@ model FreeFlyer {
 
   @@index([leadId, status])
 }
+
+// Free QR funnel models
+model FreeQrLead {
+  id        String  @id @default(cuid())
+  firstName String?
+  lastName  String?
+  email     String?
+  phone     String?
+
+  destinationUrl String
+
+  status       FreeLeadStatus @default(COMPLETE)
+  ghlContactId String?
+
+  qrCodes FreeQr[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FreeQr {
+  id     String     @id @default(cuid())
+  leadId String
+  lead   FreeQrLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  variantKey String
+  status     ReelStatus @default(COMPLETE)
+  svgUrl     String?
+  pngUrl     String?
+  pdfUrl     String?
+  createdAt  DateTime   @default(now())
+
+  @@unique([leadId, variantKey])
+  @@index([leadId, status])
+}

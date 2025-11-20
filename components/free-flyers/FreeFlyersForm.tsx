@@ -62,6 +62,7 @@ export function FreeFlyersForm() {
   const router = useRouter();
   const [leadId, setLeadId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const submitLockRef = useRef(false);
 
   // Contact
   const [firstName, setFirstName] = useState('');
@@ -254,8 +255,14 @@ export function FreeFlyersForm() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (submitLockRef.current || submitting) return;
+    submitLockRef.current = true;
+
     const id = leadId || (await ensureLead());
-    if (!id) return;
+    if (!id) {
+      submitLockRef.current = false;
+      return;
+    }
     const errs: Record<string, string> = {};
     if (!firstName) errs.firstName = 'First name is required';
     if (!lastName) errs.lastName = 'Last name is required';
@@ -275,7 +282,10 @@ export function FreeFlyersForm() {
     const imageUrls = images.map((i) => i.url).filter(Boolean) as string[];
     if (imageUrls.length !== 6) errs.images = 'Please upload exactly 6 images';
     setErrors(errs);
-    if (Object.keys(errs).length) return;
+    if (Object.keys(errs).length) {
+      submitLockRef.current = false;
+      return;
+    }
 
     // reCAPTCHA v3 token
     const recaptchaV3Token = await getRecaptchaToken('free_flyers_submit');
@@ -321,8 +331,8 @@ export function FreeFlyersForm() {
       router.push(`/free-flyers/${id}`);
     } catch (e: any) {
       setErrors((x) => ({ ...x, form: String(e?.message || e) }));
-    } finally {
       setSubmitting(false);
+      submitLockRef.current = false;
     }
   }
 
@@ -852,6 +862,13 @@ export function FreeFlyersForm() {
       {errors.form && <p className="text-red-600 text-sm">{errors.form}</p>}
 
       <div className="space-y-2">
+        {submitting && (
+          <div className="rounded-md border border-yellow-300 bg-yellow-50 text-yellow-800 p-3 flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Generating… Please keep this tab open.</span>
+          </div>
+        )}
+
         <Button
           type="submit"
           disabled={!isFormReady || submitting}

@@ -12,7 +12,11 @@ export async function GET(req: NextRequest) {
     if (!res.ok) return new NextResponse('Upstream fetch failed', { status: 502 });
 
     const buf = Buffer.from(await res.arrayBuffer());
-    const contentType = res.headers.get('content-type') || 'application/octet-stream';
+    let contentType = res.headers.get('content-type') || 'application/octet-stream';
+    // Force download behavior for SVGs to avoid inline rendering
+    if (contentType.includes('image/svg')) {
+      contentType = 'application/octet-stream';
+    }
 
     return new NextResponse(buf, {
       status: 200,
