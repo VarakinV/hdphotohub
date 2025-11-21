@@ -1,6 +1,7 @@
 import chromium from '@sparticuz/chromium';
 import puppeteer from 'puppeteer-core';
 import QRCode from 'qrcode';
+import sharp from 'sharp';
 import fs from 'fs';
 import path from 'path';
 
@@ -40,6 +41,25 @@ async function buildQrDataUrl(url: string) {
     return await QRCode.toDataURL(url, { margin: 0 });
   } catch {
     return '';
+  }
+}
+
+async function fetchAndResizeToDataUrl(url: string, opts?: { maxW?: number; maxH?: number; quality?: number }): Promise<string> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return url;
+    const buf = Buffer.from(await res.arrayBuffer());
+    const maxW = opts?.maxW ?? 1920;
+    const maxH = opts?.maxH ?? 1920;
+    const quality = opts?.quality ?? 80;
+    const out = await sharp(buf)
+      .rotate()
+      .resize({ width: maxW, height: maxH, fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality, chromaSubsampling: '4:2:0', mozjpeg: true })
+      .toBuffer();
+    return `data:image/jpeg;base64,${out.toString('base64')}`;
+  } catch {
+    return url; // fall back to original URL
   }
 }
 
@@ -145,7 +165,6 @@ function leftBlockHtml(inp: FlyerInput) {
       </div>
     </div>`;
 }
-
 // Simple inline SVG icons
 function bedIconSvg() {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -377,6 +396,23 @@ export async function renderFlyer(input: FlyerInput): Promise<{ pdf: Buffer; pre
   const widthPx = input.widthPx ?? 1275; // 8.5in * 150dpi
   const heightPx = input.heightPx ?? 1650; // 11in * 150dpi
 
+  // Downscale large images and inline as data URLs to avoid network fetch in headless browser
+  const images: string[] = [];
+  for (const u of (input.images || []).slice(0, 6)) {
+    images.push(await fetchAndResizeToDataUrl(u, { maxW: 1600, maxH: 1200, quality: 75 }));
+  }
+  const headshot = input.realtor.headshot
+    ? await fetchAndResizeToDataUrl(input.realtor.headshot, { maxW: 320, maxH: 320, quality: 75 })
+    : undefined;
+  const logo = input.realtor.logo
+    ? await fetchAndResizeToDataUrl(input.realtor.logo, { maxW: 600, maxH: 300, quality: 75 })
+    : undefined;
+  const sanitized: FlyerInput = {
+    ...input,
+    images,
+    realtor: { ...input.realtor, headshot, logo },
+  };
+
   const executablePath = await getExecutablePath();
   const launchArgs = process.platform === 'win32' ? ['--no-sandbox'] : chromium.args;
   const browser = await puppeteer.launch({
@@ -388,12 +424,21 @@ export async function renderFlyer(input: FlyerInput): Promise<{ pdf: Buffer; pre
   try {
     const page = await browser.newPage();
     await page.setViewport({ width: widthPx, height: heightPx, deviceScaleFactor: 1 });
-    const qr = await buildQrDataUrl(input.qrUrl);
-    const html = htmlForVariant(input, qr);
-    await page.setContent(html, { waitUntil: ['networkidle0'] });
+    const qr = await buildQrDataUrl(sanitized.qrUrl);
+    const html = htmlForVariant(sanitized, qr);
+    await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 15000 });
+    // Ensure images (data URLs) are decoded before capture
+    try {
+      await page.evaluate(async () => {
+        const imgs = Array.from(document.images);
+        await Promise.all(imgs.map((img) => (img as any).decode?.().catch(() => {}) || Promise.resolve()));
+      });
+    } catch {}
+    // Small settle time for layout/paint
+    await new Promise((r) => setTimeout(r, 100));
 
     // Create preview first (JPEG)
-    const previewJpeg = await page.screenshot({ type: 'jpeg', quality: 85, optimizeForSpeed: true }) as Buffer;
+    const previewJpeg = await page.screenshot({ type: 'jpeg', quality: 80, optimizeForSpeed: true }) as Buffer;
 
     // Create PDF (Letter)
     const pdf = await page.pdf({ format: 'letter', printBackground: true }) as Buffer;

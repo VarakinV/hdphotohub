@@ -72,46 +72,88 @@ export function FreeFlyersLeadClient({ id }: { id: string }) {
     };
   }, [id, isComplete]);
 
-  // Kick off server-side rendering as soon as we land on the status page
+  // Kick off server-side rendering sequentially (serialize variants)
   useEffect(() => {
     if (!lead || startedRef.current) return;
+
     const order = ['f1', 'f2', 'f3'];
     const flyers = (lead.flyers || []).map((f: any) => ({
       key: (f.variantKey || '').toLowerCase(),
       status: f.status,
       url: f.url,
     })) as Array<{ key: string; status: string; url?: string | null }>;
+
     const pendingVariants = order.filter((key) => {
       const row = flyers.find((f) => f.key === key);
-      // Start if:
-      // - missing row
-      // - FAILED
-      // - QUEUED
-      // - RENDERING but no url yet (stuck placeholder)
       if (!row) return true;
       if (row.status === 'FAILED') return true;
       if (row.status === 'QUEUED') return true;
       if (row.status === 'RENDERING' && !row.url) return true;
       return false;
     });
-    if (pendingVariants.length) {
-      startedRef.current = true;
-      // fire one per variant, staggered by ~1s to smooth serverless load
-      (async () => {
-        const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-        for (let i = 0; i < pendingVariants.length; i++) {
-          const v = pendingVariants[i];
+
+    if (!pendingVariants.length) return;
+
+    startedRef.current = true;
+
+    (async () => {
+      const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+      async function loadAndSetLead() {
+        try {
+          const l = await fetchLead(id);
+          setLead(l);
+          return l;
+        } catch {
+          return null;
+        }
+      }
+
+      for (const v of pendingVariants) {
+        let attempts = 0;
+        const startAt = Date.now();
+        const maxMs = 120000; // 2 minutes per variant guard
+
+        async function postStartOnce() {
           try {
             await fetch(`/api/free-flyers/${id}/start?variant=${v}`, {
               method: 'POST',
             });
           } catch {}
-          if (i < pendingVariants.length - 1) {
-            await sleep(1000);
-          }
         }
-      })();
-    }
+
+        // initial attempt to start this variant
+        await postStartOnce();
+
+        // wait until this variant completes (or times out), while ensuring it gets started when idle
+        while (true) {
+          const l = await loadAndSetLead();
+          const row = (l?.flyers || []).find(
+            (f: any) => (f.variantKey || '').toLowerCase() === v
+          );
+          const anyRendering = (l?.flyers || []).some(
+            (f: any) => f.status === 'RENDERING'
+          );
+
+          if (l?.status === 'COMPLETE' || row?.status === 'COMPLETE') break;
+
+          // If idle (no active rendering) and our variant is still QUEUED, try to start again
+          if (!anyRendering && row && row.status === 'QUEUED' && attempts < 5) {
+            attempts++;
+            await postStartOnce();
+          }
+
+          // If our variant failed, one retry
+          if (row && row.status === 'FAILED' && attempts < 2) {
+            attempts++;
+            await postStartOnce();
+          }
+
+          if (Date.now() - startAt > maxMs) break; // give up after guard
+          await sleep(1500);
+        }
+      }
+    })();
   }, [lead, id]);
 
   // Smooth progress and respect min duration
