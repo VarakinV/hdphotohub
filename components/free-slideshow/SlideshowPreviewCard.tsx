@@ -1,49 +1,50 @@
 'use client';
+
 import { DownloadLinkButton } from '@/components/delivery/DownloadLinkButton';
 import { VideoWithPoster } from '@/components/delivery/VideoWithPoster';
 
-interface ReelPreviewCardProps {
-  reel: any;
+interface SlideshowPreviewCardProps {
+  slideshow: any;
   fallbackImage?: string | null;
 }
 
-export function ReelPreviewCard({ reel, fallbackImage }: ReelPreviewCardProps) {
+export function SlideshowPreviewCard({ slideshow, fallbackImage }: SlideshowPreviewCardProps) {
   const labelMap: Record<string, string> = {
-    'v1-9x16': 'Vertical Reel 1 - Just Listed',
-    'v3-9x16': 'Vertical Reel 3 - For Sale',
-    'v4-9x16': 'Vertical Reel 4 - Just Listed',
+    'h1-16x9': 'Slideshow 1920x1080',
   };
+
+  const key = (slideshow.variantKey || '').toLowerCase();
+
   return (
     <div className="border rounded-md overflow-hidden">
-      {reel.url ? (
+      {slideshow.url ? (
         <VideoWithPoster
-          src={reel.url}
-          poster={reel.thumbnail}
+          src={slideshow.url}
+          poster={slideshow.thumbnail}
           fallbackImage={fallbackImage}
-          aspectRatio="9/16"
+          aspectRatio="16/9"
         />
       ) : (
-        <div className="aspect-[9/16] bg-black/5 flex items-center justify-center">
+        <div className="aspect-[16/9] bg-black/5 flex items-center justify-center">
           <div className="text-gray-400 text-sm">Loading...</div>
         </div>
       )}
       <div className="px-2 pt-2 text-xs text-gray-600 flex items-center justify-between">
         <span className="truncate">
-          {labelMap[(reel.variantKey || '').toLowerCase()] ||
-            (reel.variantKey || '').toUpperCase()}
+          {labelMap[key] || (slideshow.variantKey || '').toUpperCase()}
         </span>
-        {reel.width && reel.height ? (
+        {slideshow.width && slideshow.height ? (
           <span className="ml-2 whitespace-nowrap">
-            {reel.width}×{reel.height}
+            {slideshow.width}×{slideshow.height}
           </span>
         ) : null}
       </div>
       <div className="p-2 text-center">
-        {reel.url ? (
+        {slideshow.url ? (
           <DownloadLinkButton
-            url={reel.url}
+            url={slideshow.url}
             label="Download"
-            fileName={`reel-${reel.variantKey}.mp4`}
+            fileName={`slideshow-${slideshow.variantKey}.mp4`}
           />
         ) : (
           <div className="text-gray-500 text-sm">Processing...</div>

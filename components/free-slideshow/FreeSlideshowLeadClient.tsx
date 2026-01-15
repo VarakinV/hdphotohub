@@ -1,40 +1,31 @@
 'use client';
+
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { PromoSlides } from '@/components/free-reels/PromoSlides';
 import { ProgressBar } from '@/components/free-reels/ProgressBar';
-import { ReelPreviewCard } from '@/components/free-reels/ReelPreviewCard';
+import { SlideshowPreviewCard } from '@/components/free-slideshow/SlideshowPreviewCard';
 
 async function fetchLead(id: string) {
-  const res = await fetch(`/api/free-reels/${id}`, { cache: 'no-store' });
+  const res = await fetch(`/api/free-slideshow/${id}`, { cache: 'no-store' });
   if (!res.ok) throw new Error('Not found');
   const data = await res.json();
   return data.lead as any;
 }
 
-function sortReels(reels: any[]) {
-  const order = ['v1-9x16', 'v3-9x16', 'v4-9x16'];
-  const idx = (k: string) => {
-    const i = order.indexOf((k || '').toLowerCase());
-    return i >= 0 ? i : 999;
-  };
-  return reels
-    .slice()
-    .sort((a: any, b: any) => idx(a.variantKey) - idx(b.variantKey));
-}
-
-export function FreeReelsLeadClient({ id }: { id: string }) {
+export function FreeSlideshowLeadClient({ id }: { id: string }) {
   const [lead, setLead] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const firedRef = useRef(false);
   const [displayPct, setDisplayPct] = useState(0);
 
-  const completeReels = useMemo(
-    () => (lead?.reels || []).filter((r: any) => r.status === 'COMPLETE'),
+  const completeSlideshows = useMemo(
+    () => (lead?.slideshows || []).filter((r: any) => r.status === 'COMPLETE'),
     [lead]
   );
-  const isComplete = lead?.status === 'COMPLETE' || completeReels.length >= 3;
+  const isComplete =
+    lead?.status === 'COMPLETE' || completeSlideshows.length >= 1;
 
   useEffect(() => {
     let alive = true;
@@ -61,8 +52,7 @@ export function FreeReelsLeadClient({ id }: { id: string }) {
 
   // Smooth, continuous progress between real updates
   useEffect(() => {
-    const stepWidth = 100 / 3;
-    const base = (completeReels.length / 3) * 100;
+    const base = (completeSlideshows.length / 1) * 100;
 
     // If complete, snap to 100% and stop running an interval
     if (isComplete) {
@@ -70,25 +60,23 @@ export function FreeReelsLeadClient({ id }: { id: string }) {
       return;
     }
 
-    const hasInProgress = (lead?.reels || []).some(
+    const hasInProgress = (lead?.slideshows || []).some(
       (r: any) => r.status === 'RENDERING' || r.status === 'QUEUED'
     );
-    const target = Math.min(99, base + (hasInProgress ? stepWidth * 0.85 : 0));
+    const target = Math.min(99, base + (hasInProgress ? 85 : 0));
 
     const iv = setInterval(() => {
       setDisplayPct((prev) => {
-        // Never go below the known base percent
         const anchor = base;
         const dir = target - prev;
         if (Math.abs(dir) < 0.5) return Math.max(anchor, target);
-        // Move toward target smoothly
         const delta = dir > 0 ? Math.min(dir, 0.8) : Math.max(dir, -2);
         const next = Math.max(anchor, prev + delta);
         return next;
       });
     }, 200);
     return () => clearInterval(iv);
-  }, [completeReels.length, isComplete, lead?.reels]);
+  }, [completeSlideshows.length, isComplete, lead?.slideshows]);
 
   useEffect(() => {
     if (isComplete && !firedRef.current) {
@@ -116,10 +104,10 @@ export function FreeReelsLeadClient({ id }: { id: string }) {
         <>
           <div className="space-y-4">
             <h1 className="text-2xl md:text-3xl font-semibold">
-              Generating your reels…
+              Generating your slideshow…
             </h1>
             <p className="text-gray-600">
-              Hang tight while we render your reels. This usually takes 1–3
+              Hang tight while we render your slideshow. This usually takes 1–3
               minutes.
             </p>
             <div className="flex items-center gap-3">
@@ -134,27 +122,33 @@ export function FreeReelsLeadClient({ id }: { id: string }) {
             <PromoSlides />
           </div>
 
-          {/* 3 placeholders for reels (9x16) */}
-          <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="aspect-[9/16] rounded-md reel-skel" />
-            <div className="aspect-[9/16] rounded-md reel-skel" />
-            <div className="aspect-[9/16] rounded-md reel-skel" />
+          {/* Placeholder for slideshow (16:9) */}
+          <div className="mt-6 grid grid-cols-1 gap-3">
+            <div className="aspect-[16/9] rounded-md reel-skel" />
           </div>
         </>
       ) : (
         <div className="space-y-4">
           <h1 className="text-2xl md:text-3xl font-semibold">
-            🎉 Your Reels Are Ready!
+            🎉 Your Slideshow is Ready!
           </h1>
           <p className="text-gray-700">
-            Download your reels below. Share them on Instagram, Facebook, and
-            TikTok.
+            Your Slideshow has been generated and is ready to download or share.
+            <br />
+            Here&apos;s what you can do next:
+            <br />
+            • ✅ Preview &amp; Download your slideshow below.
+            <br />
+            • 🚀 Share it directly on your social media channels.
+            <br />
+            • 💡 Want more? Order a full media package and get 9 reels, 3
+            flyers, and 3 property websites—free with every shoot!
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {sortReels(lead?.reels || [])
+          <div className="grid grid-cols-1 gap-3">
+            {(lead?.slideshows || [])
               .filter((r: any) => r.status === 'COMPLETE')
-              .map((r: any) => (
-                <ReelPreviewCard key={r.id} reel={r} fallbackImage={lead?.images?.[0]?.url} />
+              .map((s: any) => (
+                <SlideshowPreviewCard key={s.id} slideshow={s} fallbackImage={lead?.images?.[0]?.url} />
               ))}
           </div>
           <div className="pt-2">

@@ -20,8 +20,10 @@ function statusColor(s: string) {
 }
 
 function variantLabel(v: string) {
-  // New template labels
+  // Horizontal slideshows
   if (v === 'h1-16x9') return 'H1: Horizontal 1 Slideshow (16x9)';
+  if (v === 'h2-16x9') return 'H2: Horizontal 2 Slideshow (16x9)';
+  // Vertical reels
   if (v === 'v1-9x16') return 'Vertical Reel 1 - Just Listed';
   if (v === 'v2-9x16') return 'Vertical Reel 2 - For Sale';
   if (v === 'v3-9x16') return 'Vertical Reel 3 - For Sale';

@@ -1,0 +1,42 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/db/prisma';
+import { getPresignedUploadUrlForPath, isS3Available } from '@/lib/utils/s3';
+
+export const dynamic = 'force-dynamic';
+
+function isAllowedImageType(t?: string) {
+  const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+  return !!t && allowed.includes(t.toLowerCase());
+}
+
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    const body = await req.json().catch(() => ({}));
+    const category = String(body.category || '').toLowerCase();
+    const fileName = String(body.fileName || 'upload.jpg');
+    const fileType = String(body.fileType || 'image/jpeg');
+
+    if (!isS3Available()) return NextResponse.json({ error: 'S3 not configured' }, { status: 400 });
+
+    const lead = await prisma.freeSlideshowLead.findUnique({ where: { id }, select: { id: true, status: true } });
+    if (!lead) return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
+
+    if (!isAllowedImageType(fileType)) {
+      return NextResponse.json({ error: 'Invalid file type' }, { status: 400 });
+    }
+
+    let basePath: string;
+    if (category === 'headshot') basePath = `free-slideshow/${id}/headshot`;
+    else if (category === 'logo') basePath = `free-slideshow/${id}/logo`;
+    else basePath = `free-slideshow/${id}/images`;
+
+    const { uploadUrl, fileKey, fileUrl } = await getPresignedUploadUrlForPath(basePath, fileName, fileType);
+
+    return NextResponse.json({ uploadUrl, fileKey, fileUrl });
+  } catch (e) {
+    console.error('free-slideshow presigned-url failed', e);
+    return NextResponse.json({ error: 'Failed to get presigned URL' }, { status: 500 });
+  }
+}
+

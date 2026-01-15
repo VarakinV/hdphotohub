@@ -17,7 +17,8 @@ import {
   Tag,
   Clapperboard,
   FileText,
-  QrCode,
+	  QrCode,
+	  Film,
 } from 'lucide-react';
 
 const items = [
@@ -51,6 +52,11 @@ const items = [
     label: 'Free QR Orders',
     Icon: QrCode,
   },
+	  {
+	    href: '/admin/free-slideshow-orders',
+	    label: 'Free Slideshow Orders',
+	    Icon: Film,
+	  },
 ];
 
 export default function AdminNavCard() {

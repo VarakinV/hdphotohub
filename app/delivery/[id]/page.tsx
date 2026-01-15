@@ -10,6 +10,7 @@ import { headers } from 'next/headers';
 import { PhotosZipDownloader } from '@/components/delivery/PhotosZipDownloader';
 import { DownloadLinkButton } from '@/components/delivery/DownloadLinkButton';
 import { PhotoLightbox } from '@/components/delivery/PhotoLightbox';
+import { VideoWithPoster } from '@/components/delivery/VideoWithPoster';
 
 async function getOrder(id: string) {
   const order = await prisma.order.findFirst({
@@ -225,8 +226,8 @@ export default async function DeliveryPage({
           </section>
         )}
 
-        {/* Reels */}
-        {!!order.reels?.filter((r: any) => r.status === 'COMPLETE').length && (
+        {/* Reels (vertical only) */}
+        {!!order.reels?.filter((r: any) => r.status === 'COMPLETE' && (r.variantKey || '').toLowerCase().startsWith('v')).length && (
           <section id="reels" className="space-y-3 scroll-mt-24">
             <div className="space-y-2">
               <h2 className="text-2xl md:text-3xl font-semibold">
@@ -263,22 +264,19 @@ export default async function DeliveryPage({
                   return i >= 0 ? i : 999;
                 };
                 const reelsSorted = order.reels
-                  .filter((r: any) => r.status === 'COMPLETE')
+                  .filter((r: any) => r.status === 'COMPLETE' && (r.variantKey || '').toLowerCase().startsWith('v'))
                   .slice()
                   .sort(
                     (a: any, b: any) => idx(a.variantKey) - idx(b.variantKey)
                   );
                 return reelsSorted.map((r: any) => (
                   <div key={r.id} className="border rounded-md overflow-hidden">
-                    <div className="aspect-[9/16] bg-black/5">
-                      <video
-                        controls
-                        className="w-full h-full object-cover"
-                        poster={r.thumbnail || heroUrl || undefined}
-                      >
-                        <source src={r.url} type="video/mp4" />
-                      </video>
-                    </div>
+                    <VideoWithPoster
+                      src={r.url}
+                      poster={r.thumbnail}
+                      fallbackImage={heroUrl}
+                      aspectRatio="9/16"
+                    />
                     <div className="px-2 pt-2 text-xs text-gray-600 flex items-center justify-between">
                       <span className="truncate">
                         {labelMap[(r.variantKey || '').toLowerCase()] ||
@@ -295,6 +293,65 @@ export default async function DeliveryPage({
                         url={r.url}
                         label="Download"
                         fileName={`reel-${r.variantKey}.mp4`}
+                      />
+                    </div>
+                  </div>
+                ));
+              })()}
+            </div>
+          </section>
+        )}
+
+        {/* Slideshows (horizontal) */}
+        {!!order.reels?.filter((r: any) => r.status === 'COMPLETE' && (r.variantKey || '').toLowerCase().startsWith('h')).length && (
+          <section id="slideshows" className="space-y-3 scroll-mt-24">
+            <div className="space-y-2">
+              <h2 className="text-2xl md:text-3xl font-semibold">
+                Slideshows
+              </h2>
+              <div className="h-px bg-gray-200/80" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {(() => {
+                const orderKeys = ['h1-16x9', 'h2-16x9'];
+                const labelMap: Record<string, string> = {
+                  'h1-16x9': 'Slideshow 1 - Property Showcase',
+                  'h2-16x9': 'Slideshow 2 - Property Showcase',
+                };
+                const idx = (k: string) => {
+                  const i = orderKeys.indexOf((k || '').toLowerCase());
+                  return i >= 0 ? i : 999;
+                };
+                const slideshowsSorted = order.reels
+                  .filter((r: any) => r.status === 'COMPLETE' && (r.variantKey || '').toLowerCase().startsWith('h'))
+                  .slice()
+                  .sort(
+                    (a: any, b: any) => idx(a.variantKey) - idx(b.variantKey)
+                  );
+                return slideshowsSorted.map((r: any) => (
+                  <div key={r.id} className="border rounded-md overflow-hidden">
+                    <VideoWithPoster
+                      src={r.url}
+                      poster={r.thumbnail}
+                      fallbackImage={heroUrl}
+                      aspectRatio="16/9"
+                    />
+                    <div className="px-2 pt-2 text-xs text-gray-600 flex items-center justify-between">
+                      <span className="truncate">
+                        {labelMap[(r.variantKey || '').toLowerCase()] ||
+                          (r.variantKey || '').toUpperCase()}
+                      </span>
+                      {r.width && r.height && (
+                        <span className="ml-2 whitespace-nowrap">
+                          {r.width}×{r.height}
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-2 text-center">
+                      <DownloadLinkButton
+                        url={r.url}
+                        label="Download"
+                        fileName={`slideshow-${r.variantKey}.mp4`}
                       />
                     </div>
                   </div>

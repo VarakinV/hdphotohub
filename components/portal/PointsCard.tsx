@@ -62,10 +62,10 @@ export default function PointsCard({ points }: PointsCardProps) {
   const rewards = useMemo(
     () => [
       { label: 'Drone Photos', pts: 12500, Icon: Drone },
-      { label: 'Social Media Reel (video)', pts: 15000, Icon: Clapperboard },
+      { label: 'Social Media Reel (video)', pts: 20000, Icon: Clapperboard },
       { label: 'Virtual Staging (1 photo)', pts: 3500, Icon: ImageIcon },
       { label: 'Virtual Staging (3 photos)', pts: 10000, Icon: ImageIcon },
-      { label: 'Virtual Twilight (1 photo)', pts: 2500, Icon: Sun },
+      { label: 'Virtual Twilight (1 photo)', pts: 3500, Icon: Sun },
       { label: 'Detailed Shots (3–4 images)', pts: 3500, Icon: Camera },
     ],
     []

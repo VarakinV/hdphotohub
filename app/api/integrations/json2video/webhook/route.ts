@@ -59,94 +59,132 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Persist to S3 if URL points to JSON2Video CDN
-    if (status === 'COMPLETE' && resolved.url && isS3Available()) {
-      try {
-        const u = new URL(resolved.url);
-        const isJ2V = u.hostname.includes('json2video');
-        if (isJ2V) {
-          // Try OrderReel first
-          const reel = await prisma.orderReel.findFirst({ where: { renderId: evt.renderId, provider: 'j2v' }, select: { id: true, orderId: true, variantKey: true } });
-          if (reel) {
-            const basePath = `orders/${reel.orderId}/reels/videos`;
-            const safeVar = (reel.variantKey || 'reel').replace(/[^A-Za-z0-9_-]/g, '_');
-            const name = `${safeVar}-${evt.renderId.slice(0, 8)}.mp4`;
-            const resp = await fetch(resolved.url);
-            if (resp.ok) {
-              const ab = await resp.arrayBuffer();
-              const buf = Buffer.from(ab);
-              const { fileUrl } = await uploadBufferToS3WithPath(basePath, name, buf, 'video/mp4');
-              resolved.url = fileUrl;
-            }
-          } else {
-            // Fallback to FreeReel
-            const free = await prisma.freeReel.findFirst({ where: { renderId: evt.renderId, provider: 'j2v' }, select: { id: true, leadId: true, variantKey: true } });
-            if (free) {
-              const basePath = `free-reels/${free.leadId}/videos`;
-              const safeVar = (free.variantKey || 'reel').replace(/[^A-Za-z0-9_-]/g, '_');
-              const name = `${safeVar}-${evt.renderId.slice(0, 8)}.mp4`;
-              const resp = await fetch(resolved.url);
-              if (resp.ok) {
-                const ab = await resp.arrayBuffer();
-                const buf = Buffer.from(ab);
-                const { fileUrl } = await uploadBufferToS3WithPath(basePath, name, buf, 'video/mp4');
-                resolved.url = fileUrl;
-              }
-            }
-          }
-        }
-      } catch (e) {
-        console.warn('J2V Video S3 copy failed (webhook)', { renderId: evt.renderId, e });
-      }
-    }
+	    // Persist to S3 if URL points to JSON2Video CDN
+	    if (status === 'COMPLETE' && resolved.url && isS3Available()) {
+	      try {
+	        const u = new URL(resolved.url);
+	        const isJ2V = u.hostname.includes('json2video');
+	        if (isJ2V) {
+	          // Try OrderReel first
+	          const reel = await prisma.orderReel.findFirst({ where: { renderId: evt.renderId, provider: 'j2v' }, select: { id: true, orderId: true, variantKey: true } });
+	          if (reel) {
+	            const basePath = `orders/${reel.orderId}/reels/videos`;
+	            const safeVar = (reel.variantKey || 'reel').replace(/[^A-Za-z0-9_-]/g, '_');
+	            const name = `${safeVar}-${evt.renderId.slice(0, 8)}.mp4`;
+	            const resp = await fetch(resolved.url);
+	            if (resp.ok) {
+	              const ab = await resp.arrayBuffer();
+	              const buf = Buffer.from(ab);
+	              const { fileUrl } = await uploadBufferToS3WithPath(basePath, name, buf, 'video/mp4');
+	              resolved.url = fileUrl;
+	            }
+	          } else {
+	            // Fallback to FreeReel or FreeSlideshow
+	            const free = await prisma.freeReel.findFirst({ where: { renderId: evt.renderId, provider: 'j2v' }, select: { id: true, leadId: true, variantKey: true } });
+	            if (free) {
+	              const basePath = `free-reels/${free.leadId}/videos`;
+	              const safeVar = (free.variantKey || 'reel').replace(/[^A-Za-z0-9_-]/g, '_');
+	              const name = `${safeVar}-${evt.renderId.slice(0, 8)}.mp4`;
+	              const resp = await fetch(resolved.url);
+	              if (resp.ok) {
+	                const ab = await resp.arrayBuffer();
+	                const buf = Buffer.from(ab);
+	                const { fileUrl } = await uploadBufferToS3WithPath(basePath, name, buf, 'video/mp4');
+	                resolved.url = fileUrl;
+	              }
+	            } else {
+	              const fs = await prisma.freeSlideshow.findFirst({ where: { renderId: evt.renderId, provider: 'j2v' }, select: { id: true, leadId: true, variantKey: true } });
+	              if (fs) {
+	                const basePath = `free-slideshow/${fs.leadId}/videos`;
+	                const safeVar = (fs.variantKey || 'slideshow').replace(/[^A-Za-z0-9_-]/g, '_');
+	                const name = `${safeVar}-${evt.renderId.slice(0, 8)}.mp4`;
+	                const resp = await fetch(resolved.url);
+	                if (resp.ok) {
+	                  const ab = await resp.arrayBuffer();
+	                  const buf = Buffer.from(ab);
+	                  const { fileUrl } = await uploadBufferToS3WithPath(basePath, name, buf, 'video/mp4');
+	                  resolved.url = fileUrl;
+	                }
+	              }
+	            }
+	          }
+	        }
+	      } catch (e) {
+	        console.warn('J2V Video S3 copy failed (webhook)', { renderId: evt.renderId, e });
+	      }
+	    }
 
-    // Generate poster if missing
-    if (status === 'COMPLETE' && resolved.url) {
-      try {
-        // Order reels
-        const reel = await prisma.orderReel.findFirst({ where: { renderId: evt.renderId, provider: 'j2v' }, select: { id: true, orderId: true, variantKey: true, thumbnail: true } });
-        if (reel && !reel.thumbnail && isS3Available()) {
-          const buf = await extractPosterFromVideoUrl(resolved.url);
-          if (buf && buf.length > 0) {
-            const basePath = `orders/${reel.orderId}/reels/posters`;
-            const safeVar = (reel.variantKey || 'reel').replace(/[^A-Za-z0-9_-]/g, '_');
-            const name = `${safeVar}-${evt.renderId.slice(0, 8)}.jpg`;
-            const { fileUrl } = await uploadBufferToS3WithPath(basePath, name, buf, 'image/jpeg');
-            await prisma.orderReel.update({ where: { id: reel.id }, data: { thumbnail: fileUrl } });
-          }
-        }
-        // Free reels
-        const free = await prisma.freeReel.findFirst({ where: { renderId: evt.renderId, provider: 'j2v' }, select: { id: true, leadId: true, variantKey: true, thumbnail: true } });
-        if (free && !free.thumbnail && isS3Available()) {
-          const buf = await extractPosterFromVideoUrl(resolved.url);
-          if (buf && buf.length > 0) {
-            const basePath = `free-reels/${free.leadId}/posters`;
-            const safeVar = (free.variantKey || 'reel').replace(/[^A-Za-z0-9_-]/g, '_');
-            const name = `${safeVar}-${evt.renderId.slice(0, 8)}.jpg`;
-            const { fileUrl } = await uploadBufferToS3WithPath(basePath, name, buf, 'image/jpeg');
-            await prisma.freeReel.update({ where: { id: free.id }, data: { thumbnail: fileUrl } });
-          }
-        }
-      } catch (e) {
-        console.warn('J2V Poster generation failed', { renderId: evt.renderId, e });
-      }
-    }
-
-    const updatedOrder = await prisma.orderReel.updateMany({ where: { renderId: evt.renderId, provider: 'j2v' }, data: { status, url: resolved.url ?? undefined, width: resolved.width ?? undefined, height: resolved.height ?? undefined, error: status === 'FAILED' ? 'Render failed' : undefined } });
-    const updatedFree = await prisma.freeReel.updateMany({ where: { renderId: evt.renderId, provider: 'j2v' }, data: { status, url: resolved.url ?? undefined, width: resolved.width ?? undefined, height: resolved.height ?? undefined, error: status === 'FAILED' ? 'Render failed' : undefined } });
-
-    // If a free reel became COMPLETE, check if all for that lead are done
-    if (status === 'COMPLETE' && updatedFree.count > 0) {
-      const fr = await prisma.freeReel.findFirst({ where: { renderId: evt.renderId, provider: 'j2v' }, select: { leadId: true } });
-      if (fr) {
-        const remaining = await prisma.freeReel.count({ where: { leadId: fr.leadId, status: { in: ['QUEUED', 'RENDERING'] } } });
-        if (remaining === 0) {
-          await prisma.freeReelsLead.update({ where: { id: fr.leadId }, data: { status: 'COMPLETE' } });
-        }
-      }
-    }
-
-    return NextResponse.json({ ok: true, matched: updatedOrder.count + updatedFree.count, renderId: evt.renderId, status, hasUrl: !!resolved.url });
+	    // Generate poster if missing
+	    if (status === 'COMPLETE' && resolved.url) {
+	      try {
+	        // Order reels
+	        const reel = await prisma.orderReel.findFirst({ where: { renderId: evt.renderId, provider: 'j2v' }, select: { id: true, orderId: true, variantKey: true, thumbnail: true } });
+	        if (reel && !reel.thumbnail && isS3Available()) {
+	          const buf = await extractPosterFromVideoUrl(resolved.url);
+	          if (buf && buf.length > 0) {
+	            const basePath = `orders/${reel.orderId}/reels/posters`;
+	            const safeVar = (reel.variantKey || 'reel').replace(/[^A-Za-z0-9_-]/g, '_');
+	            const name = `${safeVar}-${evt.renderId.slice(0, 8)}.jpg`;
+	            const { fileUrl } = await uploadBufferToS3WithPath(basePath, name, buf, 'image/jpeg');
+	            await prisma.orderReel.update({ where: { id: reel.id }, data: { thumbnail: fileUrl } });
+	          }
+	        }
+	        // Free reels
+	        const free = await prisma.freeReel.findFirst({ where: { renderId: evt.renderId, provider: 'j2v' }, select: { id: true, leadId: true, variantKey: true, thumbnail: true } });
+	        if (free && !free.thumbnail && isS3Available()) {
+	          const buf = await extractPosterFromVideoUrl(resolved.url);
+	          if (buf && buf.length > 0) {
+	            const basePath = `free-reels/${free.leadId}/posters`;
+	            const safeVar = (free.variantKey || 'reel').replace(/[^A-Za-z0-9_-]/g, '_');
+	            const name = `${safeVar}-${evt.renderId.slice(0, 8)}.jpg`;
+	            const { fileUrl } = await uploadBufferToS3WithPath(basePath, name, buf, 'image/jpeg');
+	            await prisma.freeReel.update({ where: { id: free.id }, data: { thumbnail: fileUrl } });
+	          }
+	        }
+	        // Free slideshows
+	        const fs = await prisma.freeSlideshow.findFirst({ where: { renderId: evt.renderId, provider: 'j2v' }, select: { id: true, leadId: true, variantKey: true, thumbnail: true } });
+	        if (fs && !fs.thumbnail && isS3Available()) {
+	          const buf = await extractPosterFromVideoUrl(resolved.url);
+	          if (buf && buf.length > 0) {
+	            const basePath = `free-slideshow/${fs.leadId}/posters`;
+	            const safeVar = (fs.variantKey || 'slideshow').replace(/[^A-Za-z0-9_-]/g, '_');
+	            const name = `${safeVar}-${evt.renderId.slice(0, 8)}.jpg`;
+	            const { fileUrl } = await uploadBufferToS3WithPath(basePath, name, buf, 'image/jpeg');
+	            await prisma.freeSlideshow.update({ where: { id: fs.id }, data: { thumbnail: fileUrl } });
+	          }
+	        }
+	      } catch (e) {
+	        console.warn('J2V Poster generation failed', { renderId: evt.renderId, e });
+	      }
+	    }
+	
+	    const updatedOrder = await prisma.orderReel.updateMany({ where: { renderId: evt.renderId, provider: 'j2v' }, data: { status, url: resolved.url ?? undefined, width: resolved.width ?? undefined, height: resolved.height ?? undefined, error: status === 'FAILED' ? 'Render failed' : undefined } });
+	    const updatedFree = await prisma.freeReel.updateMany({ where: { renderId: evt.renderId, provider: 'j2v' }, data: { status, url: resolved.url ?? undefined, width: resolved.width ?? undefined, height: resolved.height ?? undefined, error: status === 'FAILED' ? 'Render failed' : undefined } });
+	    const updatedFreeSlideshow = await prisma.freeSlideshow.updateMany({ where: { renderId: evt.renderId, provider: 'j2v' }, data: { status, url: resolved.url ?? undefined, width: resolved.width ?? undefined, height: resolved.height ?? undefined, error: status === 'FAILED' ? 'Render failed' : undefined } });
+	
+	    // If a free reel became COMPLETE, check if all for that lead are done
+	    if (status === 'COMPLETE' && updatedFree.count > 0) {
+	      const fr = await prisma.freeReel.findFirst({ where: { renderId: evt.renderId, provider: 'j2v' }, select: { leadId: true } });
+	      if (fr) {
+	        const remaining = await prisma.freeReel.count({ where: { leadId: fr.leadId, status: { in: ['QUEUED', 'RENDERING'] } } });
+	        if (remaining === 0) {
+	          await prisma.freeReelsLead.update({ where: { id: fr.leadId }, data: { status: 'COMPLETE' } });
+	        }
+	      }
+	    }
+	
+	    // If a free slideshow became COMPLETE, check if all for that lead are done
+	    if (status === 'COMPLETE' && updatedFreeSlideshow.count > 0) {
+	      const fs = await prisma.freeSlideshow.findFirst({ where: { renderId: evt.renderId, provider: 'j2v' }, select: { leadId: true } });
+	      if (fs) {
+	        const remaining = await prisma.freeSlideshow.count({ where: { leadId: fs.leadId, status: { in: ['QUEUED', 'RENDERING'] } } });
+	        if (remaining === 0) {
+	          await prisma.freeSlideshowLead.update({ where: { id: fs.leadId }, data: { status: 'COMPLETE' } });
+	        }
+	      }
+	    }
+	
+	    return NextResponse.json({ ok: true, matched: updatedOrder.count + updatedFree.count + updatedFreeSlideshow.count, renderId: evt.renderId, status, hasUrl: !!resolved.url });
   } catch (e) {
     console.error('J2V webhook error:', e);
     return NextResponse.json({ error: 'Webhook handling failed' }, { status: 500 });

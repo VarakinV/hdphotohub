@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth/auth';
 import { prisma } from '@/lib/db/prisma';
 import { ShotstackProvider } from '@/lib/video/shotstack-provider';
 import { J2VProvider } from '@/lib/video/j2v-provider';
+import { formatPhoneNumber } from '@/lib/utils';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string; reelId: string }> }) {
   try {
@@ -96,7 +97,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       ...images.slice(0, 6).map((url, i) => ({ find: `IMAGE_${i + 1}`, replace: url })),
       { find: 'AGENT_PICTURE', replace: rinfo?.headshot || '' },
       { find: 'AGENT_NAME', replace: `${rinfo?.firstName || ''} ${rinfo?.lastName || ''}`.trim() },
-      { find: 'AGENT_PHONE', replace: rinfo?.phone || '' },
+      { find: 'AGENT_PHONE', replace: formatPhoneNumber(rinfo?.phone) },
       { find: 'AGENCY_LOGO', replace: rinfo?.companyLogo || '' },
     ];
 
@@ -106,6 +107,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const templateV2S = (process.env.SHOTSTACK_TEMPLATE_ID_V2 || '').trim();
 
       const templateH1J = (process.env.JSON2VIDEO_TEMPLATE_ID_H1 || '').trim();
+      const templateH2J = (process.env.JSON2VIDEO_TEMPLATE_ID_H2 || '').trim();
       const templateV1J = (process.env.JSON2VIDEO_TEMPLATE_ID_V1 || '').trim();
       const templateV2J = (process.env.JSON2VIDEO_TEMPLATE_ID_V2 || '').trim();
       const templateV3J = (process.env.JSON2VIDEO_TEMPLATE_ID_V3 || '').trim();
@@ -118,6 +120,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
       const tid = isJ2V
         ? (reel.variantKey === 'h1-16x9' ? templateH1J :
+           reel.variantKey === 'h2-16x9' ? templateH2J :
            reel.variantKey === 'v1-9x16' ? templateV1J :
            reel.variantKey === 'v2-9x16' ? templateV2J :
            reel.variantKey === 'v3-9x16' ? templateV3J :

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/auth';
 import { prisma } from '@/lib/db/prisma';
 import { J2VProvider } from '@/lib/video/j2v-provider';
+import { formatPhoneNumber } from '@/lib/utils';
 
 function dimsForVariant(variant: string): { width: number; height: number } {
   switch (variant) {
@@ -16,7 +17,7 @@ function dimsForVariant(variant: string): { width: number; height: number } {
     case 'v9-9x16':
       return { width: 1080, height: 1920 };
     case 'h1-16x9':
-    case 'v2-16x9':
+    case 'h2-16x9':
     default:
       return { width: 1920, height: 1080 };
   }
@@ -60,13 +61,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (!order.propertyAddress && !order.propertyFormattedAddress) missing.push('Property address');
     if (missing.length) return NextResponse.json({ error: 'Missing fields', missing }, { status: 400 });
 
-    // Guard: cap total reels per order
+    // Guard: cap total reels per order (9 vertical + 2 horizontal = 11, allow some buffer)
     const existingCount = await prisma.orderReel.count({ where: { orderId: id } });
-    if (existingCount >= 12) return NextResponse.json({ error: 'Max reels reached' }, { status: 400 });
+    if (existingCount >= 15) return NextResponse.json({ error: 'Max reels reached' }, { status: 400 });
 
     const VARIANTS: Array<{ key: string; templateId?: string }> = [];
 
     const templateH1 = (process.env.JSON2VIDEO_TEMPLATE_ID_H1 || '').trim(); // 1920x1080
+    const templateH2 = (process.env.JSON2VIDEO_TEMPLATE_ID_H2 || '').trim(); // 1920x1080
     const templateV1 = (process.env.JSON2VIDEO_TEMPLATE_ID_V1 || '').trim(); // 1080x1920
     const templateV2 = (process.env.JSON2VIDEO_TEMPLATE_ID_V2 || '').trim(); // 1080x1920
     const templateV3 = (process.env.JSON2VIDEO_TEMPLATE_ID_V3 || '').trim(); // 1080x1920
@@ -77,7 +79,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const templateV8 = (process.env.JSON2VIDEO_TEMPLATE_ID_V8 || '').trim(); // 1080x1920
     const templateV9 = (process.env.JSON2VIDEO_TEMPLATE_ID_V9 || '').trim(); // 1080x1920
 
-    if (templateH1) VARIANTS.push({ key: 'h1-16x9', templateId: templateH1 });
+    // Add vertical reels first
     if (templateV1) VARIANTS.push({ key: 'v1-9x16', templateId: templateV1 });
     if (templateV2) VARIANTS.push({ key: 'v2-9x16', templateId: templateV2 });
     if (templateV3) VARIANTS.push({ key: 'v3-9x16', templateId: templateV3 });
@@ -87,12 +89,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (templateV7) VARIANTS.push({ key: 'v7-9x16', templateId: templateV7 });
     if (templateV8) VARIANTS.push({ key: 'v8-9x16', templateId: templateV8 });
     if (templateV9) VARIANTS.push({ key: 'v9-9x16', templateId: templateV9 });
+    // Add horizontal slideshows
+    if (templateH1) VARIANTS.push({ key: 'h1-16x9', templateId: templateH1 });
+    if (templateH2) VARIANTS.push({ key: 'h2-16x9', templateId: templateH2 });
 
     if (VARIANTS.length === 0) {
       return NextResponse.json({ error: 'No JSON2Video template IDs configured' }, { status: 400 });
     }
 
-    const toCreate = VARIANTS.slice(0, Math.min(VARIANTS.length, 12 - existingCount)).map((v) => ({
+    const toCreate = VARIANTS.slice(0, Math.min(VARIANTS.length, 15 - existingCount)).map((v) => ({
       orderId: id,
       variantKey: v.key,
       provider: 'j2v',
@@ -155,7 +160,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       ...images.slice(0, 6).map((url, i) => ({ find: `IMAGE_${i + 1}`, replace: url })),
       { find: 'AGENT_PICTURE', replace: rinfo?.headshot || '' },
       { find: 'AGENT_NAME', replace: `${rinfo?.firstName || ''} ${rinfo?.lastName || ''}`.trim() },
-      { find: 'AGENT_PHONE', replace: rinfo?.phone || '' },
+      { find: 'AGENT_PHONE', replace: formatPhoneNumber(rinfo?.phone) },
       { find: 'AGENCY_LOGO', replace: rinfo?.companyLogo || '' },
     ];
 

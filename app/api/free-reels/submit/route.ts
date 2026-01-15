@@ -4,6 +4,7 @@ import { J2VProvider } from '@/lib/video/j2v-provider';
 import { upsertContact, addTags } from '@/lib/ghl';
 import { randomUUID } from 'crypto';
 import { verifyRecaptchaServer } from '@/lib/recaptcha/verify';
+import { formatPhoneNumber } from '@/lib/utils';
 
 
 function dimsForVariant(variant: string): { width: number; height: number } {
@@ -129,7 +130,7 @@ export async function POST(req: NextRequest) {
       ...images.slice(0, 6).map((url: string, i: number) => ({ find: `IMAGE_${i + 1}`, replace: url })),
       { find: 'AGENT_PICTURE', replace: headshotUrl || '' },
       { find: 'AGENT_NAME', replace: `${firstName} ${lastName}`.trim() },
-      { find: 'AGENT_PHONE', replace: phone || '' },
+      { find: 'AGENT_PHONE', replace: formatPhoneNumber(phone) },
       { find: 'AGENCY_LOGO', replace: agencyLogoUrl || '' },
     ];
 

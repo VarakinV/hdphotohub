@@ -696,7 +696,71 @@ model FreeFlyer {
   @@index([leadId, status])
 }
 
-// Free QR funnel models
+	// Free Slideshow funnel models
+	model FreeSlideshowLead {
+	  id        String  @id @default(cuid())
+	  firstName String
+	  lastName  String
+	  email     String
+	  phone     String?
+
+	  // Property details
+	  propertyAddress    String
+	  propertyCity       String?
+	  propertyPostalCode String?
+	  bedrooms           String?
+	  bathrooms          String?
+	  sizeSqFt           String?
+
+	  // Assets
+	  headshotUrl   String?
+	  agencyLogoUrl String?
+
+	  // Status & integrations
+	  status       FreeLeadStatus @default(DRAFT)
+	  ghlContactId String?
+
+	  // Relations
+	  images     FreeSlideshowSourceImage[]
+	  slideshows FreeSlideshow[]
+
+	  createdAt DateTime @default(now())
+	  updatedAt DateTime @updatedAt
+	}
+
+	model FreeSlideshowSourceImage {
+	  id        String             @id @default(cuid())
+	  leadId    String
+	  lead      FreeSlideshowLead  @relation(fields: [leadId], references: [id])
+	  url       String
+	  filename  String?
+	  sortOrder Int                @default(0)
+	  createdAt DateTime           @default(now())
+
+	  @@index([leadId, sortOrder])
+	}
+
+	model FreeSlideshow {
+	  id         String             @id @default(cuid())
+	  leadId     String
+	  lead       FreeSlideshowLead  @relation(fields: [leadId], references: [id])
+	  variantKey String
+	  provider   String
+	  renderId   String
+	  status     ReelStatus
+	  url        String?
+	  thumbnail  String?
+	  width      Int?
+	  height     Int?
+	  error      String?
+	  createdAt  DateTime           @default(now())
+	  updatedAt  DateTime           @updatedAt
+
+	  @@unique([provider, renderId])
+	  @@index([leadId, status])
+	}
+	
+	// Free QR funnel models
 model FreeQrLead {
   id        String  @id @default(cuid())
   firstName String?
