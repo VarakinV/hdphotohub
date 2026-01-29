@@ -74,6 +74,7 @@ export async function POST(req: NextRequest) {
       { find: 'POSTCODE', replace: propertyPostalCode || '' },
       { find: 'BEDROOMS', replace: String(bedrooms || '') },
       { find: 'BATHROOMS', replace: String(bathrooms || '') },
+      { find: 'SQFT', replace: String(sizeSqFt || '') },
       ...images.slice(0, 6).map((url: string, i: number) => ({ find: `IMAGE_${i + 1}`, replace: url })),
       { find: 'AGENT_PICTURE', replace: headshotUrl || '' },
       { find: 'AGENT_NAME', replace: `${firstName || ''} ${lastName || ''}`.trim() },

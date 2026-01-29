@@ -157,6 +157,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       { find: 'POSTCODE', replace: postal || '' },
       { find: 'BEDROOMS', replace: String(order.bedrooms || '') },
       { find: 'BATHROOMS', replace: String(order.bathrooms || '') },
+      { find: 'SQFT', replace: String(order.propertySize || '') },
       ...images.slice(0, 6).map((url, i) => ({ find: `IMAGE_${i + 1}`, replace: url })),
       { find: 'AGENT_PICTURE', replace: rinfo?.headshot || '' },
       { find: 'AGENT_NAME', replace: `${rinfo?.firstName || ''} ${rinfo?.lastName || ''}`.trim() },
