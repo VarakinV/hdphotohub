@@ -80,6 +80,41 @@ const steps = [
   },
 ];
 
+const faqs = [
+  {
+    question: 'Are these real estate marketing tools really free?',
+    answer: 'Yes. All tools on this page are completely free to use. There are no subscriptions, trials, or hidden fees.',
+  },
+  {
+    question: 'Do I need design or video editing experience?',
+    answer: 'No. All tools are designed for realtors with no design or technical experience. Simply upload your photos, enter basic details, and generate your marketing assets.',
+  },
+  {
+    question: "Can I use these tools even if I don't order photography from Photos 4 Real Estate?",
+    answer: "Absolutely. These tools are available to all realtors, whether or not you're an existing client.",
+  },
+  {
+    question: 'Are the generated assets suitable for MLS and social media?',
+    answer: 'Yes. All outputs are designed specifically for real estate marketing, including social media platforms, email marketing, print materials, and property websites.',
+  },
+  {
+    question: 'Can I use the content for paid ads?',
+    answer: 'Yes. You may use the generated videos, flyers, and QR codes for organic marketing or paid advertising.',
+  },
+  {
+    question: 'Are there usage limits?',
+    answer: 'Currently, there are no strict usage limits. You can generate content as needed for your listings.',
+  },
+  {
+    question: 'Will more free tools be added?',
+    answer: 'Yes. We are continuously expanding the free tools section with new features and tools designed for real estate marketing.',
+  },
+  {
+    question: 'Do the tools work on mobile devices?',
+    answer: 'Yes. All tools are web-based and can be accessed from desktop, tablet, and mobile devices.',
+  },
+];
+
 export default function FreeToolsPage() {
   return (
     <main className="min-h-screen bg-white text-gray-900">
@@ -152,6 +187,23 @@ export default function FreeToolsPage() {
                 </div>
                 <h3 className="text-lg font-semibold mb-2">{step.title}</h3>
                 <p className="text-gray-600 text-sm">{step.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12">
+            FAQ — Free Real Estate Marketing Tools
+          </h2>
+          <div className="space-y-6">
+            {faqs.map((faq, index) => (
+              <div key={index} className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">{faq.question}</h3>
+                <p className="text-gray-600">{faq.answer}</p>
               </div>
             ))}
           </div>
@@ -272,8 +324,34 @@ export default function FreeToolsPage() {
             </p>
           </div>
 
-          <div className="mt-8 text-center text-xs text-gray-500">
-            © {new Date().getFullYear()} Photos4RealEstate. All rights reserved.
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 text-xs text-gray-500">
+            <span>© {new Date().getFullYear()} Photos4RealEstate. All rights reserved.</span>
+            <div className="flex items-center gap-4">
+              <a
+                href="https://photos4realestate.ca/terms-and-conditions/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-white transition-colors"
+              >
+                Terms
+              </a>
+              <a
+                href="https://photos4realestate.ca/privacy-policy/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-white transition-colors"
+              >
+                Privacy
+              </a>
+              <a
+                href="https://photos4realestate.ca/contact-us/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-white transition-colors"
+              >
+                Contact
+              </a>
+            </div>
           </div>
         </div>
       </footer>
