@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Film, Presentation, FileText, QrCode } from 'lucide-react';
 import { FreeToolsHero } from '@/components/landing/FreeToolsHero';
+import { FaqAccordion } from '@/components/landing/FaqAccordion';
 
 export const metadata: Metadata = {
   title: 'Free Real Estate Marketing Tools | Photos4RealEstate',
@@ -199,14 +200,7 @@ export default function FreeToolsPage() {
           <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12">
             FAQ — Free Real Estate Marketing Tools
           </h2>
-          <div className="space-y-6">
-            {faqs.map((faq, index) => (
-              <div key={index} className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{faq.question}</h3>
-                <p className="text-gray-600">{faq.answer}</p>
-              </div>
-            ))}
-          </div>
+          <FaqAccordion faqs={faqs} />
         </div>
       </section>
 
@@ -229,7 +223,7 @@ export default function FreeToolsPage() {
             <div className="text-2xl font-bold text-white/50">RE/MAX</div>
             <div className="text-2xl font-bold text-white/50">Century 21</div>
             <div className="text-2xl font-bold text-white/50">Royal LePage</div>
-            <div className="text-2xl font-bold text-white/50">Coldwell Banker</div>
+            <div className="text-2xl font-bold text-white/50">CIR Realty</div>
             <div className="text-2xl font-bold text-white/50">eXp Realty</div>
           </div>
         </div>

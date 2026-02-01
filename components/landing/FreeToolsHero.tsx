@@ -14,7 +14,7 @@ export function FreeToolsHero() {
     <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-[#131c3b]">
       {/* Aurora Background */}
       <Aurora
-        colorStops={['#ca4153', '#d65a6a', '#ca4153']}
+        colorStops={['#ca4153', '#2dd4bf', '#ca4153']}
         amplitude={1.2}
         blend={0.6}
         speed={0.8}
