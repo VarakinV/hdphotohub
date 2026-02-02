@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Renderer, Program, Mesh, Color, Triangle } from 'ogl';
 
 const VERT = `#version 300 es
@@ -126,17 +126,25 @@ export function Aurora({
 }: AuroraProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const propsRef = useRef({ colorStops, amplitude, blend, speed, time });
+  const [webglFailed, setWebglFailed] = useState(false);
   propsRef.current = { colorStops, amplitude, blend, speed, time };
 
   useEffect(() => {
     const ctn = containerRef.current;
     if (!ctn) return;
 
-    const renderer = new Renderer({
-      alpha: true,
-      premultipliedAlpha: true,
-      antialias: true,
-    });
+    let renderer: Renderer;
+    try {
+      renderer = new Renderer({
+        alpha: true,
+        premultipliedAlpha: true,
+        antialias: true,
+      });
+    } catch (e) {
+      console.warn('WebGL not available, using CSS fallback for Aurora');
+      setWebglFailed(true);
+      return;
+    }
     const gl = renderer.gl;
     gl.clearColor(0, 0, 0, 0);
     gl.enable(gl.BLEND);
@@ -211,6 +219,20 @@ export function Aurora({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [amplitude]);
+
+  // CSS fallback gradient when WebGL is not available
+  if (webglFailed) {
+    return (
+      <div
+        className="absolute inset-0 w-full h-full"
+        style={{
+          zIndex: 0,
+          background: `linear-gradient(135deg, ${colorStops[0]} 0%, ${colorStops[1]} 50%, ${colorStops[2]} 100%)`,
+          opacity: 0.6,
+        }}
+      />
+    );
+  }
 
   return (
     <div
