@@ -205,8 +205,8 @@ export default async function DeliveryPage({
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-4">
               {order.videos.map((v) => (
                 <div key={v.id} className="border rounded-md overflow-hidden">
-                  <div className="aspect-video bg-black/5">
-                    <video controls className="w-full h-full object-cover">
+                  <div className="aspect-video bg-black">
+                    <video controls className="w-full h-full object-contain">
                       <source src={v.url} type="video/mp4" />
                     </video>
                   </div>
