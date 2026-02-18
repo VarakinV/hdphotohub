@@ -283,8 +283,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
 
     // Create Google Calendar event immediately for PENDING booking (if connected)
     try {
+      // Include all buffer times in Google Calendar event to prevent overlapping bookings
       const eventStart = new Date(start.getTime());
-      const eventEnd = new Date(start.getTime() + (coreDurationMin) * 60 * 1000);
+      const eventEnd = new Date(start.getTime() + totalDurationMin * 60 * 1000);
       const svcLines = svcRows.map((s) => {
         const catName = s.category?.name || '';
         const catDesc = s.category?.description || '';

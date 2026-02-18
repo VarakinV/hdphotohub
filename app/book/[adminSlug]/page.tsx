@@ -180,10 +180,11 @@ export default function PublicBookingPage() {
         name: string;
         priceCents: number;
         taxRatesBps: number[];
+        bufferBeforeMin: number;
       }[];
     const byId = new Map<
       string,
-      { id: string; name: string; priceCents: number; taxRatesBps: number[] }
+      { id: string; name: string; priceCents: number; taxRatesBps: number[]; bufferBeforeMin: number }
     >();
     for (const cat of catalog.categories) {
       const svcIds = selectedByCategory[cat.id] || [];
@@ -195,11 +196,18 @@ export default function PublicBookingPage() {
             name: s.name,
             priceCents: s.priceCents,
             taxRatesBps: s.taxRatesBps,
+            bufferBeforeMin: s.bufferBeforeMin,
           });
       }
     }
     return Array.from(byId.values());
   }, [catalog, selectedByCategory]);
+
+  // Total buffer-before across all selected services (used to show service start time, not block start)
+  const totalBufferBeforeMin = useMemo(
+    () => selectedServices.reduce((acc, s) => acc + s.bufferBeforeMin, 0),
+    [selectedServices]
+  );
 
   // Load slots when services change and at least one is selected
   useEffect(() => {
@@ -421,9 +429,13 @@ export default function PublicBookingPage() {
         catalog?.settings?.timeZone ||
         Intl.DateTimeFormat().resolvedOptions().timeZone;
       const addr = (formattedAddress || address || '').toString();
+      // Pass service start time (slot start + buffer before) to confirmation page
+      const serviceStartISO = selectedSlotISO
+        ? new Date(new Date(selectedSlotISO).getTime() + totalBufferBeforeMin * 60_000).toISOString()
+        : '';
       const qs = new URLSearchParams({
         bookingId: data.bookingId,
-        start: selectedSlotISO || '',
+        start: serviceStartISO,
         tz,
         address: addr,
       });
@@ -886,8 +898,11 @@ export default function PublicBookingPage() {
                   ) : (
                     <div className="flex flex-wrap gap-2">
                       {activeSlots.map((s) => {
-                        const start = new Date(s.start);
-                        const label = start.toLocaleTimeString([], {
+                        // Show service start time (slot start + buffer before) to the user
+                        const serviceStart = new Date(
+                          new Date(s.start).getTime() + totalBufferBeforeMin * 60_000
+                        );
+                        const label = serviceStart.toLocaleTimeString([], {
                           hour: 'numeric',
                           minute: '2-digit',
                           timeZone: catalog.settings?.timeZone || undefined,

@@ -77,9 +77,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     try {
       const calendarId = settings?.googleCalendarId || undefined;
 
-      // Work-only time in Google event
+      // Include all buffer times in Google Calendar event to prevent overlapping bookings
       const eventStart = new Date((body.start ? nextStart : updated.start).getTime());
-      const eventEnd = new Date(eventStart.getTime() + coreDurationMin * 60 * 1000);
+      const totalDurationMin = coreDurationMin + beforeBufferMin + afterBufferMin + defaultBufferMin;
+      const eventEnd = new Date(eventStart.getTime() + totalDurationMin * 60 * 1000);
 
       if (updateData.status === "CANCELLED") {
         if (existing.googleEventId) {

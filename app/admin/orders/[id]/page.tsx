@@ -594,8 +594,9 @@ export default function OrderDetailsPage() {
               <ReelImagesUploader
                 orderId={order.id}
                 onUploaded={() => setReelRefresh((n) => n + 1)}
+                refreshToken={reelRefresh}
               />
-              <ReelImagesGrid orderId={order.id} refreshToken={reelRefresh} />
+              <ReelImagesGrid orderId={order.id} refreshToken={reelRefresh} onDeleted={() => setReelRefresh((n) => n + 1)} />
               <div className="hidden">
                 <GenerateReelsButton
                   orderId={order.id}
@@ -615,8 +616,9 @@ export default function OrderDetailsPage() {
               <ReelImagesUploader
                 orderId={order.id}
                 onUploaded={() => setFlyerRefresh((n) => n + 1)}
+                refreshToken={flyerRefresh}
               />
-              <ReelImagesGrid orderId={order.id} refreshToken={flyerRefresh} />
+              <ReelImagesGrid orderId={order.id} refreshToken={flyerRefresh} onDeleted={() => setFlyerRefresh((n) => n + 1)} />
               <GenerateFlyersButton
                 orderId={order.id}
                 onStarted={() => setFlyerRefresh((n) => n + 1)}

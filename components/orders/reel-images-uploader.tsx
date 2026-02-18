@@ -7,6 +7,7 @@ import { Loader2, Upload } from "lucide-react";
 interface UploaderProps {
   orderId: string;
   onUploaded?: () => void;
+  refreshToken?: number;
 }
 
 type Item = {
@@ -15,7 +16,7 @@ type Item = {
   status: "queued" | "uploading" | "done" | "error";
 };
 
-export function ReelImagesUploader({ orderId, onUploaded }: UploaderProps) {
+export function ReelImagesUploader({ orderId, onUploaded, refreshToken = 0 }: UploaderProps) {
   const [isConfigured, setIsConfigured] = useState(false);
   const [items, setItems] = useState<Item[]>([]);
   const [dragging, setDragging] = useState(false);
@@ -32,12 +33,12 @@ export function ReelImagesUploader({ orderId, onUploaded }: UploaderProps) {
   }, []);
 
   useEffect(() => {
-    // load current count
+    // load current count (re-runs when refreshToken changes, e.g. after grid delete)
     fetch(`/api/orders/${orderId}/media/reels-sources`)
       .then((r) => (r.ok ? r.json() : []))
       .then((arr) => setExistingCount(Array.isArray(arr) ? arr.length : 0))
       .catch(() => {});
-  }, [orderId]);
+  }, [orderId, refreshToken]);
 
   // auto-run when items queued due to drop
   useEffect(() => {

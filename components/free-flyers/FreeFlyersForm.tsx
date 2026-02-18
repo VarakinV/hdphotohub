@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Upload, X, Loader2, Trash2, GripVertical } from 'lucide-react';
+import { Upload, X, Loader2, Trash2, GripVertical, ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { getRecaptchaToken } from '@/lib/recaptcha/client';
 import { toast } from 'sonner';
@@ -784,12 +784,14 @@ export function FreeFlyersForm() {
                 </div>
               )}
 
-              {!!images.filter((it) => it.url).length && (
-                <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {images
-                    .map((it, i) => ({ it, i }))
-                    .filter(({ it }) => !!it.url)
-                    .map(({ it, i }, uIdx) => (
+              {(() => {
+                const uploaded = images
+                  .map((it, i) => ({ it, i }))
+                  .filter(({ it }) => !!it.url);
+                if (!uploaded.length) return null;
+                return (
+                  <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {uploaded.map(({ it, i }, uIdx) => (
                       <div
                         key={i}
                         className={`group relative rounded-md overflow-hidden border bg-black/5 aspect-[4/3] ${
@@ -816,9 +818,13 @@ export function FreeFlyersForm() {
                             )
                           }
                         />
+                        {/* Position badge */}
+                        <span className="absolute top-1.5 left-1.5 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-[10px] font-semibold text-white select-none">
+                          {uIdx + 1}
+                        </span>
                         <input
                           type="checkbox"
-                          className="absolute top-2 left-2 h-4 w-4 bg-white/80"
+                          className="absolute top-2 left-8 h-4 w-4 bg-white/80"
                           checked={!!it.selected}
                           onChange={(e) =>
                             setImages((arr) =>
@@ -830,10 +836,12 @@ export function FreeFlyersForm() {
                             )
                           }
                         />
-                        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition flex gap-1 z-10">
+                        {/* Delete button – always visible on mobile, hover on desktop */}
+                        <div className="absolute top-1 right-1 flex gap-1 z-10 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition">
                           <Button
                             size="icon"
                             variant="outline"
+                            className="h-7 w-7"
                             onClick={() => {
                               setImages((arr) =>
                                 arr.filter((_, idx) => idx !== i)
@@ -842,18 +850,43 @@ export function FreeFlyersForm() {
                             }}
                             title="Delete image"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </div>
-                        <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                        {/* Mobile reorder arrows */}
+                        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 z-10 flex gap-1 md:hidden">
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="h-7 w-7 bg-white/80"
+                            disabled={uIdx === 0}
+                            onClick={() => { reorderUploaded(uIdx, uIdx - 1); toast.success('Image order saved'); }}
+                            title="Move left"
+                          >
+                            <ChevronLeft className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="h-7 w-7 bg-white/80"
+                            disabled={uIdx === uploaded.length - 1}
+                            onClick={() => { reorderUploaded(uIdx, uIdx + 1); toast.success('Image order saved'); }}
+                            title="Move right"
+                          >
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                        {/* Desktop drag overlay */}
+                        <div className="pointer-events-none absolute inset-0 z-0 hidden md:flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
                           <span className="inline-flex items-center justify-center rounded bg-white/80 border px-1.5 py-1 text-[10px] text-gray-700 select-none">
                             <GripVertical className="h-3 w-3 mr-1" /> Drag
                           </span>
                         </div>
                       </div>
                     ))}
-                </div>
-              )}
+                  </div>
+                );
+              })()}
             </>
           )}
         </div>

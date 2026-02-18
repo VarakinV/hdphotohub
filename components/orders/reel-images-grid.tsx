@@ -14,9 +14,11 @@ interface Item {
 export function ReelImagesGrid({
   orderId,
   refreshToken = 0,
+  onDeleted,
 }: {
   orderId: string;
   refreshToken?: number;
+  onDeleted?: () => void;
 }) {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,6 +56,7 @@ export function ReelImagesGrid({
       });
       setItems((p) => p.filter((x) => !ids.includes(x.id)));
       setSelected({});
+      onDeleted?.();
     } finally {
       setDeleting(null);
     }
@@ -68,6 +71,7 @@ export function ReelImagesGrid({
         body: JSON.stringify({ ids: [id] }),
       });
       setItems((p) => p.filter((x) => x.id !== id));
+      onDeleted?.();
     } finally {
       setDeleting(null);
     }
