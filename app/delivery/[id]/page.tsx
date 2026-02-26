@@ -140,7 +140,7 @@ export default async function DeliveryPage({
               <div className="text-white/95 text-2xl md:text-3xl font-semibold">
                 Download All Photos
               </div>
-              <PhotosZipDownloader orderId={order.id} size="lg" />
+              <PhotosZipDownloader orderId={order.id} photos={order.photos.map(p => ({ id: p.id, url: p.url, urlMls: p.urlMls, filename: p.filename }))} size="lg" />
             </div>
           </div>
         </div>
