@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
@@ -311,11 +311,25 @@ export default function PublicBookingPage() {
   }, [selectedServices, promo]);
   // Using the shared PlacesAddressInput like admin orders/new; map preview shows only after address selection
 
+  // Format a UTC slot date into YYYY-MM-DD in the admin's timezone
+  const adminTz =
+    catalog?.settings?.timeZone ||
+    Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const toLocalDateKey = useCallback(
+    (d: Date) =>
+      new Intl.DateTimeFormat('en-CA', {
+        timeZone: adminTz,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).format(d),
+    [adminTz]
+  );
+
   const slotsByDate = useMemo(() => {
     const by: Record<string, Array<{ start: string; end: string }>> = {};
     for (const s of slots) {
-      const d = new Date(s.start);
-      const key = d.toISOString().slice(0, 10);
+      const key = toLocalDateKey(new Date(s.start));
       (by[key] ||= []).push(s);
     }
     for (const k of Object.keys(by)) {
@@ -325,7 +339,7 @@ export default function PublicBookingPage() {
     }
 
     return by;
-  }, [slots]);
+  }, [slots, toLocalDateKey]);
 
   async function handleApplyPromo() {
     try {
@@ -794,7 +808,7 @@ export default function PublicBookingPage() {
               grid.push(new Date(month.getFullYear(), month.getMonth(), d));
 
             const dayHasSlots = (d: Date) => {
-              const k = d.toISOString().slice(0, 10);
+              const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
               return !!slotsByDate[k];
             };
 
@@ -846,7 +860,7 @@ export default function PublicBookingPage() {
                   <div className="grid grid-cols-7 gap-1 mt-1">
                     {grid.map((d, idx) => {
                       if (!d) return <div key={idx} className="h-9" />;
-                      const k = d.toISOString().slice(0, 10);
+                      const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                       const isActive = selectedDateKey === k;
                       const selectable = dayHasSlots(d);
                       return (
