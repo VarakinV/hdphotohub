@@ -108,6 +108,7 @@ export default function PublicBookingPage() {
   // Time slots + submission state
   const [slots, setSlots] = useState<Array<{ start: string; end: string }>>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
+  const [slotsLoadingMore, setSlotsLoadingMore] = useState(false);
   const [selectedSlotISO, setSelectedSlotISO] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState<{
@@ -209,48 +210,74 @@ export default function PublicBookingPage() {
     [selectedServices]
   );
 
-  // Load slots when services change and at least one is selected
+  // Load slots in two phases: first 7 days (fast, blocking), then remaining days (background)
+  const PHASE1_DAYS = 7;
   useEffect(() => {
+    let cancelled = false;
+
+    async function fetchSlots(
+      serviceIds: string[],
+      rangeStart: string,
+      rangeEnd: string,
+      signal: AbortSignal
+    ): Promise<Array<{ start: string; end: string }>> {
+      const res = await fetch(`/api/public/booking/slots/${adminSlug}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ serviceIds, rangeStart, rangeEnd }),
+        signal,
+      });
+      if (!res.ok) throw new Error('Failed to load slots');
+      const data = await res.json();
+      return Array.isArray(data.slots) ? data.slots : [];
+    }
+
     async function loadSlots() {
       if (!catalog) return;
       const serviceIds = selectedServices.map((s) => s.id);
       if (serviceIds.length === 0) return;
-      try {
-        setSlotsLoading(true);
-        const now = new Date();
-        const days = catalog.settings?.maxAdvanceDays ?? 14;
-        const end = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
 
-        // Abort fetch if it hangs > 10s (extensions/adblockers sometimes stall fetch)
-        const ac = new AbortController();
-        const timeout = setTimeout(() => ac.abort(), 20000);
-        const res = await fetch(`/api/public/booking/slots/${adminSlug}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            serviceIds,
-            rangeStart: now.toISOString(),
-            rangeEnd: end.toISOString(),
-          }),
-          signal: ac.signal,
-        }).catch((err) => {
-          throw err;
-        });
-        clearTimeout(timeout);
-        if (!res.ok) throw new Error('Failed to load slots');
-        const data = await res.json();
-        setSlots(Array.isArray(data.slots) ? data.slots : []);
+      const ac = new AbortController();
+      const now = new Date();
+      const maxDays = catalog.settings?.maxAdvanceDays ?? 14;
+      const fullEnd = new Date(now.getTime() + maxDays * 24 * 60 * 60 * 1000);
+      const phase1End = new Date(now.getTime() + Math.min(PHASE1_DAYS, maxDays) * 24 * 60 * 60 * 1000);
+      const needsPhase2 = maxDays > PHASE1_DAYS;
+
+      try {
+        // Phase 1: first 7 days — show immediately
+        setSlotsLoading(true);
+        const phase1Slots = await fetchSlots(serviceIds, now.toISOString(), phase1End.toISOString(), ac.signal);
+        if (cancelled) return;
+        setSlots(phase1Slots);
+        setSlotsLoading(false);
+
+        // Phase 2: remaining days — merge in background
+        if (needsPhase2) {
+          setSlotsLoadingMore(true);
+          const phase2Slots = await fetchSlots(serviceIds, phase1End.toISOString(), fullEnd.toISOString(), ac.signal);
+          if (cancelled) return;
+          setSlots((prev) => {
+            const existing = new Set(prev.map((s) => s.start));
+            const unique = phase2Slots.filter((s) => !existing.has(s.start));
+            return [...prev, ...unique];
+          });
+          setSlotsLoadingMore(false);
+        }
       } catch (e) {
+        if (cancelled) return;
         console.error('Failed to load slots', e);
         setSlots([]);
         try {
           toast.error('Could not load time slots. Please try again.');
         } catch {}
-      } finally {
         setSlotsLoading(false);
+        setSlotsLoadingMore(false);
       }
     }
+
     loadSlots();
+    return () => { cancelled = true; };
   }, [selectedServices, catalog, adminSlug]);
   const totals = useMemo(() => {
     let subtotal = 0;
@@ -889,6 +916,11 @@ export default function PublicBookingPage() {
                     {catalog.settings?.timeZone ||
                       Intl.DateTimeFormat().resolvedOptions().timeZone}
                   </div>
+                  {slotsLoadingMore && (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
+                      <Loader2 className="h-3 w-3 animate-spin" /> Loading more dates…
+                    </div>
+                  )}
                 </div>
 
                 {/* Times for selected date */}
