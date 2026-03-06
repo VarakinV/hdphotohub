@@ -378,7 +378,7 @@ export default function ClientsPage() {
         }}
       >
         <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader className="sticky top-0 z-10 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/70">
+          <DialogHeader>
             <DialogTitle>
               {selectedRealtor ? 'Edit Realtor' : 'Add New Realtor'}
             </DialogTitle>

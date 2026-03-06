@@ -17,7 +17,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
-import { Loader2, Upload, X } from 'lucide-react';
+import { Loader2, Minus, Plus, Upload, X } from 'lucide-react';
 
 const formSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -76,6 +76,8 @@ export function RealtorForm({
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [pointsMode, setPointsMode] = useState<'add' | 'retract' | null>(null);
+  const [pointsDelta, setPointsDelta] = useState('');
   const [headshotUrl, setHeadshotUrl] = useState<string | null>(
     realtor?.headshot || null
   );
@@ -406,10 +408,17 @@ export function RealtorForm({
         {/* Company Logo Upload */}
         <div className="flex flex-col items-center space-y-4">
           <div className="text-sm font-medium">Company Logo</div>
-          <Avatar className="h-24 w-24">
-            <AvatarImage src={companyLogoPreview || undefined} />
-            <AvatarFallback>CL</AvatarFallback>
-          </Avatar>
+          <div className="h-24 w-24 rounded-md border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden">
+            {companyLogoPreview ? (
+              <img
+                src={companyLogoPreview}
+                alt="Company Logo"
+                className="max-h-full max-w-full object-contain"
+              />
+            ) : (
+              <span className="text-xs text-gray-400">CL</span>
+            )}
+          </div>
 
           <div className="flex gap-2">
             <input
@@ -539,28 +548,86 @@ export function RealtorForm({
           <FormField
             control={form.control}
             name="points"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Points</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    inputMode="numeric"
-                    step={100}
-                    {...field}
-                    onChange={(e) =>
-                      field.onChange(
-                        e.target.value === ''
-                          ? undefined
-                          : Number(e.target.value)
-                      )
-                    }
-                    disabled={isLoading}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+            render={({ field }) => {
+              const currentPoints = field.value ?? 0;
+              return (
+                <FormItem>
+                  <FormLabel>Points</FormLabel>
+                  <div className="text-2xl font-bold tabular-nums">
+                    {currentPoints.toLocaleString()}
+                  </div>
+
+                  {/* Add / Retract buttons */}
+                  <div className="flex gap-2 mt-2">
+                    <Button
+                      type="button"
+                      variant={pointsMode === 'add' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() =>
+                        setPointsMode((m) => (m === 'add' ? null : 'add'))
+                      }
+                      disabled={isLoading}
+                    >
+                      <Plus className="mr-1 h-4 w-4" /> Add Points
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={pointsMode === 'retract' ? 'destructive' : 'outline'}
+                      size="sm"
+                      onClick={() =>
+                        setPointsMode((m) => (m === 'retract' ? null : 'retract'))
+                      }
+                      disabled={isLoading}
+                    >
+                      <Minus className="mr-1 h-4 w-4" /> Retract Points
+                    </Button>
+                  </div>
+
+                  {/* Inline input when a mode is active */}
+                  {pointsMode && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        step={1}
+                        placeholder="Enter amount"
+                        value={pointsDelta}
+                        onChange={(e) => setPointsDelta(e.target.value)}
+                        disabled={isLoading}
+                        className="w-40"
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={
+                          isLoading ||
+                          !pointsDelta ||
+                          Number(pointsDelta) <= 0
+                        }
+                        onClick={() => {
+                          const delta = Math.abs(
+                            Math.round(Number(pointsDelta))
+                          );
+                          if (!delta) return;
+                          const newVal =
+                            pointsMode === 'add'
+                              ? currentPoints + delta
+                              : Math.max(0, currentPoints - delta);
+                          field.onChange(newVal);
+                          setPointsDelta('');
+                          setPointsMode(null);
+                        }}
+                      >
+                        Update
+                      </Button>
+                    </div>
+                  )}
+
+                  <FormMessage />
+                </FormItem>
+              );
+            }}
           />
         )}
 
