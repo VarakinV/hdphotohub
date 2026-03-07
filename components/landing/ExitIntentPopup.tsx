@@ -76,6 +76,7 @@ export function ExitIntentPopup({ bookingUrl, promoCode }: ExitIntentPopupProps)
           <h3 className="text-2xl sm:text-3xl font-bold text-white">
             Get 25% Off Your First Order
           </h3>
+          <p className="text-white/70 text-xs mt-2">Limited-time offer for REALTORS only</p>
         </div>
 
         {/* Content */}
