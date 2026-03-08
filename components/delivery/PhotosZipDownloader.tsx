@@ -42,10 +42,8 @@ export function PhotosZipDownloader({
         const batch = photos.slice(i, i + BATCH_SIZE);
         const results = await Promise.allSettled(
           batch.map(async (photo) => {
-            const photoUrl =
-              variant === 'mls'
-                ? photo.urlMls || `/api/delivery/photo/${photo.id}?variant=mls`
-                : photo.url;
+            // Always proxy through our API to avoid S3 CORS issues
+            const photoUrl = `/api/delivery/photo/${photo.id}?variant=${variant}`;
             const res = await fetch(photoUrl);
             if (!res.ok) throw new Error(`Failed to fetch ${photo.filename}`);
             const buf = await res.arrayBuffer();
