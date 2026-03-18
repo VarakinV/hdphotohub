@@ -174,9 +174,24 @@ export default function BookingDetailsPage() {
               <div className="text-sm">
                 {data.propertyFormattedAddress || data.propertyAddress}
               </div>
+              {data.unitNumber ? (
+                <div className="text-sm text-gray-700">
+                  Unit #: {data.unitNumber}
+                </div>
+              ) : null}
               {data.propertySizeSqFt ? (
                 <div className="text-sm text-gray-700">
                   Size: {data.propertySizeSqFt} sq ft
+                </div>
+              ) : null}
+              {(data.basementMeasure || data.basementPhoto) ? (
+                <div className="text-sm text-gray-700">
+                  Basement: {[data.basementMeasure && 'Measure', data.basementPhoto && 'Photo'].filter(Boolean).join(', ')}
+                </div>
+              ) : null}
+              {(data.garageMeasure || data.garagePhoto) ? (
+                <div className="text-sm text-gray-700">
+                  Detached Garage: {[data.garageMeasure && 'Measure', data.garagePhoto && 'Photo'].filter(Boolean).join(', ')}
                 </div>
               ) : null}
             </Card>

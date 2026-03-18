@@ -13,6 +13,8 @@ const updateSchema = z.object({
   bufferAfterMin: z.number().int().min(0).optional(),
   minSqFt: z.number().int().min(0).optional().nullable(),
   maxSqFt: z.number().int().min(0).optional().nullable(),
+  isPerSqFt: z.boolean().optional(),
+  minPriceCents: z.number().int().min(0).optional().nullable(),
   active: z.boolean().optional(),
   taxIds: z.array(z.string().min(1)).optional(),
 });
@@ -104,6 +106,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         bufferAfterMin: parsed.data.bufferAfterMin ?? existing.bufferAfterMin,
         minSqFt: parsed.data.minSqFt ?? existing.minSqFt,
         maxSqFt: parsed.data.maxSqFt ?? existing.maxSqFt,
+        isPerSqFt: parsed.data.isPerSqFt ?? existing.isPerSqFt,
+        minPriceCents: parsed.data.minPriceCents ?? existing.minPriceCents,
         active: parsed.data.active ?? existing.active,
       },
     });

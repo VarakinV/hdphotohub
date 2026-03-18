@@ -65,6 +65,8 @@ interface ServiceRow {
   bufferAfterMin: number;
   minSqFt?: number | null;
   maxSqFt?: number | null;
+  isPerSqFt: boolean;
+  minPriceCents?: number | null;
   active: boolean;
   taxes?: Tax[];
 }
@@ -132,8 +134,9 @@ export default function ServicesPage() {
       });
       if (!res.ok) throw new Error('Failed to save order');
       setOrderDirty(false);
+      toast.success('Service order saved');
     } catch (e) {
-      alert('Failed to save order');
+      toast.error('Failed to save service order');
     }
   };
 
@@ -149,6 +152,8 @@ export default function ServicesPage() {
     bufferAfterMin?: string;
     minSqFt?: string;
     maxSqFt?: string;
+    isPerSqFt: boolean;
+    minPriceDollars?: string;
     taxIds: string[];
   }>({
     name: '',
@@ -160,6 +165,8 @@ export default function ServicesPage() {
     bufferAfterMin: '0',
     minSqFt: '',
     maxSqFt: '',
+    isPerSqFt: false,
+    minPriceDollars: '',
     taxIds: [],
   });
   const [createErrors, setCreateErrors] = useState<{
@@ -209,14 +216,14 @@ export default function ServicesPage() {
   }, [services, filters]);
 
   const [page, setPage] = useState(1);
-  const perPage = 20;
+  const [perPage, setPerPage] = useState(20);
   useEffect(() => {
     setPage(1);
   }, [filters]);
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
   const pageItems = useMemo(
     () => filtered.slice((page - 1) * perPage, page * perPage),
-    [filtered, page]
+    [filtered, page, perPage]
   );
 
   function startEdit(row: ServiceRow) {
@@ -233,6 +240,8 @@ export default function ServicesPage() {
       bufferAfterMin: row.bufferAfterMin,
       minSqFt: row.minSqFt ?? undefined,
       maxSqFt: row.maxSqFt ?? undefined,
+      isPerSqFt: row.isPerSqFt,
+      minPriceCents: row.minPriceCents ?? undefined,
       taxIds: row.taxes?.map((t) => t.id) ?? [],
     });
     setEditOpen(true);
@@ -260,6 +269,8 @@ export default function ServicesPage() {
         bufferAfterMin: draft.bufferAfterMin ?? 0,
         minSqFt: draft.minSqFt ?? null,
         maxSqFt: draft.maxSqFt ?? null,
+        isPerSqFt: draft.isPerSqFt ?? false,
+        minPriceCents: draft.minPriceCents ?? null,
         taxIds: draft.taxIds,
       }),
     });
@@ -267,8 +278,9 @@ export default function ServicesPage() {
       const updated = await res.json();
       setServices((list) => list.map((s) => (s.id === id ? updated : s)));
       cancelEdit();
+      toast.success('Service updated');
     } else {
-      alert('Failed to save');
+      toast.error('Failed to update service');
     }
   }
 
@@ -281,6 +293,9 @@ export default function ServicesPage() {
     if (res.ok) {
       const updated = await res.json();
       setServices((list) => list.map((s) => (s.id === row.id ? updated : s)));
+      toast.success(`Service ${!row.active ? 'activated' : 'deactivated'}`);
+    } else {
+      toast.error('Failed to toggle service status');
     }
   }
 
@@ -411,7 +426,7 @@ export default function ServicesPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-sm font-medium">Price ($)</label>
+                  <label className="text-sm font-medium">{create.isPerSqFt ? 'Price per sq ft ($)' : 'Price ($)'}</label>
                   <Input
                     type="number"
                     step="0.01"
@@ -467,6 +482,33 @@ export default function ServicesPage() {
                     }
                   />
                 </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="inline-flex items-center gap-2 text-sm font-medium cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="cursor-pointer"
+                    checked={create.isPerSqFt}
+                    onChange={(e) =>
+                      setCreate((c) => ({ ...c, isPerSqFt: e.target.checked }))
+                    }
+                  />
+                  Price is per sq ft
+                </label>
+                {create.isPerSqFt && (
+                  <div className="flex items-center gap-1">
+                    <label className="text-sm font-medium whitespace-nowrap">Min Price ($)</label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      className="w-28"
+                      value={create.minPriceDollars || ''}
+                      onChange={(e) =>
+                        setCreate((c) => ({ ...c, minPriceDollars: e.target.value }))
+                      }
+                    />
+                  </div>
+                )}
               </div>
               <div>
                 <label className="text-sm font-medium">Taxes</label>
@@ -542,6 +584,10 @@ export default function ServicesPage() {
                           maxSqFt: create.maxSqFt
                             ? Number(create.maxSqFt)
                             : null,
+                          isPerSqFt: create.isPerSqFt,
+                          minPriceCents: create.isPerSqFt && create.minPriceDollars
+                            ? Math.round(Number(create.minPriceDollars) * 100)
+                            : null,
                           taxIds: create.taxIds,
                         }),
                       });
@@ -567,9 +613,12 @@ export default function ServicesPage() {
                         bufferAfterMin: '0',
                         minSqFt: '',
                         maxSqFt: '',
+                        isPerSqFt: false,
+                        minPriceDollars: '',
                         taxIds: [],
                       });
                       setCreateErrors({});
+                      toast.success('Service created');
                     } catch (e) {
                       setCreateErrors((er: any) => ({
                         ...er,
@@ -634,7 +683,7 @@ export default function ServicesPage() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-sm font-medium">Price (USD)</label>
+                  <label className="text-sm font-medium">{draft.isPerSqFt ? 'Price per sq ft ($)' : 'Price ($)'}</label>
                   <Input
                     type="number"
                     step="0.01"
@@ -717,6 +766,36 @@ export default function ServicesPage() {
                     }
                   />
                 </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="inline-flex items-center gap-2 text-sm font-medium cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="cursor-pointer"
+                    checked={draft.isPerSqFt ?? false}
+                    onChange={(e) =>
+                      setDraft((d) => ({ ...d, isPerSqFt: e.target.checked }))
+                    }
+                  />
+                  Price is per sq ft
+                </label>
+                {draft.isPerSqFt && (
+                  <div className="flex items-center gap-1">
+                    <label className="text-sm font-medium whitespace-nowrap">Min Price ($)</label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      className="w-28"
+                      value={draft.minPriceCents != null ? (draft.minPriceCents / 100).toFixed(2) : ''}
+                      onChange={(e) =>
+                        setDraft((d) => ({
+                          ...d,
+                          minPriceCents: e.target.value ? Math.round(Number(e.target.value) * 100) : undefined,
+                        }))
+                      }
+                    />
+                  </div>
+                )}
               </div>
               <div>
                 <label className="text-sm font-medium">Taxes</label>
@@ -909,7 +988,10 @@ export default function ServicesPage() {
                               }
                             />
                           ) : (
-                            `$${(s.priceCents / 100).toFixed(2)}`
+                            <span>
+                              ${(s.priceCents / 100).toFixed(2)}
+                              {s.isPerSqFt && <span className="text-xs text-muted-foreground ml-1">/sqft{s.minPriceCents ? ` (min $${(s.minPriceCents / 100).toFixed(2)})` : ''}</span>}
+                            </span>
                           )}
                         </TableCell>
                         <TableCell>
@@ -1028,8 +1110,22 @@ export default function ServicesPage() {
 
               {/* Pagination */}
               <div className="p-4 border-t flex items-center justify-between">
-                <div className="text-sm text-gray-500">
-                  Page {page} of {totalPages}
+                <div className="flex items-center gap-4">
+                  <div className="text-sm text-gray-500">
+                    Page {page} of {totalPages}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <label className="text-sm text-gray-500">Rows:</label>
+                    <select
+                      className="h-8 rounded-md border px-2 text-sm"
+                      value={perPage}
+                      onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}
+                    >
+                      {[10, 20, 30, 50].map((n) => (
+                        <option key={n} value={n}>{n}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <Button

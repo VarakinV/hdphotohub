@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Layers as LayersIcon } from 'lucide-react';
+import { Loader2, Layers as LayersIcon, CheckCircle2 } from 'lucide-react';
 import * as Lucide from 'lucide-react';
 import PlacesAddressInput from '@/components/admin/PlacesAddressInput';
 import { Toaster } from '@/components/ui/sonner';
@@ -50,6 +50,8 @@ type Catalog = {
       bufferAfterMin: number;
       minSqFt?: number | null;
       maxSqFt?: number | null;
+      isPerSqFt?: boolean;
+      minPriceCents?: number | null;
       taxRatesBps: number[];
     }>;
   }>;
@@ -78,7 +80,12 @@ export default function PublicBookingPage() {
   // Form state
   const [step, setStep] = useState(1);
   const [address, setAddress] = useState('');
+  const [unitNumber, setUnitNumber] = useState('');
   const [size, setSize] = useState<number | ''>('');
+  const [basementMeasure, setBasementMeasure] = useState(false);
+  const [basementPhoto, setBasementPhoto] = useState(false);
+  const [garageMeasure, setGarageMeasure] = useState(false);
+  const [garagePhoto, setGaragePhoto] = useState(false);
   const [selectedByCategory, setSelectedByCategory] = useState<
     Record<string, string[]>
   >({});
@@ -100,6 +107,11 @@ export default function PublicBookingPage() {
   const [postalCode, setPostalCode] = useState('');
   const [country, setCountry] = useState('');
   const [placeId, setPlaceId] = useState('');
+
+  // Touched state for validation styling
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const markTouched = (field: string) =>
+    setTouched((prev) => ({ ...prev, [field]: true }));
 
   // Optional checkboxes
   const [prefSidebarPersistent, setPrefSidebarPersistent] = useState(false);
@@ -131,6 +143,63 @@ export default function PublicBookingPage() {
   // Calendly-style calendar state
   const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null);
   const [calendarMonth, setCalendarMonth] = useState<Date>(new Date());
+
+  // ── localStorage persistence ──
+  const STORAGE_KEY = `booking-draft-${adminSlug}`;
+  const restoredRef = useRef(false);
+
+  // Restore from localStorage on mount
+  useEffect(() => {
+    if (restoredRef.current) return;
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      if (d.address) setAddress(d.address);
+      if (d.unitNumber) setUnitNumber(d.unitNumber);
+      if (d.size) setSize(d.size);
+      if (d.basementMeasure) setBasementMeasure(d.basementMeasure);
+      if (d.basementPhoto) setBasementPhoto(d.basementPhoto);
+      if (d.garageMeasure) setGarageMeasure(d.garageMeasure);
+      if (d.garagePhoto) setGaragePhoto(d.garagePhoto);
+      if (d.selectedByCategory) setSelectedByCategory(d.selectedByCategory);
+      if (d.notes) setNotes(d.notes);
+      if (d.contact) setContact(d.contact);
+      if (d.formattedAddress) setFormattedAddress(d.formattedAddress);
+      if (d.lat != null) setLat(d.lat);
+      if (d.lng != null) setLng(d.lng);
+      if (d.city) setCity(d.city);
+      if (d.province) setProvince(d.province);
+      if (d.postalCode) setPostalCode(d.postalCode);
+      if (d.country) setCountry(d.country);
+      if (d.placeId) setPlaceId(d.placeId);
+      if (d.promoCode) setPromoCode(d.promoCode);
+    } catch {}
+    restoredRef.current = true;
+  }, [STORAGE_KEY]);
+
+  // Save to localStorage on change
+  useEffect(() => {
+    if (!restoredRef.current) return;
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          address, unitNumber, size,
+          basementMeasure, basementPhoto, garageMeasure, garagePhoto,
+          selectedByCategory, notes, contact,
+          formattedAddress, lat, lng, city, province, postalCode, country, placeId,
+          promoCode,
+        })
+      );
+    } catch {}
+  }, [
+    STORAGE_KEY, address, unitNumber, size,
+    basementMeasure, basementPhoto, garageMeasure, garagePhoto,
+    selectedByCategory, notes, contact,
+    formattedAddress, lat, lng, city, province, postalCode, country, placeId,
+    promoCode,
+  ]);
 
   useEffect(() => {
     let abort = false;
@@ -191,18 +260,25 @@ export default function PublicBookingPage() {
       const svcIds = selectedByCategory[cat.id] || [];
       for (const id of svcIds) {
         const s = cat.services.find((x) => x.id === id);
-        if (s)
+        if (s) {
+          let effectivePrice = s.priceCents;
+          if (s.isPerSqFt && sizeNumber > 0) {
+            const computed = Math.round(s.priceCents * sizeNumber);
+            const floor = s.minPriceCents ?? 0;
+            effectivePrice = Math.max(computed, floor);
+          }
           byId.set(s.id, {
             id: s.id,
             name: s.name,
-            priceCents: s.priceCents,
+            priceCents: effectivePrice,
             taxRatesBps: s.taxRatesBps,
             bufferBeforeMin: s.bufferBeforeMin,
           });
+        }
       }
     }
     return Array.from(byId.values());
-  }, [catalog, selectedByCategory]);
+  }, [catalog, selectedByCategory, sizeNumber]);
 
   // Total buffer-before across all selected services (used to show service start time, not block start)
   const totalBufferBeforeMin = useMemo(
@@ -447,6 +523,11 @@ export default function PublicBookingPage() {
         country,
         placeId,
         propertySizeSqFt: sizeNumber || null,
+        unitNumber: unitNumber.trim() || null,
+        basementMeasure,
+        basementPhoto,
+        garageMeasure,
+        garagePhoto,
         notes,
         contactFirstName: contact.firstName,
         contactLastName: contact.lastName,
@@ -479,7 +560,10 @@ export default function PublicBookingPage() {
         start: serviceStartISO,
         tz,
         address: addr,
+        ...(unitNumber.trim() ? { unitNumber: unitNumber.trim() } : {}),
       });
+      // Clear saved draft on successful submission
+      try { localStorage.removeItem(STORAGE_KEY); } catch {}
       router.push(`/book/confirmation?${qs.toString()}`);
     } catch (e: any) {
       setSubmitError(e.message || 'Failed to submit');
@@ -578,33 +662,41 @@ export default function PublicBookingPage() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto p-6 space-y-6">
-        <h1 className="text-2xl font-semibold">Booking Form</h1>
-        {/* Stepper */}
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          {steps.map((s, i) => {
-            const isCurrent =
-              (currentIdx === -1 ? steps.length - 1 : currentIdx) === i &&
-              !s.done;
-            const cls = s.done
-              ? 'bg-green-100 text-green-800 border-green-200'
-              : isCurrent
-              ? 'bg-[#ca4153]/10 text-[#ca4153] border-[#ca4153]/30'
-              : 'bg-gray-50 text-gray-600 border-gray-200';
-            return (
-              <div
-                key={s.key}
-                className={`px-3 py-1 rounded-full border ${cls}`}
-              >
-                <span className="font-medium">{i + 1}.</span> {s.key}
-              </div>
-            );
-          })}
+      {/* Sticky booking header & stepper */}
+      <div className="sticky top-0 z-30 bg-white border-b shadow-sm">
+        <div className="max-w-5xl mx-auto px-6 py-4 space-y-3">
+          <h1 className="text-2xl font-semibold">Booking Form</h1>
+          {/* Stepper */}
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            {steps.map((s, i) => {
+              const isCurrent =
+                (currentIdx === -1 ? steps.length - 1 : currentIdx) === i &&
+                !s.done;
+              const cls = s.done
+                ? 'bg-green-100 text-green-800 border-green-200'
+                : isCurrent
+                ? 'bg-[#ca4153]/10 text-[#ca4153] border-[#ca4153]/30'
+                : 'bg-gray-50 text-gray-600 border-gray-200';
+              return (
+                <div
+                  key={s.key}
+                  className={`px-3 py-1 rounded-full border ${cls}`}
+                >
+                  <span className="font-medium">{i + 1}.</span> {s.key}
+                </div>
+              );
+            })}
+          </div>
         </div>
+      </div>
 
+      <main className="max-w-5xl mx-auto p-6 space-y-6">
         {/* Property Address */}
         <Card className="p-4">
-          <h2 className="text-xl font-semibold mb-3">Property Address</h2>
+          <h2 className="text-xl font-semibold mb-3 flex items-center gap-2">
+            Property Address
+            {stage.address && <CheckCircle2 className="h-5 w-5 text-green-600" />}
+          </h2>
           <div className="grid gap-4">
             <div>
               <PlacesAddressInput
@@ -628,6 +720,16 @@ export default function PublicBookingPage() {
                 </div>
               )}
             </div>
+            <div>
+              <Label className="text-sm text-muted-foreground">Unit # (If applicable)</Label>
+              <Input
+                className="mt-1"
+                type="text"
+                placeholder="e.g., 402"
+                value={unitNumber}
+                onChange={(e) => setUnitNumber(e.target.value)}
+              />
+            </div>
             {lat != null && lng != null && (
               <div className="aspect-video rounded overflow-hidden border">
                 <iframe
@@ -643,13 +745,14 @@ export default function PublicBookingPage() {
 
         {/* Approximate Property Size (sq ft) */}
         <Card className="p-4">
-          <h2 className="text-xl font-semibold mb-3">
+          <h2 className="text-xl font-semibold mb-3 flex items-center gap-2">
             Approximate Property Size (sq ft)
+            {stage.size && <CheckCircle2 className="h-5 w-5 text-green-600" />}
           </h2>
           <div className="grid gap-4">
             <div>
               <Input
-                className="mt-1"
+                className={`mt-1 ${touched.size && !sizeNumber ? 'border-red-400 ring-1 ring-red-200' : ''}`}
                 type="number"
                 min={0}
                 placeholder="e.g., 2200"
@@ -657,10 +760,64 @@ export default function PublicBookingPage() {
                 onChange={(e) =>
                   setSize(e.target.value ? parseInt(e.target.value, 10) : '')
                 }
+                onBlur={() => markTouched('size')}
               />
+              {touched.size && !sizeNumber && (
+                <div className="text-xs text-red-500 mt-1">Property size is required</div>
+              )}
               <div className="text-sm text-muted-foreground mt-2">
                 Enter the total area to be measured, including basements,
                 garages, and all levels (not just RMS).
+              </div>
+            </div>
+
+            {/* Basement */}
+            <div>
+              <Label className="text-sm font-medium">Basement (if applicable):</Label>
+              <div className="flex items-center gap-6 mt-2">
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={basementMeasure}
+                    onChange={(e) => setBasementMeasure(e.target.checked)}
+                    className="h-5 w-5 rounded border-gray-300"
+                  />
+                  Measure?
+                </label>
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={basementPhoto}
+                    onChange={(e) => setBasementPhoto(e.target.checked)}
+                    className="h-5 w-5 rounded border-gray-300"
+                  />
+                  Photo?
+                </label>
+              </div>
+            </div>
+
+            {/* Detached Garage */}
+            <div>
+              <Label className="text-sm font-medium">Detached Garage (if applicable):</Label>
+              <div className="flex items-center gap-6 mt-2">
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={garageMeasure}
+                    onChange={(e) => setGarageMeasure(e.target.checked)}
+                    className="h-5 w-5 rounded border-gray-300"
+                  />
+                  Measure?
+                </label>
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={garagePhoto}
+                    onChange={(e) => setGaragePhoto(e.target.checked)}
+                    className="h-5 w-5 rounded border-gray-300"
+                  />
+                  Photo?
+                </label>
               </div>
             </div>
           </div>
@@ -668,7 +825,10 @@ export default function PublicBookingPage() {
 
         {/* Choose Your Services */}
         <Card className="p-4">
-          <h2 className="text-xl font-semibold mb-3">Choose Your Services</h2>
+          <h2 className="text-xl font-semibold mb-3 flex items-center gap-2">
+            Choose Your Services
+            {stage.services && <CheckCircle2 className="h-5 w-5 text-green-600" />}
+          </h2>
           <div className="grid gap-6">
             <div>
               <h3 className="text-lg font-semibold mb-2">Packages</h3>
@@ -699,18 +859,18 @@ export default function PublicBookingPage() {
                         {cat.services.map((s) => (
                           <label
                             key={s.id}
-                            className={`w-full rounded border p-2 hover:bg-accent flex items-start justify-between gap-3 ${
+                            className={`w-full rounded-lg border p-3 md:p-2 hover:bg-accent flex items-start justify-between gap-3 cursor-pointer transition-colors ${
                               selectedIds.includes(s.id)
-                                ? 'border-primary'
+                                ? 'border-primary bg-primary/5'
                                 : 'border-border'
                             }`}
                           >
-                            <div className="flex items-start gap-2">
+                            <div className="flex items-start gap-3">
                               <input
                                 type="checkbox"
                                 checked={selectedIds.includes(s.id)}
                                 onChange={() => toggleService(cat.id, s.id)}
-                                className="mt-1"
+                                className="mt-0.5 h-5 w-5 shrink-0 rounded border-gray-300"
                                 aria-label={`Select ${s.name}`}
                               />
                               <div>
@@ -722,8 +882,19 @@ export default function PublicBookingPage() {
                                 )}
                               </div>
                             </div>
-                            <div className="font-semibold whitespace-nowrap">
-                              {formatMoney(s.priceCents)}
+                            <div className="font-semibold whitespace-nowrap text-right">
+                              {s.isPerSqFt ? (
+                                sizeNumber > 0 ? (
+                                  <>
+                                    {formatMoney(Math.max(Math.round(s.priceCents * sizeNumber), s.minPriceCents ?? 0))}
+                                    <div className="text-xs font-normal text-muted-foreground">{formatMoney(s.priceCents)}/sqft</div>
+                                  </>
+                                ) : (
+                                  <>{formatMoney(s.priceCents)}/sqft</>
+                                )
+                              ) : (
+                                formatMoney(s.priceCents)
+                              )}
                             </div>
                           </label>
                         ))}
@@ -766,18 +937,18 @@ export default function PublicBookingPage() {
                         {cat.services.map((s) => (
                           <label
                             key={s.id}
-                            className={`w-full rounded border p-2 hover:bg-accent flex items-start justify-between gap-3 ${
+                            className={`w-full rounded-lg border p-3 md:p-2 hover:bg-accent flex items-start justify-between gap-3 cursor-pointer transition-colors ${
                               selectedIds.includes(s.id)
-                                ? 'border-primary'
+                                ? 'border-primary bg-primary/5'
                                 : 'border-border'
                             }`}
                           >
-                            <div className="flex items-start gap-2">
+                            <div className="flex items-start gap-3">
                               <input
                                 type="checkbox"
                                 checked={selectedIds.includes(s.id)}
                                 onChange={() => toggleService(cat.id, s.id)}
-                                className="mt-1"
+                                className="mt-0.5 h-5 w-5 shrink-0 rounded border-gray-300"
                                 aria-label={`Select ${s.name}`}
                               />
                               <div>
@@ -789,8 +960,19 @@ export default function PublicBookingPage() {
                                 )}
                               </div>
                             </div>
-                            <div className="font-semibold whitespace-nowrap">
-                              {formatMoney(s.priceCents)}
+                            <div className="font-semibold whitespace-nowrap text-right">
+                              {s.isPerSqFt ? (
+                                sizeNumber > 0 ? (
+                                  <>
+                                    {formatMoney(Math.max(Math.round(s.priceCents * sizeNumber), s.minPriceCents ?? 0))}
+                                    <div className="text-xs font-normal text-muted-foreground">{formatMoney(s.priceCents)}/sqft</div>
+                                  </>
+                                ) : (
+                                  <>{formatMoney(s.priceCents)}/sqft</>
+                                )
+                              ) : (
+                                formatMoney(s.priceCents)
+                              )}
                             </div>
                           </label>
                         ))}
@@ -814,7 +996,10 @@ export default function PublicBookingPage() {
 
         {/* Appointment Time */}
         <Card className="p-4">
-          <h2 className="text-xl font-semibold mb-3">Appointment Time</h2>
+          <h2 className="text-xl font-semibold mb-3 flex items-center gap-2">
+            Appointment Time
+            {stage.time && <CheckCircle2 className="h-5 w-5 text-green-600" />}
+          </h2>
           {(() => {
             // Calendly-style: calendar left, time slots right
             function startOfMonth(d: Date) {
@@ -979,39 +1164,54 @@ export default function PublicBookingPage() {
 
         {/* Contact Information */}
         <Card className="p-4">
-          <h2 className="text-xl font-semibold mb-3">Contact Information</h2>
+          <h2 className="text-xl font-semibold mb-3 flex items-center gap-2">
+            Contact Information
+            {stage.contact && <CheckCircle2 className="h-5 w-5 text-green-600" />}
+          </h2>
           <div className="grid gap-4">
             <div className="grid md:grid-cols-2 gap-3">
               <div>
-                <Label>First Name</Label>
+                <Label>First Name <span className="text-red-400">*</span></Label>
                 <Input
-                  className="mt-1"
+                  className={`mt-1 ${touched.firstName && !contact.firstName.trim() ? 'border-red-400 ring-1 ring-red-200' : ''}`}
                   value={contact.firstName}
                   onChange={(e) =>
                     setContact({ ...contact, firstName: e.target.value })
                   }
+                  onBlur={() => markTouched('firstName')}
                 />
+                {touched.firstName && !contact.firstName.trim() && (
+                  <div className="text-xs text-red-500 mt-1">First name is required</div>
+                )}
               </div>
               <div>
-                <Label>Last Name</Label>
+                <Label>Last Name <span className="text-red-400">*</span></Label>
                 <Input
-                  className="mt-1"
+                  className={`mt-1 ${touched.lastName && !contact.lastName.trim() ? 'border-red-400 ring-1 ring-red-200' : ''}`}
                   value={contact.lastName}
                   onChange={(e) =>
                     setContact({ ...contact, lastName: e.target.value })
                   }
+                  onBlur={() => markTouched('lastName')}
                 />
+                {touched.lastName && !contact.lastName.trim() && (
+                  <div className="text-xs text-red-500 mt-1">Last name is required</div>
+                )}
               </div>
               <div className="md:col-span-2">
-                <Label>Email</Label>
+                <Label>Email <span className="text-red-400">*</span></Label>
                 <Input
-                  className="mt-1"
+                  className={`mt-1 ${touched.email && !contact.email.trim() ? 'border-red-400 ring-1 ring-red-200' : ''}`}
                   type="email"
                   value={contact.email}
                   onChange={(e) =>
                     setContact({ ...contact, email: e.target.value })
                   }
+                  onBlur={() => markTouched('email')}
                 />
+                {touched.email && !contact.email.trim() && (
+                  <div className="text-xs text-red-500 mt-1">Email is required</div>
+                )}
               </div>
               <div>
                 <Label>Phone (optional)</Label>
@@ -1040,7 +1240,7 @@ export default function PublicBookingPage() {
               <textarea
                 className="mt-1 w-full min-h-[120px] rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"
                 rows={5}
-                placeholder="Anything we should know?"
+                placeholder="Please add any additional information you would like to share, such as lockbox combination, access codes, etc."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
               />
@@ -1126,7 +1326,7 @@ export default function PublicBookingPage() {
               <span>{formatMoney(totals.tax)}</span>
             </div>
             <div className="flex items-center justify-between font-semibold">
-              <span>Total</span>
+              <span>Estimated Total</span>
               <span>{formatMoney(totals.total)}</span>
             </div>
             <div className="text-xs text-muted-foreground mt-2">
@@ -1139,7 +1339,7 @@ export default function PublicBookingPage() {
               <label className="flex items-start gap-3">
                 <input
                   type="checkbox"
-                  className="mt-1"
+                  className="mt-1 h-5 w-5 rounded border-gray-300"
                   checked={prefSidebarPersistent}
                   onChange={(e) => setPrefSidebarPersistent(e.target.checked)}
                 />
@@ -1156,7 +1356,7 @@ export default function PublicBookingPage() {
               <label className="flex items-start gap-3">
                 <input
                   type="checkbox"
-                  className="mt-1"
+                  className="mt-1 h-5 w-5 rounded border-gray-300"
                   checked={marketingOptIn}
                   onChange={(e) => setMarketingOptIn(e.target.checked)}
                 />
@@ -1183,11 +1383,28 @@ export default function PublicBookingPage() {
                 selectedServices.length === 0
               }
             >
-              {submitting ? 'Submitting…' : 'Place Order'}
+              {submitting ? 'Submitting…' : 'Confirm Booking'}
             </Button>
           </div>
+          <p className="text-center text-sm text-muted-foreground mt-3">
+            No payment required now – we'll confirm your booking via email.
+          </p>
         </Card>
       </main>
+
+      {/* Sticky bottom Estimated Total bar */}
+      {selectedServices.length > 0 && !submitted && (
+        <div className="sticky bottom-0 z-30 border-t bg-white/95 backdrop-blur-sm shadow-[0_-2px_10px_rgba(0,0,0,0.08)]">
+          <div className="mx-auto max-w-3xl px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
+            <div className="text-sm text-muted-foreground">
+              {selectedServices.length} service{selectedServices.length !== 1 ? 's' : ''} selected
+            </div>
+            <div className="text-lg font-semibold">
+              Estimated Total: {formatMoney(totals.total)}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="mt-8 border-t border-white/10 bg-[#131c3b] text-gray-200">

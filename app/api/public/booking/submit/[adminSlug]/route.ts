@@ -42,6 +42,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
       country,
       placeId,
       propertySizeSqFt,
+      unitNumber,
+      basementMeasure,
+      basementPhoto,
+      garageMeasure,
+      garagePhoto,
       notes,
       contactFirstName,
       contactLastName,
@@ -85,7 +90,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
       select: {
         id: true,
         name: true,
+        description: true,
         priceCents: true,
+        isPerSqFt: true,
+        minPriceCents: true,
         durationMin: true,
         bufferBeforeMin: true,
         bufferAfterMin: true,
@@ -94,6 +102,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
       },
     });
     if (svcRows.length === 0) return NextResponse.json({ error: "No valid services" }, { status: 400 });
+
+    // Calculate effective price for each service (accounting for per-sq-ft pricing)
+    const size = Number(propertySizeSqFt) || 0;
+    const effectivePrices: Record<string, number> = {};
+    for (const s of svcRows) {
+      if (s.isPerSqFt && size > 0) {
+        const computed = Math.round(s.priceCents * size);
+        const floor = s.minPriceCents ?? 0;
+        effectivePrices[s.id] = Math.max(computed, floor);
+      } else {
+        effectivePrices[s.id] = s.priceCents;
+      }
+    }
 
     // Compute totals and end time
     const start = new Date(slotStart || Date.now());
@@ -105,7 +126,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
 
     let subtotal = 0;
     for (const s of svcRows) {
-      subtotal += s.priceCents;
+      subtotal += effectivePrices[s.id];
     }
     // We'll compute tax after promo discount is determined to ensure tax is based on discounted subtotal.
 
@@ -153,7 +174,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
       const appliesToSubset = eligibleServiceIds.size > 0;
       const selectedEligible = appliesToSubset ? svcRows.filter(s => eligibleServiceIds.has(s.id)) : [];
       const baseForDiscount = appliesToSubset ? selectedEligible : svcRows;
-      const eligibleSubtotal = baseForDiscount.reduce((acc, s) => acc + s.priceCents, 0);
+      const eligibleSubtotal = baseForDiscount.reduce((acc, s) => acc + effectivePrices[s.id], 0);
 
       if (eligibleSubtotal > 0) {
         if (promo.discountType === "AMOUNT") {
@@ -186,7 +207,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
         const appliesToSubset = (promo?.services?.length || 0) > 0;
         baseForDiscount = appliesToSubset ? svcRows.filter(s => eligibleIds.has(s.id)) : svcRows;
       }
-      const eligibleSubtotal = baseForDiscount.reduce((acc, s) => acc + s.priceCents, 0);
+      const eligibleSubtotal = baseForDiscount.reduce((acc, s) => acc + effectivePrices[s.id], 0);
       if (eligibleSubtotal > 0) {
         // Pro-rate discount across eligible services
         let remaining = discountCents;
@@ -195,7 +216,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
           const isLast = i === baseForDiscount.length - 1;
           let share = isLast
             ? remaining
-            : Math.round((discountCents * s.priceCents) / eligibleSubtotal);
+            : Math.round((discountCents * effectivePrices[s.id]) / eligibleSubtotal);
           if (share > remaining) share = remaining;
           discountShares[s.id] = share;
           remaining -= share;
@@ -205,7 +226,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
 
     for (const s of svcRows) {
       const discountShare = discountShares[s.id] || 0;
-      const baseAfter = Math.max(0, s.priceCents - discountShare);
+      const baseAfter = Math.max(0, effectivePrices[s.id] - discountShare);
       const t = s.taxes.reduce((acc, r) => acc + Math.round((baseAfter * r.tax.rateBps) / 10000), 0);
       itemTax[s.id] = t;
       tax += t;
@@ -232,6 +253,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
         propertyCountry: country || null,
         propertyPlaceId: placeId || null,
         propertySizeSqFt: propertySizeSqFt || null,
+        unitNumber: unitNumber || null,
+        basementMeasure: !!basementMeasure,
+        basementPhoto: !!basementPhoto,
+        garageMeasure: !!garageMeasure,
+        garagePhoto: !!garagePhoto,
         contactName: `${contactFirstName} ${contactLastName}`,
         contactEmail,
         contactPhone: contactPhone || null,
@@ -245,7 +271,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
           create: svcRows.map((s) => ({
             serviceId: s.id,
             serviceName: s.name,
-            unitPriceCents: s.priceCents,
+            unitPriceCents: effectivePrices[s.id],
             taxCents: itemTax[s.id] || 0,
           })),
         },
@@ -350,16 +376,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
 
     if (apiKey) {
       const resend = new Resend(apiKey);
-      const primary = svcRows[0];
-      const catName = primary?.category?.name || '';
-      const catDesc = primary?.category?.description || '';
-      const svcName = primary?.name || '';
       const dt = new Date(start);
       const dateStr = dt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
       const timeStr = dt
         .toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: settings.timeZone })
         .replace('AM', 'a.m.')
         .replace('PM', 'p.m.');
+
+      // Build service list HTML for emails
+      const servicesListHtml = svcRows.map((s) => {
+        const catName = s.category?.name || '';
+        const catDesc = s.category?.description || '';
+        const desc = s.description || '';
+        const price = money(effectivePrices[s.id]);
+        const perSqFtNote = s.isPerSqFt ? ` (${money(s.priceCents)}/sqft)` : '';
+        return `<li style="margin-bottom:8px;"><strong>${s.name}</strong>${perSqFtNote} — ${price}${catName ? `<br/><span style="color:#666;font-size:13px;">Category: ${catName}</span>` : ''}${catDesc ? `<br/><span style="color:#666;font-size:13px;">${catDesc}</span>` : ''}${desc ? `<br/><span style="color:#666;font-size:13px;">${desc}</span>` : ''}</li>`;
+      }).join('');
 
       const customerSubject = `We received your booking request for ${formattedAddress || address}`;
       const customerHtml = `
@@ -373,9 +405,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
           <p>We're all set for your appointment!</p>
           <h3 style="margin:16px 0 8px">Booking Details:</h3>
           <p><strong>Address:</strong> ${formattedAddress || address}</p>
+          ${unitNumber ? `<p><strong>Unit #:</strong> ${unitNumber}</p>` : ''}
           <p><strong>Date & time:</strong> ${dateStr}, at ${timeStr}</p>
-          <h3 style="margin:16px 0 8px">Selected Service:</h3>
-          <p>${catName ? `<strong>${catName}</strong><br />` : ''}${catDesc ? `${catDesc}<br />` : ''}${svcName}</p>
+          <h3 style="margin:16px 0 8px">Selected Services:</h3>
+          <ul style="margin:0;padding-left:20px;">${servicesListHtml}</ul>
+          <p style="margin-top:16px"><strong>Estimated Total: ${money(booking.totalCents)}</strong></p>
+          <p style="margin-top:4px;font-size:12px;color:#666;">Displayed prices are estimates. Final charges may vary based on actual property square footage, selected services, and travel distance.</p>
           <p style="margin-top:24px">Thank you for your business!</p>
           <p>Photos 4 Real Estate<br/>📧 info@photos4realestate.ca<br/>📞 (825) 449-5001</p>
         </div>
@@ -389,9 +424,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
             <h2 style="margin:0 0 12px">A new booking request has been received.</h2>
             <h3 style="margin:16px 0 8px">Booking Details:</h3>
             <p><strong>Address:</strong> ${formattedAddress || address}</p>
+            ${unitNumber ? `<p><strong>Unit #:</strong> ${unitNumber}</p>` : ''}
             <p><strong>Date & time:</strong> ${dateStr}, at ${timeStr}</p>
-            <h3 style="margin:16px 0 8px">Selected Service:</h3>
-            <p>${catName ? `<strong>${catName}</strong><br />` : ''}${catDesc ? `${catDesc}<br />` : ''}${svcName}</p>
+            ${propertySizeSqFt ? `<p><strong>Property Size:</strong> ${propertySizeSqFt} sq ft</p>` : ''}
+            ${basementMeasure || basementPhoto ? `<p><strong>Basement:</strong> ${[basementMeasure && 'Measure', basementPhoto && 'Photo'].filter(Boolean).join(', ')}</p>` : ''}
+            ${garageMeasure || garagePhoto ? `<p><strong>Detached Garage:</strong> ${[garageMeasure && 'Measure', garagePhoto && 'Photo'].filter(Boolean).join(', ')}</p>` : ''}
+            <h3 style="margin:16px 0 8px">Selected Services:</h3>
+            <ul style="margin:0;padding-left:20px;">${servicesListHtml}</ul>
             <h3 style="margin:16px 0 8px">Client:</h3>
             <p><strong>First Name:</strong> ${contactFirstName || ''}</p>
             <p><strong>Last Name:</strong> ${contactLastName || ''}</p>
@@ -399,7 +438,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
             <p><strong>Phone:</strong> ${contactPhone || ''}</p>
             <p><strong>Company name:</strong> ${company || ''}</p>
             <h3 style="margin:16px 0 8px">Pricing:</h3>
-            <p><strong>Total:</strong> ${money(booking.totalCents)}</p>
+            <p><strong>Subtotal:</strong> ${money(subtotal)}</p>
+            ${discountCents > 0 ? `<p><strong>Discount:</strong> -${money(discountCents)}</p>` : ''}
+            ${tax > 0 ? `<p><strong>Tax:</strong> ${money(tax)}</p>` : ''}
+            <p><strong>Estimated Total:</strong> ${money(booking.totalCents)}</p>
+            <p style="margin-top:4px;font-size:12px;color:#666;">Displayed prices are estimates. Final charges may vary based on actual property square footage, selected services, and travel distance.</p>
             <p style="margin-top:16px">Please review and confirm with the client.</p>
           </div>
         `;

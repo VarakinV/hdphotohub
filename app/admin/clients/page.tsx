@@ -72,7 +72,7 @@ export default function ClientsPage() {
   const [query, setQuery] = useState('');
 
   const [page, setPage] = useState(1);
-  const perPage = 20;
+  const [perPage, setPerPage] = useState(20);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -92,7 +92,7 @@ export default function ClientsPage() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
   const pageItems = useMemo(
     () => filtered.slice((page - 1) * perPage, page * perPage),
-    [filtered, page]
+    [filtered, page, perPage]
   );
 
   // Fetch realtors
@@ -339,8 +339,22 @@ export default function ClientsPage() {
               {/* Pagination */}
               {!isLoading && (
                 <div className="p-4 border-t flex items-center justify-between">
-                  <div className="text-sm text-gray-500">
-                    Page {page} of {totalPages}
+                  <div className="flex items-center gap-4">
+                    <div className="text-sm text-gray-500">
+                      Page {page} of {totalPages}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <label className="text-sm text-gray-500">Rows:</label>
+                      <select
+                        className="h-8 rounded-md border px-2 text-sm"
+                        value={perPage}
+                        onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}
+                      >
+                        {[10, 20, 30, 50].map((n) => (
+                          <option key={n} value={n}>{n}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                   <div className="flex gap-2">
                     <Button

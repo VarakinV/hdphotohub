@@ -52,6 +52,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ adm
             bufferAfterMin: true,
             minSqFt: true,
             maxSqFt: true,
+            isPerSqFt: true,
+            minPriceCents: true,
             taxes: { select: { tax: { select: { id: true, name: true, rateBps: true } } } },
           },
         },

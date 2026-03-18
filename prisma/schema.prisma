@@ -334,6 +334,8 @@ model Service {
   bufferAfterMin   Int                @default(0)
   minSqFt          Int?
   maxSqFt          Int?
+  isPerSqFt        Boolean            @default(false)
+  minPriceCents    Int?
   active           Boolean            @default(true)
   sortOrder        Int                @default(0)
   taxes            ServiceTax[]
@@ -391,6 +393,11 @@ model Booking {
   propertyCountry          String?
   propertyPlaceId          String?
   propertySizeSqFt         Int?
+  unitNumber               String?
+  basementMeasure          Boolean  @default(false)
+  basementPhoto            Boolean  @default(false)
+  garageMeasure            Boolean  @default(false)
+  garagePhoto              Boolean  @default(false)
 
   // Contact
   contactName  String

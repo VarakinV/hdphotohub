@@ -161,6 +161,7 @@ function BookingConfirmationInner() {
   const startISO = params.get('start') || '';
   const tz = params.get('tz') || undefined;
   const address = params.get('address') || '';
+  const unitNumber = params.get('unitNumber') || '';
 
   const dateObj = startISO ? new Date(startISO) : null;
   const dateText = dateObj ? formatDateLongWithComma(dateObj) : '';
@@ -230,6 +231,9 @@ function BookingConfirmationInner() {
             <div className="sm:col-span-2">
               <div className="text-muted-foreground">Property Address</div>
               <div className="font-medium">{address || '—'}</div>
+              {unitNumber && (
+                <div className="font-medium">Unit #: {unitNumber}</div>
+              )}
             </div>
           </div>
         </Card>

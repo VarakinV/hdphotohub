@@ -13,6 +13,8 @@ const createSchema = z.object({
   bufferAfterMin: z.number().int().min(0).optional(),
   minSqFt: z.number().int().min(0).optional().nullable(),
   maxSqFt: z.number().int().min(0).optional().nullable(),
+  isPerSqFt: z.boolean().optional(),
+  minPriceCents: z.number().int().min(0).optional().nullable(),
   active: z.boolean().optional(),
   taxIds: z.array(z.string().min(1)).optional(),
 });
@@ -88,6 +90,8 @@ export async function POST(req: NextRequest) {
         bufferAfterMin: parsed.data.bufferAfterMin ?? 0,
         minSqFt: parsed.data.minSqFt ?? null,
         maxSqFt: parsed.data.maxSqFt ?? null,
+        isPerSqFt: parsed.data.isPerSqFt ?? false,
+        minPriceCents: parsed.data.minPriceCents ?? null,
         active: parsed.data.active ?? true,
       },
     });

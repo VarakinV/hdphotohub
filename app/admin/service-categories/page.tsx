@@ -199,14 +199,14 @@ export default function ServiceCategoriesPage() {
   };
 
   const [page, setPage] = useState(1);
-  const perPage = 20;
+  const [perPage, setPerPage] = useState(20);
   useEffect(() => {
     setPage(1);
   }, [filters]);
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
   const pageItems = useMemo(
     () => filtered.slice((page - 1) * perPage, page * perPage),
-    [filtered, page]
+    [filtered, page, perPage]
   );
 
   function startEdit(row: Category) {
@@ -240,8 +240,9 @@ export default function ServiceCategoriesPage() {
       const updated = await res.json();
       setItems((list) => list.map((x) => (x.id === id ? updated : x)));
       cancelEdit();
+      toast.success('Category updated');
     } else {
-      alert('Failed to save');
+      toast.error('Failed to update category');
     }
   }
 
@@ -254,6 +255,9 @@ export default function ServiceCategoriesPage() {
     if (res.ok) {
       const u = await res.json();
       setItems((list) => list.map((x) => (x.id === row.id ? u : x)));
+      toast.success(`Category ${!row.active ? 'activated' : 'deactivated'}`);
+    } else {
+      toast.error('Failed to toggle category status');
     }
   }
 
@@ -415,6 +419,7 @@ export default function ServiceCategoriesPage() {
                     setCreateOpen(false);
                     setCreateName('');
                     setCreateErr({});
+                    toast.success('Category created');
                   } catch {
                     setCreateErr((e: any) => ({ ...e, form: 'Network error' }));
                   }
@@ -644,8 +649,22 @@ export default function ServiceCategoriesPage() {
               </Table>
 
               <div className="p-4 border-t flex items-center justify-between">
-                <div className="text-sm text-gray-500">
-                  Page {page} of {totalPages}
+                <div className="flex items-center gap-4">
+                  <div className="text-sm text-gray-500">
+                    Page {page} of {totalPages}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <label className="text-sm text-gray-500">Rows:</label>
+                    <select
+                      className="h-8 rounded-md border px-2 text-sm"
+                      value={perPage}
+                      onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}
+                    >
+                      {[10, 20, 30, 50].map((n) => (
+                        <option key={n} value={n}>{n}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <Button
