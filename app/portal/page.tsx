@@ -42,10 +42,9 @@ export default async function PortalHomePage({
     redirect(`/admin/dashboard${suffix}`);
   }
 
-  const { page: pageParam, q: qParam } = sp;
-  const page = Math.max(1, Number(pageParam) || 1);
+  const { q: qParam } = sp;
   const q = (qParam || '').trim();
-  const perPage = 10;
+  const recentLimit = 5;
 
   const baseWhere = isAdmin ? {} : { realtorId: user.realtorId || '__none__' };
   const where = q
@@ -57,16 +56,12 @@ export default async function PortalHomePage({
       }
     : baseWhere;
 
-  const total = await prisma.order.count({ where });
   const orders = await prisma.order.findMany({
     where,
     orderBy: { createdAt: 'desc' },
-    skip: (page - 1) * perPage,
-    take: perPage,
+    take: recentLimit,
     select: { id: true, slug: true, propertyAddress: true, status: true },
   });
-
-  const totalPages = Math.max(1, Math.ceil(total / perPage));
 
   // Fetch points for client (only if user is linked to a Realtor)
   let points = 0;
@@ -147,43 +142,11 @@ export default async function PortalHomePage({
             </ul>
           )}
 
-          {/* Pagination */}
-          <div className="mt-4 flex items-center justify-between">
-            <div className="text-sm text-gray-500">
-              Page {page} of {totalPages}
-            </div>
-            <div className="flex gap-2">
-              {page > 1 ? (
-                <Button variant="outline" asChild size="sm">
-                  <Link
-                    href={`/portal?page=${page - 1}${
-                      q ? `&q=${encodeURIComponent(q)}` : ''
-                    }`}
-                  >
-                    Previous
-                  </Link>
-                </Button>
-              ) : (
-                <Button variant="outline" size="sm" disabled>
-                  Previous
-                </Button>
-              )}
-              {page < totalPages ? (
-                <Button variant="outline" asChild size="sm">
-                  <Link
-                    href={`/portal?page=${page + 1}${
-                      q ? `&q=${encodeURIComponent(q)}` : ''
-                    }`}
-                  >
-                    Next
-                  </Link>
-                </Button>
-              ) : (
-                <Button variant="outline" size="sm" disabled>
-                  Next
-                </Button>
-              )}
-            </div>
+          {/* View All link */}
+          <div className="mt-4 text-center">
+            <Button variant="outline" asChild size="sm">
+              <Link href="/portal/orders">View All Orders</Link>
+            </Button>
           </div>
         </div>
       </PortalTwoColumnShell>

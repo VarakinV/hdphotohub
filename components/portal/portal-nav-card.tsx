@@ -12,11 +12,13 @@ import {
   Settings2,
   X,
   FileText,
+  Sparkles,
 } from 'lucide-react';
 
 const items = [
   { href: '/portal', label: 'Portal', Icon: LayoutDashboard },
   { href: '/portal/orders', label: 'My Orders', Icon: ClipboardList },
+  { href: '/portal/points-history', label: 'Points History', Icon: Sparkles },
   { href: '/portal/review', label: 'Write a Review', Icon: Star },
   { href: '/portal/invoices', label: 'Invoices', Icon: FileText },
 ];

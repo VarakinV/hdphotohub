@@ -16,10 +16,12 @@ import { OrdersSearchInput } from '@/components/portal/orders-search';
 
 import PortalTwoColumnShell from '@/components/portal/PortalTwoColumnShell';
 
+import { PerPageSelect } from '@/components/portal/per-page-select';
+
 export default async function PortalOrdersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; q?: string }>;
+  searchParams: Promise<{ page?: string; q?: string; perPage?: string }>;
 }) {
   const session = await auth();
   const user = session?.user as any;
@@ -30,7 +32,7 @@ export default async function PortalOrdersPage({
       ? {}
       : { realtorId: user.realtorId || '__none__' };
 
-  const { page: pageParam, q: qParam } = await searchParams;
+  const { page: pageParam, q: qParam, perPage: perPageParam } = await searchParams;
   const q = (qParam || '').trim();
   const where = q
     ? {
@@ -42,7 +44,10 @@ export default async function PortalOrdersPage({
     : baseWhere;
 
   const page = Math.max(1, Number(pageParam) || 1);
-  const perPage = 20;
+  const allowedPerPage = [10, 20, 50];
+  const perPage = allowedPerPage.includes(Number(perPageParam))
+    ? Number(perPageParam)
+    : 10;
   const total = await prisma.order.count({ where });
   const orders = await prisma.order.findMany({
     where,
@@ -81,6 +86,7 @@ export default async function PortalOrdersPage({
       <PortalTwoColumnShell>
         <div className="bg-white rounded-lg shadow">
           <div className="p-4 border-b flex items-center gap-3">
+            <PerPageSelect current={perPage} q={q} />
             <div className="ml-auto w-full sm:w-64">
               <OrdersSearchInput initialQ={q} />
             </div>
@@ -130,7 +136,7 @@ export default async function PortalOrdersPage({
               {page > 1 ? (
                 <Button variant="outline" asChild size="sm">
                   <Link
-                    href={`/portal/orders?page=${page - 1}${
+                    href={`/portal/orders?page=${page - 1}&perPage=${perPage}${
                       q ? `&q=${encodeURIComponent(q)}` : ''
                     }`}
                   >
@@ -145,7 +151,7 @@ export default async function PortalOrdersPage({
               {page < totalPages ? (
                 <Button variant="outline" asChild size="sm">
                   <Link
-                    href={`/portal/orders?page=${page + 1}${
+                    href={`/portal/orders?page=${page + 1}&perPage=${perPage}${
                       q ? `&q=${encodeURIComponent(q)}` : ''
                     }`}
                   >

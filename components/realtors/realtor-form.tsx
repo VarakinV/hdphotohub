@@ -78,6 +78,7 @@ export function RealtorForm({
   const [isUploading, setIsUploading] = useState(false);
   const [pointsMode, setPointsMode] = useState<'add' | 'retract' | null>(null);
   const [pointsDelta, setPointsDelta] = useState('');
+  const [pointsReason, setPointsReason] = useState('');
   const [headshotUrl, setHeadshotUrl] = useState<string | null>(
     realtor?.headshot || null
   );
@@ -585,17 +586,25 @@ export function RealtorForm({
 
                   {/* Inline input when a mode is active */}
                   {pointsMode && (
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="space-y-2 mt-2">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          inputMode="numeric"
+                          min={1}
+                          step={1}
+                          placeholder="Enter amount"
+                          value={pointsDelta}
+                          onChange={(e) => setPointsDelta(e.target.value)}
+                          disabled={isLoading}
+                          className="w-40"
+                        />
+                      </div>
                       <Input
-                        type="number"
-                        inputMode="numeric"
-                        min={1}
-                        step={1}
-                        placeholder="Enter amount"
-                        value={pointsDelta}
-                        onChange={(e) => setPointsDelta(e.target.value)}
+                        placeholder="Reason (required)"
+                        value={pointsReason}
+                        onChange={(e) => setPointsReason(e.target.value)}
                         disabled={isLoading}
-                        className="w-40"
                       />
                       <Button
                         type="button"
@@ -603,19 +612,39 @@ export function RealtorForm({
                         disabled={
                           isLoading ||
                           !pointsDelta ||
-                          Number(pointsDelta) <= 0
+                          Number(pointsDelta) <= 0 ||
+                          !pointsReason.trim()
                         }
-                        onClick={() => {
+                        onClick={async () => {
                           const delta = Math.abs(
                             Math.round(Number(pointsDelta))
                           );
-                          if (!delta) return;
-                          const newVal =
-                            pointsMode === 'add'
-                              ? currentPoints + delta
-                              : Math.max(0, currentPoints - delta);
-                          field.onChange(newVal);
+                          if (!delta || !pointsReason.trim()) return;
+                          if (!realtor?.id) return;
+                          try {
+                            const res = await fetch(
+                              `/api/realtors/${realtor.id}/points`,
+                              {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  amount: delta,
+                                  type: pointsMode === 'add' ? 'add' : 'redeem',
+                                  reason: pointsReason.trim(),
+                                }),
+                              }
+                            );
+                            if (!res.ok) {
+                              const data = await res.json();
+                              throw new Error(data.error || 'Failed');
+                            }
+                            const data = await res.json();
+                            field.onChange(data.balance);
+                          } catch (e: any) {
+                            alert(e.message || 'Failed to update points');
+                          }
                           setPointsDelta('');
+                          setPointsReason('');
                           setPointsMode(null);
                         }}
                       >

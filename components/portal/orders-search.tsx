@@ -2,7 +2,7 @@
 
 import { Input } from "@/components/ui/input";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export function OrdersSearchInput({
   placeholder = "Search address...",
@@ -17,6 +17,7 @@ export function OrdersSearchInput({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [value, setValue] = useState(initialQ);
+  const isUserTyping = useRef(false);
 
   const updateQuery = useCallback(
     (next: string) => {
@@ -31,9 +32,13 @@ export function OrdersSearchInput({
     [router, pathname, searchParams]
   );
 
-  // Update list on the fly
+  // Only push to URL when the user is actively typing
   useEffect(() => {
-    const t = setTimeout(() => updateQuery(value), 250); // debounce a bit
+    if (!isUserTyping.current) return;
+    const t = setTimeout(() => {
+      updateQuery(value);
+      isUserTyping.current = false;
+    }, 250);
     return () => clearTimeout(t);
   }, [value, updateQuery]);
 
@@ -47,7 +52,10 @@ export function OrdersSearchInput({
   return (
     <Input
       value={value}
-      onChange={(e) => setValue(e.target.value)}
+      onChange={(e) => {
+        isUserTyping.current = true;
+        setValue(e.target.value);
+      }}
       placeholder={placeholder}
       className={className}
     />

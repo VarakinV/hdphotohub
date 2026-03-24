@@ -72,8 +72,21 @@ model Realtor {
   invites      Invitation[] @relation("RealtorInvites")
 
   // Realtors ↔ Admins assignments (as Realtor)
-  assignedAdmins RealtorAssignment[] @relation("RealtorAdmins")
-  Booking        Booking[]
+  assignedAdmins    RealtorAssignment[] @relation("RealtorAdmins")
+  Booking           Booking[]
+  pointTransactions PointTransaction[]
+}
+
+model PointTransaction {
+  id        String   @id @default(cuid())
+  realtorId String
+  realtor   Realtor  @relation(fields: [realtorId], references: [id], onDelete: Cascade)
+  amount    Int      // positive = added, negative = redeemed
+  reason    String
+  createdBy String?  // admin user id who created this transaction
+  createdAt DateTime @default(now())
+
+  @@index([realtorId, createdAt])
 }
 
 model RealtorAssignment {

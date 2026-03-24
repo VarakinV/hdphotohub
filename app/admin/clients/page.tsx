@@ -279,7 +279,12 @@ export default function ClientsPage() {
                         </Avatar>
                       </TableCell>
                       <TableCell className="font-medium">
-                        {realtor.firstName} {realtor.lastName}
+                        <Link
+                          href={`/admin/clients/${realtor.id}`}
+                          className="text-primary hover:underline"
+                        >
+                          {realtor.firstName} {realtor.lastName}
+                        </Link>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
