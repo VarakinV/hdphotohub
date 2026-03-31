@@ -11,20 +11,32 @@ export async function GET(req: NextRequest) {
     const res = await fetch(url);
     if (!res.ok) return new NextResponse('Upstream fetch failed', { status: 502 });
 
-    const buf = Buffer.from(await res.arrayBuffer());
     let contentType = res.headers.get('content-type') || 'application/octet-stream';
     // Force download behavior for SVGs to avoid inline rendering
     if (contentType.includes('image/svg')) {
       contentType = 'application/octet-stream';
     }
 
-    return new NextResponse(buf, {
+    const headers: Record<string, string> = {
+      'Content-Type': contentType,
+      'Content-Disposition': `attachment; filename="${sanitizeFilename(filename)}"`,
+      'Cache-Control': 'no-store',
+    };
+
+    // Forward content-length if available so the browser can show download progress
+    const contentLength = res.headers.get('content-length');
+    if (contentLength) {
+      headers['Content-Length'] = contentLength;
+    }
+
+    // Stream the response body instead of buffering to avoid
+    // exceeding Vercel's serverless function memory / body-size limits
+    // for large files (e.g. videos).
+    const body = res.body;
+
+    return new Response(body, {
       status: 200,
-      headers: {
-        'Content-Type': contentType,
-        'Content-Disposition': `attachment; filename="${sanitizeFilename(filename)}"`,
-        'Cache-Control': 'no-store',
-      },
+      headers,
     });
   } catch (e) {
     console.error(e);
