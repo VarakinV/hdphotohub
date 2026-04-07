@@ -11,6 +11,7 @@ import { PhotosZipDownloader } from '@/components/delivery/PhotosZipDownloader';
 import { DownloadLinkButton } from '@/components/delivery/DownloadLinkButton';
 import { PhotoLightbox } from '@/components/delivery/PhotoLightbox';
 import { VideoWithPoster } from '@/components/delivery/VideoWithPoster';
+import { SitePreview } from '@/components/delivery/SitePreview';
 
 async function getOrder(id: string) {
   const order = await prisma.order.findFirst({
@@ -27,6 +28,14 @@ async function getOrder(id: string) {
       embeds: true,
       propertyPages: true,
       flyers: true,
+      aiReels: {
+        where: { j2vStatus: 'COMPLETE' },
+        select: {
+          id: true, finalUrl: true, thumbnail: true,
+          sourceImageUrl: true, width: true, height: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      },
     },
   });
   return order;
@@ -302,6 +311,47 @@ export default async function DeliveryPage({
           </section>
         )}
 
+        {/* AI Reels */}
+        {!!(order as any).aiReels?.filter((r: any) => r.finalUrl).length && (
+          <section id="ai-reels" className="space-y-3 scroll-mt-24">
+            <div className="space-y-2">
+              <h2 className="text-2xl md:text-3xl font-semibold">
+                Bonus AI Reel
+              </h2>
+              <div className="h-px bg-gray-200/80" />
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-3">
+              {(order as any).aiReels
+                .filter((r: any) => r.finalUrl)
+                .map((r: any, i: number) => (
+                  <div key={r.id} className="border rounded-md overflow-hidden">
+                    <VideoWithPoster
+                      src={r.finalUrl}
+                      poster={r.thumbnail}
+                      fallbackImage={heroUrl}
+                      aspectRatio="9/16"
+                    />
+                    <div className="px-2 pt-2 text-xs text-gray-600 flex items-center justify-between">
+                      <span className="truncate">AI Twilight Reel{(order as any).aiReels.filter((r: any) => r.finalUrl).length > 1 ? ` ${i + 1}` : ''}</span>
+                      {r.width && r.height && (
+                        <span className="ml-2 whitespace-nowrap">
+                          {r.width}×{r.height}
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-2 text-center">
+                      <DownloadLinkButton
+                        url={r.finalUrl}
+                        label="Download"
+                        fileName={`ai-twilight-reel${i > 0 ? `-${i + 1}` : ''}.mp4`}
+                      />
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </section>
+        )}
+
         {/* Slideshows (horizontal) */}
         {!!order.reels?.filter((r: any) => r.status === 'COMPLETE' && (r.variantKey || '').toLowerCase().startsWith('h')).length && (
           <section id="slideshows" className="space-y-3 scroll-mt-24">
@@ -521,20 +571,10 @@ export default async function DeliveryPage({
                     Variant {v}
                   </div>
 
-                  <div className="aspect-video bg-black/5 relative">
-                    {heroUrl ? (
-                      <Image
-                        src={heroUrl}
-                        alt={`Template v${v}`}
-                        fill
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400">
-                        No preview
-                      </div>
-                    )}
-                  </div>
+                  <SitePreview
+                    src={`/property/${order.id}/v${v}`}
+                    title={`Property Website Variant ${v}`}
+                  />
                   <div className="p-3 flex items-center justify-between">
                     <Button
                       asChild

@@ -96,7 +96,8 @@ export async function PUT(
       );
     }
 
-    const { firstName, lastName, email, phone, headshot, companyName, companyLogo, facebookUrl, linkedinUrl, instagramUrl, youtubeUrl, twitterUrl, pinterestUrl, vimeoUrl, tiktokUrl, points } = validatedFields.data;
+    const { firstName, lastName, email: rawEmail, phone, headshot, companyName, companyLogo, facebookUrl, linkedinUrl, instagramUrl, youtubeUrl, twitterUrl, pinterestUrl, vimeoUrl, tiktokUrl, points } = validatedFields.data;
+    const email = rawEmail.trim().toLowerCase();
 
     // Check if realtor exists and belongs to the user
     const existingRealtor = await prisma.realtor.findFirst({

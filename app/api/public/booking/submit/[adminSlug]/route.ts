@@ -130,10 +130,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
     }
     // We'll compute tax after promo discount is determined to ensure tax is based on discounted subtotal.
 
-    // Upsert Realtor by email under this admin
-    let realtor = await prisma.realtor.findUnique({ where: { email: contactEmail } });
+    // Upsert Realtor by email under this admin (normalize to lowercase to avoid duplicates)
+    const normalizedEmail = (contactEmail || '').trim().toLowerCase();
+    let realtor = await prisma.realtor.findUnique({ where: { email: normalizedEmail } });
     if (!realtor) {
-      realtor = await prisma.realtor.create({ data: { email: contactEmail, firstName: contactFirstName, lastName: contactLastName, phone: contactPhone || null, companyName: company || null, userId: admin.id } });
+      realtor = await prisma.realtor.create({ data: { email: normalizedEmail, firstName: contactFirstName, lastName: contactLastName, phone: contactPhone || null, companyName: company || null, userId: admin.id } });
     }
     // Ensure assignment link
     await prisma.realtorAssignment.upsert({

@@ -147,6 +147,7 @@ model Order {
   reels         OrderReel[]
   reelSources   OrderReelSourceImage[]
   flyers        OrderFlyer[]
+  aiReels       OrderAiReel[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -581,6 +582,49 @@ enum ReelStatus {
   RENDERING
   COMPLETE
   FAILED
+}
+
+enum AiReelStepStatus {
+  PENDING
+  PROCESSING
+  COMPLETE
+  FAILED
+}
+
+model OrderAiReel {
+  id             String   @id @default(cuid())
+  orderId        String
+  order          Order    @relation(fields: [orderId], references: [id])
+
+  // Step 0: Source
+  sourceImageUrl String   // uploaded daytime photo
+
+  // Step 1: Kie.ai image transform (nano-banana-pro → twilight)
+  kieImageTaskId   String?
+  kieImageStatus   AiReelStepStatus @default(PENDING)
+  twilightImageUrl String?
+
+  // Step 2: Kie.ai Veo3 video (day→twilight transition)
+  kieVideoTaskId String?
+  kieVideoStatus AiReelStepStatus @default(PENDING)
+  videoUrl       String?
+
+  // Step 3: JSON2Video final reel
+  j2vRenderId String?
+  j2vStatus   AiReelStepStatus @default(PENDING)
+  finalUrl    String?   // completed reel URL
+  thumbnail   String?
+  width       Int?      @default(1080)
+  height      Int?      @default(1920)
+
+  error     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orderId])
+  @@index([kieImageTaskId])
+  @@index([kieVideoTaskId])
+  @@index([j2vRenderId])
 }
 
 // Free Reels funnel models

@@ -1,0 +1,6 @@
+ERRORS:
+app/delivery/[id]/page.tsx(336,29): error TS2322: Type '{ src: any; poster: any; width: any; height: any; }' is not assignable to type 'IntrinsicAttributes & VideoWithPosterProps'.
+  Property 'width' does not exist on type 'IntrinsicAttributes & VideoWithPosterProps'.
+components/orders/ai-reel-uploader.tsx(7,19): error TS2307: Cannot find module 'react-hot-toast' or its corresponding type declarations.
+components/orders/ai-reels-list.tsx(6,19): error TS2307: Cannot find module 'react-hot-toast' or its corresponding type declarations.
+

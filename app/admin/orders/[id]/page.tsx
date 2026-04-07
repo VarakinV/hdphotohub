@@ -40,7 +40,10 @@ import {
   Paperclip,
   Link2,
   FileText,
+  Sparkles,
 } from 'lucide-react';
+import { AiReelUploader } from '@/components/orders/ai-reel-uploader';
+import AiReelsList from '@/components/orders/ai-reels-list';
 
 interface Order {
   id: string;
@@ -86,6 +89,7 @@ export default function OrderDetailsPage() {
     | 'photos'
     | 'videos'
     | 'reels'
+    | 'aireels'
     | 'flyers'
     | 'floor'
     | 'attach'
@@ -99,6 +103,7 @@ export default function OrderDetailsPage() {
 
   const [embedRefresh, setEmbedRefresh] = useState(0);
   const [reelRefresh, setReelRefresh] = useState(0);
+  const [aiReelRefresh, setAiReelRefresh] = useState(0);
   const [editing, setEditing] = useState(false);
   const [preview, setPreview] = useState<{
     lat: number | null;
@@ -139,6 +144,7 @@ export default function OrderDetailsPage() {
     | 'photos'
     | 'videos'
     | 'reels'
+    | 'aireels'
     | 'flyers'
     | 'floor'
     | 'attach'
@@ -150,6 +156,7 @@ export default function OrderDetailsPage() {
     { key: 'photos', label: 'Photos', icon: Images },
     { key: 'videos', label: 'Videos', icon: Film },
     { key: 'reels', label: 'Reels', icon: PlaySquare },
+    { key: 'aireels', label: 'AI Reels', icon: Sparkles },
     { key: 'flyers', label: 'Flyers', icon: FileText },
     { key: 'floor', label: 'Floor Plans', icon: Ruler },
     { key: 'attach', label: 'PDFs', icon: Paperclip },
@@ -608,6 +615,16 @@ export default function OrderDetailsPage() {
                 onStarted={() => setReelRefresh((n) => n + 1)}
               />
               <ReelsList orderId={order.id} refreshToken={reelRefresh} />
+            </div>
+          )}
+
+          {tab === 'aireels' && order && (
+            <div className="space-y-4">
+              <AiReelUploader
+                orderId={order.id}
+                onGenerated={() => setAiReelRefresh((n) => n + 1)}
+              />
+              <AiReelsList orderId={order.id} refreshToken={aiReelRefresh} onDeleted={() => setAiReelRefresh((n) => n + 1)} />
             </div>
           )}
 

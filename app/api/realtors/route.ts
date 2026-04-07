@@ -96,7 +96,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { firstName, lastName, email, phone, headshot, companyName, companyLogo, facebookUrl, linkedinUrl, instagramUrl, youtubeUrl, twitterUrl, pinterestUrl, vimeoUrl, tiktokUrl } = validatedFields.data;
+    const { firstName, lastName, email: rawEmail, phone, headshot, companyName, companyLogo, facebookUrl, linkedinUrl, instagramUrl, youtubeUrl, twitterUrl, pinterestUrl, vimeoUrl, tiktokUrl } = validatedFields.data;
+    const email = rawEmail.trim().toLowerCase();
 
     // Check if realtor with this email already exists
     const existingRealtor = await prisma.realtor.findUnique({

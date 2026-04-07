@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { useForm, SubmitHandler } from 'react-hook-form';
@@ -9,13 +9,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   Form,
   FormControl,
   FormField,
@@ -23,7 +16,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ChevronDown } from 'lucide-react';
 
 import { AdminNavbar } from '@/components/admin/admin-navbar';
 import PlacesAddressInput from '@/components/admin/PlacesAddressInput';
@@ -56,6 +49,82 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
+
+function RealtorSearchSelect({
+  realtors,
+  value,
+  onChange,
+}: {
+  realtors: { id: string; name: string }[];
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return realtors;
+    const q = search.toLowerCase();
+    return realtors.filter((r) => r.name.toLowerCase().includes(q));
+  }, [realtors, search]);
+
+  const selectedName = realtors.find((r) => r.id === value)?.name;
+
+  React.useEffect(() => {
+    if (!open) return;
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative w-full">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring"
+      >
+        <span className={`truncate ${selectedName ? '' : 'text-muted-foreground'}`}>
+          {selectedName || 'Select realtor'}
+        </span>
+        <ChevronDown className="h-4 w-4 opacity-50" />
+      </button>
+
+      {open && (
+        <div className="absolute z-50 mt-1 w-full rounded-md border bg-white shadow-lg">
+          <div className="p-2 border-b">
+            <input
+              autoFocus
+              type="text"
+              placeholder="Search realtor..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full rounded-md border border-input px-2 py-1.5 text-sm outline-none focus:ring-1 focus:ring-ring"
+            />
+          </div>
+          <div className="max-h-60 overflow-y-auto py-1">
+            {filtered.map((r) => (
+              <button
+                key={r.id}
+                type="button"
+                onClick={() => { onChange(r.id); setSearch(''); setOpen(false); }}
+                className={`w-full text-left px-3 py-1.5 text-sm hover:bg-gray-100 ${value === r.id ? 'bg-gray-50 font-medium' : ''}`}
+              >
+                {r.name}
+              </button>
+            ))}
+            {filtered.length === 0 && (
+              <div className="px-3 py-2 text-sm text-gray-400">No results</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function NewOrderPage() {
   const router = useRouter();
@@ -141,6 +210,7 @@ export default function NewOrderPage() {
           </Button>
         </div>
 
+        <div className="bg-white rounded-lg border shadow-sm p-6">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
@@ -150,18 +220,11 @@ export default function NewOrderPage() {
                 <FormItem>
                   <FormLabel>Realtor</FormLabel>
                   <FormControl>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select realtor" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {realtors.map((r) => (
-                          <SelectItem key={r.id} value={r.id}>
-                            {r.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <RealtorSearchSelect
+                      realtors={realtors}
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -372,6 +435,7 @@ export default function NewOrderPage() {
             </div>
           </form>
         </Form>
+        </div>
       </div>
     </>
   );

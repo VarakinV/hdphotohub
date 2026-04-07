@@ -161,6 +161,56 @@ export async function POST(req: NextRequest) {
 	    const updatedOrder = await prisma.orderReel.updateMany({ where: { renderId: evt.renderId, provider: 'j2v' }, data: { status, url: resolved.url ?? undefined, width: resolved.width ?? undefined, height: resolved.height ?? undefined, error: status === 'FAILED' ? 'Render failed' : undefined } });
 	    const updatedFree = await prisma.freeReel.updateMany({ where: { renderId: evt.renderId, provider: 'j2v' }, data: { status, url: resolved.url ?? undefined, width: resolved.width ?? undefined, height: resolved.height ?? undefined, error: status === 'FAILED' ? 'Render failed' : undefined } });
 	    const updatedFreeSlideshow = await prisma.freeSlideshow.updateMany({ where: { renderId: evt.renderId, provider: 'j2v' }, data: { status, url: resolved.url ?? undefined, width: resolved.width ?? undefined, height: resolved.height ?? undefined, error: status === 'FAILED' ? 'Render failed' : undefined } });
+
+	    // AI Reels: update OrderAiReel if this renderId matches
+	    const aiReelStatus = status === 'COMPLETE' ? 'COMPLETE' as const : status === 'FAILED' ? 'FAILED' as const : 'PROCESSING' as const;
+	    const aiReelData: any = { j2vStatus: aiReelStatus };
+	    if (resolved.url) aiReelData.finalUrl = resolved.url;
+	    if (resolved.width) aiReelData.width = resolved.width;
+	    if (resolved.height) aiReelData.height = resolved.height;
+	    if (status === 'FAILED') aiReelData.error = 'J2V render failed';
+	    const updatedAiReel = await prisma.orderAiReel.updateMany({ where: { j2vRenderId: evt.renderId }, data: aiReelData });
+
+	    // Generate poster for AI reel
+	    if (status === 'COMPLETE' && resolved.url && updatedAiReel.count > 0) {
+	      try {
+	        const aiReel = await prisma.orderAiReel.findFirst({ where: { j2vRenderId: evt.renderId }, select: { id: true, orderId: true, thumbnail: true } });
+	        if (aiReel && !aiReel.thumbnail && isS3Available()) {
+	          const buf = await extractPosterFromVideoUrl(resolved.url);
+	          if (buf && buf.length > 0) {
+	            const basePath = `orders/${aiReel.orderId}/ai-reels/posters`;
+	            const name = `ai-reel-${aiReel.id.slice(0, 8)}.jpg`;
+	            const { fileUrl } = await uploadBufferToS3WithPath(basePath, name, buf, 'image/jpeg');
+	            await prisma.orderAiReel.update({ where: { id: aiReel.id }, data: { thumbnail: fileUrl } });
+	          }
+	        }
+	      } catch (e) {
+	        console.warn('AI Reel poster generation failed', { renderId: evt.renderId, e });
+	      }
+	    }
+
+	    // S3 copy for AI reel video
+	    if (status === 'COMPLETE' && resolved.url && updatedAiReel.count > 0 && isS3Available()) {
+	      try {
+	        const u = new URL(resolved.url);
+	        if (u.hostname.includes('json2video')) {
+	          const aiReel = await prisma.orderAiReel.findFirst({ where: { j2vRenderId: evt.renderId }, select: { id: true, orderId: true } });
+	          if (aiReel) {
+	            const basePath = `orders/${aiReel.orderId}/ai-reels/final`;
+	            const name = `ai-reel-${aiReel.id.slice(0, 8)}.mp4`;
+	            const resp = await fetch(resolved.url);
+	            if (resp.ok) {
+	              const ab = await resp.arrayBuffer();
+	              const buf = Buffer.from(ab);
+	              const { fileUrl } = await uploadBufferToS3WithPath(basePath, name, buf, 'video/mp4');
+	              await prisma.orderAiReel.update({ where: { id: aiReel.id }, data: { finalUrl: fileUrl } });
+	            }
+	          }
+	        }
+	      } catch (e) {
+	        console.warn('AI Reel S3 copy failed', { renderId: evt.renderId, e });
+	      }
+	    }
 	
 	    // If a free reel became COMPLETE, check if all for that lead are done
 	    if (status === 'COMPLETE' && updatedFree.count > 0) {
