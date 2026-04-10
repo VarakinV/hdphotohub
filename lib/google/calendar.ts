@@ -84,17 +84,30 @@ export async function getFreeBusy(adminId: string, calendarId: string | null, ti
   const auth = await getGoogleClientForAdmin(adminId);
   if (!auth) return [] as { start: string; end: string }[];
   const cal = google.calendar({ version: "v3", auth });
-  const id = calendarId || "primary";
+
+  // Always query "primary" calendar (where phone-created events land).
+  // If a different calendar is configured, query that too so we catch
+  // busy times from both calendars.
+  const ids = new Set<string>(["primary"]);
+  if (calendarId) ids.add(calendarId);
+
   const res = await cal.freebusy.query({
     requestBody: {
       timeMin,
       timeMax,
       timeZone,
-      items: [{ id }],
+      items: Array.from(ids).map((id) => ({ id })),
     },
   });
-  const busy = (res.data.calendars as any)?.[id]?.busy as { start: string; end: string }[] | undefined;
-  return busy || [];
+
+  // Merge busy periods from all queried calendars
+  const calendars = (res.data.calendars ?? {}) as Record<string, { busy?: { start: string; end: string }[] }>;
+  const allBusy: { start: string; end: string }[] = [];
+  for (const id of ids) {
+    const periods = calendars[id]?.busy;
+    if (Array.isArray(periods)) allBusy.push(...periods);
+  }
+  return allBusy;
 }
 
 export type CreateEventInput = {
