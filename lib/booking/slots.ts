@@ -116,6 +116,10 @@ export function generateSlots(req: SlotRequest): Slot[] {
         const sStart = t;
         const sEnd = addMinutes(t, totalMin);
 
+        // skip slots whose start falls before the requested range
+        // (the UTC-day cursor can drift into the previous local day due to timezone offsets)
+        if (isBefore(sStart, req.rangeStart)) continue;
+
         // enforce lead time and max advance (both measured in real UTC time)
         if (isBefore(sStart, leadReady)) continue;
         const maxAdvanceEnd = addMinutes(now, req.settings.maxAdvanceDays * 24 * 60);
