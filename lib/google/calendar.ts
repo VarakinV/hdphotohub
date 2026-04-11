@@ -82,7 +82,10 @@ export async function listCalendars(adminId: string) {
 
 export async function getFreeBusy(adminId: string, calendarId: string | null, timeMin: string, timeMax: string, timeZone?: string) {
   const auth = await getGoogleClientForAdmin(adminId);
-  if (!auth) return [] as { start: string; end: string }[];
+  if (!auth) {
+    console.warn('[FreeBusy] Google auth failed for admin', adminId, '— returning empty busy list');
+    return [] as { start: string; end: string }[];
+  }
   const cal = google.calendar({ version: "v3", auth });
 
   // Always query "primary" calendar (where phone-created events land).
@@ -90,6 +93,8 @@ export async function getFreeBusy(adminId: string, calendarId: string | null, ti
   // busy times from both calendars.
   const ids = new Set<string>(["primary"]);
   if (calendarId) ids.add(calendarId);
+
+  console.log('[FreeBusy] Querying calendars:', Array.from(ids), 'range:', timeMin, '->', timeMax);
 
   const res = await cal.freebusy.query({
     requestBody: {
@@ -101,12 +106,23 @@ export async function getFreeBusy(adminId: string, calendarId: string | null, ti
   });
 
   // Merge busy periods from all queried calendars
-  const calendars = (res.data.calendars ?? {}) as Record<string, { busy?: { start: string; end: string }[] }>;
+  const calendars = (res.data.calendars ?? {}) as Record<string, { busy?: { start: string; end: string }[]; errors?: any[] }>;
   const allBusy: { start: string; end: string }[] = [];
   for (const id of ids) {
-    const periods = calendars[id]?.busy;
-    if (Array.isArray(periods)) allBusy.push(...periods);
+    const entry = calendars[id];
+    // Log per-calendar errors (e.g. notFound, auth issues)
+    if (entry?.errors?.length) {
+      console.warn('[FreeBusy] Calendar', id, 'returned errors:', JSON.stringify(entry.errors));
+    }
+    const periods = entry?.busy;
+    if (Array.isArray(periods)) {
+      console.log('[FreeBusy] Calendar', id, 'has', periods.length, 'busy periods');
+      allBusy.push(...periods);
+    } else {
+      console.warn('[FreeBusy] Calendar', id, 'returned no busy array');
+    }
   }
+  console.log('[FreeBusy] Total busy periods:', allBusy.length);
   return allBusy;
 }
 

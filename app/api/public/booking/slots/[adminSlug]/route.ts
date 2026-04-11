@@ -65,6 +65,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
 
     // Google Calendar overlay (if connected)
     let finalSlots = slots;
+    console.log('[SLOTS] Google Calendar overlay — calendarId:', settings.googleCalendarId ?? '(none/primary)');
     try {
       const busy = await getFreeBusy(
         admin.id,
@@ -73,16 +74,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
         end.toISOString(),
         settings.timeZone || undefined
       );
+      console.log('[SLOTS] FreeBusy returned', busy.length, 'busy periods, filtering', slots.length, 'slots');
       if (Array.isArray(busy) && busy.length) {
         finalSlots = slots.filter((s) => {
           return !busy.some((b) => new Date(b.start) < s.end && new Date(b.end) > s.start);
         });
+        console.log('[SLOTS] After filtering:', finalSlots.length, 'slots remain (removed', slots.length - finalSlots.length, ')');
       }
     } catch (e) {
       console.warn('[SLOTS] Google FreeBusy failed, falling back to internal only', e);
     }
 
-    return NextResponse.json({ slots: finalSlots });
+    return NextResponse.json({ slots: finalSlots }, {
+      headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate', 'CDN-Cache-Control': 'no-store' },
+    });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: "Failed to generate slots" }, { status: 500 });
