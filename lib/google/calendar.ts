@@ -116,10 +116,11 @@ export async function getFreeBusy(adminId: string, calendarId: string | null, ti
     }
     const periods = entry?.busy;
     if (Array.isArray(periods)) {
-      console.log('[FreeBusy] Calendar', id, 'has', periods.length, 'busy periods');
+      console.log('[FreeBusy] Calendar', id, 'has', periods.length, 'busy periods:',
+        JSON.stringify(periods.map(p => ({ s: p.start, e: p.end }))));
       allBusy.push(...periods);
     } else {
-      console.warn('[FreeBusy] Calendar', id, 'returned no busy array');
+      console.warn('[FreeBusy] Calendar', id, 'returned no busy array. Raw entry:', JSON.stringify(entry));
     }
   }
   console.log('[FreeBusy] Total busy periods:', allBusy.length);
