@@ -63,6 +63,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
     });
     console.timeEnd(`[SLOTS] gen ${start.toISOString()} -> ${end.toISOString()}`);
 
+    // The slot generator may produce slots slightly before `start` because it
+    // iterates by UTC days which can drift into the previous local day due to
+    // timezone offsets.  We must extend the FreeBusy query to cover ALL generated
+    // slots so every busy period is checked, then clip any out-of-range slots at
+    // the end.
+    let actualMin = start;
+    let actualMax = end;
+    if (slots.length) {
+      const first = slots[0].start;
+      const last = slots[slots.length - 1].end;
+      if (first.getTime() < actualMin.getTime()) actualMin = first;
+      if (last.getTime() > actualMax.getTime()) actualMax = last;
+    }
+
     // Google Calendar overlay (if connected)
     let finalSlots = slots;
     console.log('[SLOTS] Google Calendar overlay — calendarId:', settings.googleCalendarId ?? '(none/primary)');
@@ -70,8 +84,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
       const busy = await getFreeBusy(
         admin.id,
         settings.googleCalendarId ?? null,
-        start.toISOString(),
-        end.toISOString(),
+        actualMin.toISOString(),
+        actualMax.toISOString(),
         settings.timeZone || undefined
       );
       console.log('[SLOTS] FreeBusy returned', busy.length, 'busy periods, filtering', slots.length, 'slots');
