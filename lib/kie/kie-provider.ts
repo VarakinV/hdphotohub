@@ -6,6 +6,24 @@
  */
 
 const KIE_BASE_URL = 'https://api.kie.ai/api/v1';
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 2000;
+
+async function withRetry<T>(fn: () => Promise<T>, retries = MAX_RETRIES, delay = RETRY_DELAY_MS): Promise<T> {
+  let lastError: Error | undefined;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (err: any) {
+      lastError = err;
+      const isServerError = err?.message?.includes('500') || err?.message?.includes('Internal');
+      if (!isServerError || attempt === retries) throw err;
+      console.warn(`Kie.ai retry ${attempt + 1}/${retries} after error:`, err.message);
+      await new Promise((r) => setTimeout(r, delay * (attempt + 1)));
+    }
+  }
+  throw lastError;
+}
 
 function getApiKey(): string {
   const key = process.env.KIE_API_KEY;
@@ -38,35 +56,37 @@ export async function transformToTwilight(
   imageUrl: string,
   callbackUrl: string
 ): Promise<KieTaskResult> {
-  const body = {
-    model: 'nano-banana-pro',
-    callBackUrl: callbackUrl,
-    input: {
-      prompt:
-        'Transform this daytime real estate photo into a realistic twilight version. Keep the details of the house unchanged. Keep lighting natural, warm interior glow, and realistic sky.',
-      image_input: [imageUrl],
-      aspect_ratio: '4:3',
-      resolution: '2K',
-      output_format: 'png',
-    },
-  };
+  return withRetry(async () => {
+    const body = {
+      model: 'nano-banana-pro',
+      callBackUrl: callbackUrl,
+      input: {
+        prompt:
+          'Transform this daytime real estate photo into a realistic twilight version. Keep the details of the house unchanged. Keep lighting natural, warm interior glow, and realistic sky.',
+        image_input: [imageUrl],
+        aspect_ratio: '4:3',
+        resolution: '2K',
+        output_format: 'png',
+      },
+    };
 
-  const res = await fetch(`${KIE_BASE_URL}/jobs/createTask`, {
-    method: 'POST',
-    headers: headers(),
-    body: JSON.stringify(body),
+    const res = await fetch(`${KIE_BASE_URL}/jobs/createTask`, {
+      method: 'POST',
+      headers: headers(),
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const txt = await res.text().catch(() => '');
+      throw new Error(`Kie.ai image transform error: ${res.status} ${txt}`);
+    }
+
+    const json: any = await res.json().catch(() => ({}));
+    if (json.code !== 200 || !json.data?.taskId) {
+      throw new Error(`Kie.ai image transform failed: ${JSON.stringify(json)}`);
+    }
+    return { taskId: json.data.taskId };
   });
-
-  if (!res.ok) {
-    const txt = await res.text().catch(() => '');
-    throw new Error(`Kie.ai image transform error: ${res.status} ${txt}`);
-  }
-
-  const json: any = await res.json().catch(() => ({}));
-  if (json.code !== 200 || !json.data?.taskId) {
-    throw new Error(`Kie.ai image transform failed: ${JSON.stringify(json)}`);
-  }
-  return { taskId: json.data.taskId };
 }
 
 /**
@@ -78,33 +98,35 @@ export async function generateVideo(
   twilightImageUrl: string,
   callbackUrl: string
 ): Promise<KieTaskResult> {
-  const body = {
-    prompt:
-      'Create a cinematic real estate transition video. Start with the daytime image, smoothly transition into the twilight version over 3-5 seconds. Add a subtle slow zoom effect. Duration 6-8 seconds total.',
-    imageUrls: [dayImageUrl, twilightImageUrl],
-    model: 'veo3_fast',
-    callBackUrl: callbackUrl,
-    aspect_ratio: '16:9',
-    seeds: Math.floor(Math.random() * 90000) + 10000,
-    generationType: 'REFERENCE_2_VIDEO',
-  };
+  return withRetry(async () => {
+    const body = {
+      prompt:
+        'Create a cinematic real estate transition video. Start with the daytime image, smoothly transition into the twilight version over 3-5 seconds. Add a subtle slow zoom effect. Duration 6-8 seconds total.',
+      imageUrls: [dayImageUrl, twilightImageUrl],
+      model: 'veo3_fast',
+      callBackUrl: callbackUrl,
+      aspect_ratio: '16:9',
+      seeds: Math.floor(Math.random() * 90000) + 10000,
+      generationType: 'REFERENCE_2_VIDEO',
+    };
 
-  const res = await fetch(`${KIE_BASE_URL}/veo/generate`, {
-    method: 'POST',
-    headers: headers(),
-    body: JSON.stringify(body),
+    const res = await fetch(`${KIE_BASE_URL}/veo/generate`, {
+      method: 'POST',
+      headers: headers(),
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const txt = await res.text().catch(() => '');
+      throw new Error(`Kie.ai video generate error: ${res.status} ${txt}`);
+    }
+
+    const json: any = await res.json().catch(() => ({}));
+    if (json.code !== 200 || !json.data?.taskId) {
+      throw new Error(`Kie.ai video generate failed: ${JSON.stringify(json)}`);
+    }
+    return { taskId: json.data.taskId };
   });
-
-  if (!res.ok) {
-    const txt = await res.text().catch(() => '');
-    throw new Error(`Kie.ai video generate error: ${res.status} ${txt}`);
-  }
-
-  const json: any = await res.json().catch(() => ({}));
-  if (json.code !== 200 || !json.data?.taskId) {
-    throw new Error(`Kie.ai video generate failed: ${JSON.stringify(json)}`);
-  }
-  return { taskId: json.data.taskId };
 }
 
 /**

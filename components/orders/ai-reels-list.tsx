@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, Trash2, ExternalLink, CheckCircle2, XCircle, Clock, Cog } from 'lucide-react';
+import { Loader2, Trash2, ExternalLink, CheckCircle2, XCircle, Clock, Cog, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface AiReel {
@@ -55,6 +55,7 @@ export default function AiReelsList({ orderId, refreshToken = 0, onDeleted }: Ai
   const [reels, setReels] = useState<AiReel[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState<string | null>(null);
 
   const fetchReels = useCallback(async () => {
     try {
@@ -93,6 +94,24 @@ export default function AiReelsList({ orderId, refreshToken = 0, onDeleted }: Ai
       }
     } finally {
       setDeleting(null);
+    }
+  }
+
+  async function handleRetry(reelId: string) {
+    setRetrying(reelId);
+    try {
+      const res = await fetch(`/api/orders/${orderId}/ai-reels/${reelId}/retry`, { method: 'POST' });
+      if (res.ok) {
+        toast.success('Retrying failed step...');
+        fetchReels();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toast.error(err.detail || err.error || 'Retry failed');
+      }
+    } catch {
+      toast.error('Retry failed');
+    } finally {
+      setRetrying(null);
     }
   }
 
@@ -156,6 +175,17 @@ export default function AiReelsList({ orderId, refreshToken = 0, onDeleted }: Ai
                 <a href={r.finalUrl} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-3.5 w-3.5 mr-1.5" /> View Reel
                 </a>
+              </Button>
+            )}
+            {(r.kieImageStatus === 'FAILED' || r.kieVideoStatus === 'FAILED' || r.j2vStatus === 'FAILED') && (
+              <Button
+                variant="outline" size="sm"
+                onClick={() => handleRetry(r.id)}
+                disabled={retrying === r.id}
+                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+              >
+                {retrying === r.id ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <RotateCcw className="h-3.5 w-3.5 mr-1.5" />}
+                Retry
               </Button>
             )}
             <Button
