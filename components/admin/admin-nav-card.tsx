@@ -14,6 +14,7 @@ import {
   Calendar,
   Settings as SettingsIcon,
   Ban,
+  Car,
   Tag,
   Clapperboard,
   FileText,
@@ -27,6 +28,7 @@ const items = [
     label: 'Booking Settings',
     Icon: SettingsIcon,
   },
+  { href: '/admin/travel-fees', label: 'Travel Fees', Icon: Car },
   { href: '/admin/availability', label: 'Availability', Icon: Calendar },
   { href: '/admin/blackouts', label: 'Blackouts', Icon: Ban },
   {

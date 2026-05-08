@@ -40,6 +40,7 @@ model User {
   BlackoutDate          BlackoutDate[]
   CalendarAccount       CalendarAccount[]
   AdminBookingSettings  AdminBookingSettings?
+  AdminTravelFlatFeeTown AdminTravelFlatFeeTown[]
   PromoCode             PromoCode[]
   Account               Account[]
   Session               Session[]
@@ -429,6 +430,14 @@ model Booking {
   promoCodeCode      String?
   discountCents      Int        @default(0)
 
+  // Travel fee snapshot
+  travelDistanceMeters   Int?
+  travelDurationSeconds  Int?
+  travelFeeCents         Int        @default(0)
+  travelRule             String?
+  travelCalculationText  String?
+  travelCalculatedAt     DateTime?
+
   // Calendar integration
   googleEventId String?
 
@@ -530,14 +539,30 @@ model PromoCodeService {
 }
 
 model AdminBookingSettings {
-  id               String  @id @default(cuid())
-  adminId          String  @unique
-  admin            User    @relation(fields: [adminId], references: [id])
-  timeZone         String
-  leadTimeMin      Int     @default(0)
-  maxAdvanceDays   Int     @default(60)
-  defaultBufferMin Int     @default(0)
-  googleCalendarId String?
+  id                    String  @id @default(cuid())
+  adminId               String  @unique
+  admin                 User    @relation(fields: [adminId], references: [id])
+  timeZone              String
+  leadTimeMin           Int     @default(0)
+  maxAdvanceDays        Int     @default(60)
+  defaultBufferMin      Int     @default(0)
+  googleCalendarId      String?
+  travelFreeRadiusKm    Float   @default(35)
+  travelPerKmRateCents  Int     @default(85)
+}
+
+model AdminTravelFlatFeeTown {
+  id        String   @id @default(cuid())
+  adminId   String
+  admin     User     @relation(fields: [adminId], references: [id])
+  cityName  String
+  feeCents  Int
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([adminId])
+  @@unique([adminId, cityName])
 }
 
 // Auth.js Prisma Adapter models

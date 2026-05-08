@@ -40,9 +40,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const body = await req.json();
     // body: { title, embedUrl }
-    if (!body?.title || !body?.embedUrl) return NextResponse.json({ error: 'Invalid body' }, { status: 400 });
+    const title = String(body?.title || '').trim() || '3D Virtual Tour';
+    const embedUrl = String(body?.embedUrl || '').trim();
+    if (!embedUrl) return NextResponse.json({ error: 'Invalid body' }, { status: 400 });
 
-    const created = await prisma.embed.create({ data: { orderId: id, title: body.title, embedUrl: body.embedUrl } });
+    const created = await prisma.embed.create({ data: { orderId: id, title, embedUrl } });
     return NextResponse.json(created, { status: 201 });
   } catch (e) {
     console.error(e);

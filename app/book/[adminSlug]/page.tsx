@@ -108,6 +108,16 @@ export default function PublicBookingPage() {
   const [country, setCountry] = useState('');
   const [placeId, setPlaceId] = useState('');
 
+  // Travel fee
+  const [travelFee, setTravelFee] = useState<{
+    feeCents: number;
+    rule: string;
+    description: string;
+    distanceMeters: number;
+    durationSeconds: number;
+  } | null>(null);
+  const [travelFeeLoading, setTravelFeeLoading] = useState(false);
+
   // Touched state for validation styling
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const markTouched = (field: string) =>
@@ -174,6 +184,7 @@ export default function PublicBookingPage() {
       if (d.country) setCountry(d.country);
       if (d.placeId) setPlaceId(d.placeId);
       if (d.promoCode) setPromoCode(d.promoCode);
+      if (d.travelFee) setTravelFee(d.travelFee);
     } catch {}
     restoredRef.current = true;
   }, [STORAGE_KEY]);
@@ -190,6 +201,7 @@ export default function PublicBookingPage() {
           selectedByCategory, notes, contact,
           formattedAddress, lat, lng, city, province, postalCode, country, placeId,
           promoCode,
+          travelFee,
         })
       );
     } catch {}
@@ -199,6 +211,7 @@ export default function PublicBookingPage() {
     selectedByCategory, notes, contact,
     formattedAddress, lat, lng, city, province, postalCode, country, placeId,
     promoCode,
+    travelFee,
   ]);
 
   useEffect(() => {
@@ -355,6 +368,43 @@ export default function PublicBookingPage() {
     loadSlots();
     return () => { cancelled = true; };
   }, [selectedServices, catalog, adminSlug]);
+
+  // Fetch travel fee when address changes
+  useEffect(() => {
+    if (!lat || !lng || !formattedAddress) {
+      setTravelFee(null);
+      return;
+    }
+    let cancelled = false;
+    async function fetchTravelFee() {
+      setTravelFeeLoading(true);
+      try {
+        const res = await fetch('/api/travel-fee', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ adminSlug, lat, lng, city, formattedAddress }),
+        });
+        if (!res.ok) throw new Error('Failed to calculate travel fee');
+        const data = await res.json();
+        if (cancelled) return;
+        setTravelFee({
+          feeCents: data.feeCents ?? 0,
+          rule: data.rule ?? 'FREE',
+          description: data.description ?? '',
+          distanceMeters: data.distanceMeters ?? 0,
+          durationSeconds: data.durationSeconds ?? 0,
+        });
+      } catch (e) {
+        console.warn('Travel fee fetch failed', e);
+        if (!cancelled) setTravelFee(null);
+      } finally {
+        if (!cancelled) setTravelFeeLoading(false);
+      }
+    }
+    fetchTravelFee();
+    return () => { cancelled = true; };
+  }, [lat, lng, city, formattedAddress]);
+
   const totals = useMemo(() => {
     let subtotal = 0;
     for (const s of selectedServices) subtotal += s.priceCents;
@@ -409,9 +459,18 @@ export default function PublicBookingPage() {
       }
     }
 
-    const total = Math.max(0, subtotal - discount + tax);
-    return { subtotal, tax, discount, total };
-  }, [selectedServices, promo]);
+    const travelFeeCents = travelFee?.feeCents ?? 0;
+
+    // Tax the travel fee at the effective composite rate from services
+    const taxableServicesBase = Math.max(0, subtotal - discount);
+    const effectiveTaxRateBps =
+      taxableServicesBase > 0 ? Math.round((tax / taxableServicesBase) * 10000) : 0;
+    const travelTax = Math.round((travelFeeCents * effectiveTaxRateBps) / 10000);
+    tax += travelTax;
+
+    const total = Math.max(0, subtotal + travelFeeCents - discount + tax);
+    return { subtotal, tax, discount, total, travelFeeCents, travelTax };
+  }, [selectedServices, promo, travelFee]);
   // Using the shared PlacesAddressInput like admin orders/new; map preview shows only after address selection
 
   // Format a UTC slot date into YYYY-MM-DD in the admin's timezone
@@ -538,6 +597,7 @@ export default function PublicBookingPage() {
         slotStart: selectedSlotISO,
         promoCode: promoCode.trim() || undefined,
         recaptchaToken: recaptchaToken || undefined,
+        travelFee,
       };
       const res = await fetch(`/api/public/booking/submit/${adminSlug}`, {
         method: 'POST',
@@ -738,6 +798,23 @@ export default function PublicBookingPage() {
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
                 />
+              </div>
+            )}
+            {travelFeeLoading && (
+              <div className="text-sm text-muted-foreground flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Calculating travel fee...
+              </div>
+            )}
+            {travelFee && !travelFeeLoading && (
+              <div className="text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Travel Fee</span>
+                  <span className="font-medium">
+                    {travelFee.feeCents === 0 ? 'Free' : formatMoney(travelFee.feeCents)}
+                  </span>
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">{travelFee.description}</div>
               </div>
             )}
           </div>
@@ -1319,6 +1396,12 @@ export default function PublicBookingPage() {
               <div className="flex items-center justify-between text-sm text-green-700">
                 <span>Promo Discount</span>
                 <span>-{formatMoney(totals.discount)}</span>
+              </div>
+            )}
+            {(totals.travelFeeCents ?? 0) > 0 && (
+              <div className="flex items-center justify-between text-sm">
+                <span>Travel Fee</span>
+                <span>{formatMoney(totals.travelFeeCents)}</span>
               </div>
             )}
             <div className="flex items-center justify-between text-sm">

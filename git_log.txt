@@ -1,0 +1,20 @@
+﻿0dcad7e feat: AI Reel generation, searchable realtor filter, email normalization, delivery page updates
+faeb714 fix: extend FreeBusy range to cover all generated slots, fixing phase boundary gap
+2d29b1a fix: prevent phase overlap ΓÇö skip slots before rangeStart to avoid unfiltered duplicates
+d02823f fix:calnedar
+2b7b6f4 fix: add FreeBusy diagnostic logging, cache-control headers, and per-calendar error checking
+161645e fix: query primary + configured calendar in FreeBusy to catch phone-blocked slots
+af84b64 feat - AI reel
+b5d3140 fix: stream proxy response to avoid Vercel body-size limit for large video downloads
+f52a596 Points tracking system, portal points history, per-page dropdown, pagination fix
+27a42bb Trigger Vercel rebuild
+074fef3 Booking UX improvements: sticky header/stepper, inline validation, localStorage persistence, standardized checkboxes, sticky estimated total bar, per-sqft pricing, unit/basement/garage fields, email enhancements, pagination controls, toast notifications
+529a217 Fix MLS ZIP download CORS error: proxy all photo fetches through API route
+bbe1205 Add 'Limited-time offer for REALTORS only' text to exit intent popup
+cb2b4fb UI improvements for client management - Change company logo from circle to object-contain display - Fix dialog header overlay covering close button - Replace direct points input with Add/Retract Points UI
+b1ea5c4 Optimize booking page: two-phase slot loading for faster initial render
+b6ab8d2 Fix time slot ordering on booking page - group by admin timezone instead of UTC
+59c7afd Fix ZIP download on delivery page: client-side ZIP generation - bypass Vercel serverless limits by building ZIP in browser using JSZip
+bbfee26 Fix mobile reordering on free tools pages - Add position badge, move arrows on mobile, always-visible delete on mobile for FreeReelsForm, FreeFlyersForm, FreeSlideshowForm
+ebafb0e Add marketing-kit landing page with fixes
+3e5a48d Update video display to object-contain on delivery page

@@ -12,9 +12,11 @@ export function EmbedsForm({
   orderId: string;
   onAdded: () => void;
 }) {
-  const [title, setTitle] = useState('');
+  const DEFAULT_TITLE = '3D Virtual Tour';
+  const [title, setTitle] = useState(DEFAULT_TITLE);
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
+  const normalizedUrl = url.trim();
 
   async function submit() {
     setLoading(true);
@@ -22,10 +24,10 @@ export function EmbedsForm({
       const res = await fetch(`/api/orders/${orderId}/media/embeds`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, embedUrl: url }),
+        body: JSON.stringify({ title: title.trim() || DEFAULT_TITLE, embedUrl: normalizedUrl }),
       });
       if (!res.ok) throw new Error('Failed to add embed');
-      setTitle('');
+      setTitle(DEFAULT_TITLE);
       setUrl('');
       onAdded();
     } catch (e) {
@@ -49,7 +51,7 @@ export function EmbedsForm({
         value={url}
         onChange={(e) => setUrl(e.target.value)}
       />
-      <Button onClick={submit} disabled={loading || !title || !url}>
+      <Button type="button" onClick={submit} disabled={loading || !normalizedUrl}>
         {loading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Adding...

@@ -4,6 +4,7 @@ import { Resend } from "resend";
 import { createEventForAdmin } from "@/lib/google/calendar";
 import { sendBookingToGhl } from "@/lib/ghl";
 import { verifyRecaptchaServer } from "@/lib/recaptcha/verify";
+import { calculateTravelFee, getTravelFeeConfigForAdmin } from "@/lib/travel/fee";
 
 function money(cents: number) { return `$${(cents/100).toFixed(2)}`; }
 function slugify(text: string) {
@@ -233,7 +234,25 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
       tax += t;
     }
 
-    const finalTotalCents = Math.max(0, (subtotal - discountCents) + tax);
+    // Recalculate travel fee server-side for accuracy and security
+    const travelConfig = await getTravelFeeConfigForAdmin(admin.id);
+    const travelResult = await calculateTravelFee({
+      lat: lat ?? null,
+      lng: lng ?? null,
+      city: city || null,
+      formattedAddress: formattedAddress || null,
+      config: travelConfig,
+    });
+
+    const travelFeeCents = travelResult.feeCents;
+
+    // Tax the travel fee at the effective composite rate from services
+    const taxableServicesBase = Math.max(0, subtotal - discountCents);
+    const effectiveTaxRateBps = taxableServicesBase > 0 ? Math.round((tax / taxableServicesBase) * 10000) : 0;
+    const travelTax = Math.round((travelFeeCents * effectiveTaxRateBps) / 10000);
+    tax += travelTax;
+
+    const finalTotalCents = Math.max(0, (subtotal - discountCents) + travelFeeCents + tax);
 
     // Create Booking and items
     const booking = await prisma.booking.create({
@@ -268,6 +287,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
         discountCents,
         appliedPromoCodeId,
         totalCents: finalTotalCents,
+        travelDistanceMeters: travelResult.distanceMeters,
+        travelDurationSeconds: travelResult.durationSeconds,
+        travelFeeCents: travelResult.feeCents,
+        travelRule: travelResult.rule,
+        travelCalculationText: travelResult.description,
+        travelCalculatedAt: new Date(travelResult.calculatedAt),
         items: {
           create: svcRows.map((s) => ({
             serviceId: s.id,
@@ -327,11 +352,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
       const description = [
         `Client: ${contactFirstName} ${contactLastName}${contactPhone ? ` (${contactPhone})` : ''}`,
         notes ? `Client notes: ${notes}` : null,
+        basementMeasure || basementPhoto
+          ? `Basement: ${[basementMeasure && 'Measure', basementPhoto && 'Photo']
+              .filter(Boolean)
+              .join(', ')}`
+          : null,
+        garageMeasure || garagePhoto
+          ? `Detached Garage: ${[garageMeasure && 'Measure', garagePhoto && 'Photo']
+              .filter(Boolean)
+              .join(', ')}`
+          : null,
         '---------',
         'Selected Services:',
         ...svcLines,
         '',
         `Total price: ${money(finalTotalCents)}`,
+        travelFeeCents > 0 ? `Travel fee: ${money(travelFeeCents)}` : null,
       ].filter(Boolean).join('\n');
 
       const event = await createEventForAdmin(admin.id, {
@@ -410,6 +446,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
           <p><strong>Date & time:</strong> ${dateStr}, at ${timeStr}</p>
           <h3 style="margin:16px 0 8px">Selected Services:</h3>
           <ul style="margin:0;padding-left:20px;">${servicesListHtml}</ul>
+          ${travelFeeCents > 0 ? `<p style="margin-top:8px"><strong>Travel Fee:</strong> ${money(travelFeeCents)}</p>` : ''}
           <p style="margin-top:16px"><strong>Estimated Total: ${money(booking.totalCents)}</strong></p>
           <p style="margin-top:4px;font-size:12px;color:#666;">Displayed prices are estimates. Final charges may vary based on actual property square footage, selected services, and travel distance.</p>
           <p style="margin-top:24px">Thank you for your business!</p>
@@ -441,6 +478,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
             <h3 style="margin:16px 0 8px">Pricing:</h3>
             <p><strong>Subtotal:</strong> ${money(subtotal)}</p>
             ${discountCents > 0 ? `<p><strong>Discount:</strong> -${money(discountCents)}</p>` : ''}
+            ${travelFeeCents > 0 ? `<p><strong>Travel Fee:</strong> ${money(travelFeeCents)}</p>` : ''}
             ${tax > 0 ? `<p><strong>Tax:</strong> ${money(tax)}</p>` : ''}
             <p><strong>Estimated Total:</strong> ${money(booking.totalCents)}</p>
             <p style="margin-top:4px;font-size:12px;color:#666;">Displayed prices are estimates. Final charges may vary based on actual property square footage, selected services, and travel distance.</p>

@@ -14,6 +14,7 @@ import {
   Calendar,
   Settings as SettingsIcon,
   Ban,
+  Car,
 } from 'lucide-react';
 
 const primaryItems = [
@@ -35,6 +36,7 @@ const businessSettings = [
     label: 'Booking Settings',
     Icon: SettingsIcon,
   },
+  { href: '/admin/travel-fees', label: 'Travel Fees', Icon: Car },
   { href: '/admin/availability', label: 'Availability', Icon: Calendar },
   { href: '/admin/blackouts', label: 'Blackouts', Icon: Ban },
 ];
