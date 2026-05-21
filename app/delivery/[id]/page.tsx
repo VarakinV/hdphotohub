@@ -164,13 +164,14 @@ export default async function DeliveryPage({
               <div className="h-px bg-gray-200/80" />
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {order.photos.map((p) => (
+              {order.photos.map((p, index) => (
                 <div key={p.id} className="border rounded-md overflow-hidden">
                   <PhotoLightbox
                     src={p.urlMls || p.url}
                     alt={p.filename}
                     items={photoItems}
-                    startIndex={order.photos.findIndex((x) => x.id === p.id)}
+                    startIndex={index}
+                    overlayLabel={String(index + 1).padStart(2, '0')}
                   />
                   <div className="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x">
                     <div className="sm:flex-1 p-2 text-center">

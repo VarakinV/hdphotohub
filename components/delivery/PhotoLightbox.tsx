@@ -12,12 +12,14 @@ export function PhotoLightbox({
   alt,
   items,
   startIndex,
+  overlayLabel,
   thumbClassName = 'w-full h-32 object-cover cursor-pointer',
 }: {
   src: string;
   alt: string;
   items?: Item[];
   startIndex?: number;
+  overlayLabel?: string;
   thumbClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -43,17 +45,27 @@ export function PhotoLightbox({
 
   return (
     <>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={src}
-        alt={alt}
-        className={thumbClassName}
-        loading="lazy"
-        onClick={() => {
-          setIndex(startIndex ?? 0);
-          setOpen(true);
-        }}
-      />
+      <div className="relative">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={src}
+          alt={alt}
+          className={thumbClassName}
+          loading="lazy"
+          onClick={() => {
+            setIndex(startIndex ?? 0);
+            setOpen(true);
+          }}
+        />
+        {overlayLabel ? (
+          <div
+            className="pointer-events-none absolute right-2 top-2 rounded-md bg-black/45 px-2 py-1 text-lg font-bold leading-none tracking-wider text-white backdrop-blur-[2px] sm:text-2xl"
+            style={{ textShadow: '0 2px 8px rgba(0, 0, 0, 0.75)' }}
+          >
+            {overlayLabel}
+          </div>
+        ) : null}
+      </div>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="p-0 bg-transparent border-0 shadow-none w-full max-w-[calc(100vw-2rem)] sm:max-w-[1200px]">
           <DialogTitle className="sr-only">
