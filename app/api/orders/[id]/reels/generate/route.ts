@@ -52,7 +52,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (!r?.companyLogo) missing.push('Brokerage logo');
     if (!r?.firstName || !r?.lastName) missing.push('Realtor name');
     if (!r?.phone) missing.push('Realtor phone');
-    if (!order.listPrice) missing.push('List price');
     if (!order.bedrooms) missing.push('Bedrooms');
     if (!order.bathrooms) missing.push('Bathrooms');
     if (!order.propertyAddress && !order.propertyFormattedAddress) missing.push('Property address');

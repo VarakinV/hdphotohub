@@ -607,11 +607,13 @@ export default function OrderDetailsPage() {
               <div className="hidden">
                 <GenerateReelsButton
                   orderId={order.id}
+                  refreshToken={reelRefresh}
                   onStarted={() => setReelRefresh((n) => n + 1)}
                 />
               </div>
               <GenerateReelsJ2VButton
                 orderId={order.id}
+                refreshToken={reelRefresh}
                 onStarted={() => setReelRefresh((n) => n + 1)}
               />
               <ReelsList orderId={order.id} refreshToken={reelRefresh} />

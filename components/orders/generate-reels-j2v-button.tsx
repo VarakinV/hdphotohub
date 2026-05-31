@@ -7,9 +7,11 @@ import { Loader2, PlaySquare } from 'lucide-react';
 export function GenerateReelsJ2VButton({
   orderId,
   onStarted,
+  refreshToken = 0,
 }: {
   orderId: string;
   onStarted?: () => void;
+  refreshToken?: number;
 }) {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -32,7 +34,7 @@ export function GenerateReelsJ2VButton({
 
   useEffect(() => {
     load();
-  }, [orderId]);
+  }, [orderId, refreshToken]);
 
   const missing: string[] = useMemo(() => {
     const m: string[] = [];
@@ -43,7 +45,6 @@ export function GenerateReelsJ2VButton({
     if (!r?.companyLogo) m.push('Brokerage logo');
     if (!r?.firstName || !r?.lastName) m.push('Realtor name');
     if (!r?.phone) m.push('Realtor phone');
-    if (!order.listPrice) m.push('List price');
     if (!order.bedrooms) m.push('Bedrooms');
     if (!order.bathrooms) m.push('Bathrooms');
     if (!order.propertyAddress && !order.propertyFormattedAddress)
