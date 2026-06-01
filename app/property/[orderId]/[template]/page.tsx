@@ -6,6 +6,7 @@ import { headers } from 'next/headers';
 import PropertyTemplateV1 from '@/components/property/templates/PropertyTemplateV1';
 import PropertyTemplateV2 from '@/components/property/templates/PropertyTemplateV2';
 import PropertyTemplateV3 from '@/components/property/templates/PropertyTemplateV3';
+import SimilarHomesLeadPopup from '@/components/property/SimilarHomesLeadPopup';
 
 async function getOrder(orderId: string) {
   return prisma.order.findUnique({
@@ -74,6 +75,7 @@ export default async function PropertyPage({
   const baseUrl =
     process.env.NEXT_PUBLIC_APP_URL || (host ? `${proto}://${host}` : '');
   const heroUrl = order.photos[0]?.url || order.photos[0]?.urlMls || undefined;
+  const area = order.propertyCity?.trim() || '';
 
   return (
     <div className="min-h-screen bg-white">
@@ -85,6 +87,11 @@ export default async function PropertyPage({
       {![1, 2, 3].includes(tNum) && (
         <PropertyTemplateV1 order={order} baseUrl={baseUrl} />
       )}
+      <SimilarHomesLeadPopup
+        orderId={order.id}
+        listPrice={order.listPrice}
+        area={area || 'this area'}
+      />
     </div>
   );
 }
