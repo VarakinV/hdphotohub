@@ -74,6 +74,7 @@ export default function PropertyTemplateV2({
           }
         />
         <TopAnchorMenu
+          orderId={order.id}
           showFeatures={Boolean(order.featuresText)}
           showDescription={Boolean(order.description)}
           showPhotos={order.photos.length > 0}

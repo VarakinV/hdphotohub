@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import { Menu } from 'lucide-react';
+import BookShowingPopup from '@/components/property/BookShowingPopup';
 
 export default function TopAnchorMenu({
+  orderId,
   showFeatures,
   showDescription,
   showPhotos,
@@ -12,6 +14,7 @@ export default function TopAnchorMenu({
   showTours,
   showMap,
 }: {
+  orderId: string;
   showFeatures: boolean;
   showDescription: boolean;
   showPhotos: boolean;
@@ -21,6 +24,7 @@ export default function TopAnchorMenu({
   showMap: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [showingOpen, setShowingOpen] = useState(false);
 
   const links = [
     { href: '#details', label: 'Details', show: true },
@@ -47,6 +51,13 @@ export default function TopAnchorMenu({
             {l.label}
           </a>
         ))}
+        <button
+          type="button"
+          onClick={() => setShowingOpen(true)}
+          className="ml-2 rounded-full bg-white px-4 py-1 text-sm font-semibold uppercase tracking-wide text-gray-900 shadow hover:bg-gray-100"
+        >
+          Book a Showing
+        </button>
       </nav>
 
       {/* Mobile: hamburger */}
@@ -72,10 +83,25 @@ export default function TopAnchorMenu({
                   {l.label}
                 </a>
               ))}
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  setShowingOpen(true);
+                }}
+                className="mt-2 rounded-full bg-white px-3 py-2 text-sm font-semibold uppercase tracking-wide text-gray-900"
+              >
+                Book a Showing
+              </button>
             </div>
           </div>
         </div>
       )}
+      <BookShowingPopup
+        orderId={orderId}
+        open={showingOpen}
+        onClose={() => setShowingOpen(false)}
+      />
     </div>
   );
 }

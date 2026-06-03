@@ -87,6 +87,7 @@ export default function PropertyTemplateV3({
           title={street}
         />
         <TopAnchorMenu
+          orderId={order.id}
           showFeatures={Boolean(order.featuresText)}
           showDescription={Boolean(order.description)}
           showPhotos={order.photos.length > 0}

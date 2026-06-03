@@ -1,6 +1,6 @@
 'use client';
 
-import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getRecaptchaToken } from '@/lib/recaptcha/client';
@@ -54,11 +54,26 @@ export default function SimilarHomesLeadPopup({
     };
   }, [dismissed, status]);
 
-  function closePopup() {
+  const closePopup = useCallback(() => {
     setOpen(false);
     setDismissed(true);
     window.sessionStorage.setItem(storageKey, 'dismissed');
-  }
+  }, [storageKey]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closePopup();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [closePopup, open]);
 
   function validate(form: HTMLFormElement) {
     const fd = new FormData(form);
