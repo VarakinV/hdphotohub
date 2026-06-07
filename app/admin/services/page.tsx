@@ -43,6 +43,111 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { GripVertical } from 'lucide-react';
 import { Loader2, Pencil, Trash2, Save, X, Plus } from 'lucide-react';
+import { normalizeTieredPricing } from '@/lib/booking/pricing';
+
+type TieredPricingForm = {
+  enabled: boolean;
+  unitLabel: string;
+  tiers: { quantity: string; priceDollars: string }[];
+};
+
+function emptyTieredPricingForm(): TieredPricingForm {
+  return { enabled: false, unitLabel: 'image', tiers: [{ quantity: '1', priceDollars: '' }] };
+}
+
+function toTieredPricingForm(value: unknown): TieredPricingForm {
+  const normalized = normalizeTieredPricing(value);
+  if (!normalized) return emptyTieredPricingForm();
+  return {
+    enabled: true,
+    unitLabel: normalized.unitLabel,
+    tiers: normalized.tiers.map((tier) => ({
+      quantity: String(tier.quantity),
+      priceDollars: (tier.priceCents / 100).toFixed(2),
+    })),
+  };
+}
+
+function tieredPricingPayload(form?: TieredPricingForm | null) {
+  if (!form?.enabled) return null;
+  const tiers = form.tiers
+    .filter((tier) => tier.quantity.trim() !== '' && tier.priceDollars.trim() !== '')
+    .map((tier) => ({
+      quantity: Number(tier.quantity),
+      priceCents: Math.round(Number(tier.priceDollars) * 100),
+    }))
+    .filter((tier) => Number.isInteger(tier.quantity) && tier.quantity > 0 && tier.priceCents >= 0);
+  return tiers.length ? { enabled: true, unitLabel: form.unitLabel || 'item', tiers } : null;
+}
+
+function TieredPricingEditor({
+  value,
+  onChange,
+}: {
+  value: TieredPricingForm;
+  onChange: (next: TieredPricingForm) => void;
+}) {
+  const setTier = (index: number, key: 'quantity' | 'priceDollars', nextValue: string) => {
+    onChange({
+      ...value,
+      tiers: value.tiers.map((tier, i) => (i === index ? { ...tier, [key]: nextValue } : tier)),
+    });
+  };
+
+  return (
+    <div className="rounded-md border p-3 space-y-3">
+      <label className="inline-flex items-center gap-2 text-sm font-medium cursor-pointer">
+        <input
+          type="checkbox"
+          checked={value.enabled}
+          onChange={(e) => onChange({ ...value, enabled: e.target.checked })}
+        />
+        Use tiered quantity pricing
+      </label>
+      {value.enabled && (
+        <div className="space-y-3">
+          <div>
+            <label className="text-sm font-medium">Quantity unit label</label>
+            <Input
+              placeholder="image"
+              value={value.unitLabel}
+              onChange={(e) => onChange({ ...value, unitLabel: e.target.value })}
+            />
+          </div>
+          {value.tiers.map((tier, index) => (
+            <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
+              <div>
+                <label className="text-xs text-gray-600">Quantity</label>
+                <Input type="number" min={1} value={tier.quantity} onChange={(e) => setTier(index, 'quantity', e.target.value)} />
+              </div>
+              <div>
+                <label className="text-xs text-gray-600">Price ($)</label>
+                <Input type="number" min={0} step="0.01" value={tier.priceDollars} onChange={(e) => setTier(index, 'priceDollars', e.target.value)} />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => onChange({ ...value, tiers: value.tiers.filter((_, i) => i !== index) })}
+                disabled={value.tiers.length <= 1}
+              >
+                Remove
+              </Button>
+            </div>
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => onChange({ ...value, tiers: [...value.tiers, { quantity: '', priceDollars: '' }] })}
+          >
+            Add Tier
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface Category {
   id: string;
@@ -67,6 +172,7 @@ interface ServiceRow {
   maxSqFt?: number | null;
   isPerSqFt: boolean;
   minPriceCents?: number | null;
+  tieredPricing?: unknown;
   active: boolean;
   taxes?: Tax[];
 }
@@ -91,6 +197,7 @@ export default function ServicesPage() {
       description?: string | null;
       bufferBeforeMin?: number;
       bufferAfterMin?: number;
+      tieredPricing?: TieredPricingForm;
     }
   >({});
   const [editOpen, setEditOpen] = useState(false);
@@ -154,6 +261,7 @@ export default function ServicesPage() {
     maxSqFt?: string;
     isPerSqFt: boolean;
     minPriceDollars?: string;
+    tieredPricing: TieredPricingForm;
     taxIds: string[];
   }>({
     name: '',
@@ -167,6 +275,7 @@ export default function ServicesPage() {
     maxSqFt: '',
     isPerSqFt: false,
     minPriceDollars: '',
+    tieredPricing: emptyTieredPricingForm(),
     taxIds: [],
   });
   const [createErrors, setCreateErrors] = useState<{
@@ -242,6 +351,7 @@ export default function ServicesPage() {
       maxSqFt: row.maxSqFt ?? undefined,
       isPerSqFt: row.isPerSqFt,
       minPriceCents: row.minPriceCents ?? undefined,
+      tieredPricing: toTieredPricingForm(row.tieredPricing),
       taxIds: row.taxes?.map((t) => t.id) ?? [],
     });
     setEditOpen(true);
@@ -256,6 +366,11 @@ export default function ServicesPage() {
 
   async function saveEdit(id: string) {
     const priceCents = Math.round(Number(draft.priceDollars || '0') * 100);
+    const tieredPricing = tieredPricingPayload(draft.tieredPricing);
+    if (draft.tieredPricing?.enabled && !tieredPricing) {
+      toast.error('Add at least one valid tier with quantity and price');
+      return;
+    }
     const res = await fetch(`/api/services/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -271,6 +386,7 @@ export default function ServicesPage() {
         maxSqFt: draft.maxSqFt ?? null,
         isPerSqFt: draft.isPerSqFt ?? false,
         minPriceCents: draft.minPriceCents ?? null,
+        tieredPricing,
         taxIds: draft.taxIds,
       }),
     });
@@ -337,7 +453,7 @@ export default function ServicesPage() {
       <AdminTwoColumnShell>
         {/* Create New Service Dialog */}
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogContent>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create New Service</DialogTitle>
               <DialogDescription>
@@ -510,6 +626,10 @@ export default function ServicesPage() {
                   </div>
                 )}
               </div>
+              <TieredPricingEditor
+                value={create.tieredPricing}
+                onChange={(tieredPricing) => setCreate((c) => ({ ...c, tieredPricing }))}
+              />
               <div>
                 <label className="text-sm font-medium">Taxes</label>
                 <div className="flex flex-wrap gap-2 mt-2">
@@ -559,6 +679,9 @@ export default function ServicesPage() {
                     const dur = Number(create.durationMin);
                     if (!Number.isInteger(dur) || dur <= 0)
                       errs.durationMin = 'Enter a positive integer';
+                    const tieredPricing = tieredPricingPayload(create.tieredPricing);
+                    if (create.tieredPricing.enabled && !tieredPricing)
+                      errs.form = 'Add at least one valid tier with quantity and price';
                     setCreateErrors(errs);
                     if (Object.keys(errs).length) return;
 
@@ -588,6 +711,7 @@ export default function ServicesPage() {
                           minPriceCents: create.isPerSqFt && create.minPriceDollars
                             ? Math.round(Number(create.minPriceDollars) * 100)
                             : null,
+                          tieredPricing,
                           taxIds: create.taxIds,
                         }),
                       });
@@ -615,6 +739,7 @@ export default function ServicesPage() {
                         maxSqFt: '',
                         isPerSqFt: false,
                         minPriceDollars: '',
+                        tieredPricing: emptyTieredPricingForm(),
                         taxIds: [],
                       });
                       setCreateErrors({});
@@ -638,7 +763,7 @@ export default function ServicesPage() {
           open={editOpen}
           onOpenChange={(o) => (o ? setEditOpen(true) : cancelEdit())}
         >
-          <DialogContent>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit Service</DialogTitle>
               <DialogDescription>
@@ -797,6 +922,10 @@ export default function ServicesPage() {
                   </div>
                 )}
               </div>
+              <TieredPricingEditor
+                value={draft.tieredPricing || emptyTieredPricingForm()}
+                onChange={(tieredPricing) => setDraft((d) => ({ ...d, tieredPricing }))}
+              />
               <div>
                 <label className="text-sm font-medium">Taxes</label>
                 <div className="flex flex-wrap gap-2 mt-1">
@@ -991,6 +1120,7 @@ export default function ServicesPage() {
                             <span>
                               ${(s.priceCents / 100).toFixed(2)}
                               {s.isPerSqFt && <span className="text-xs text-muted-foreground ml-1">/sqft{s.minPriceCents ? ` (min $${(s.minPriceCents / 100).toFixed(2)})` : ''}</span>}
+                              {normalizeTieredPricing(s.tieredPricing) && <span className="block text-xs text-muted-foreground">Tiered quantity pricing</span>}
                             </span>
                           )}
                         </TableCell>

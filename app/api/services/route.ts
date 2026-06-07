@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
 import { prisma } from "@/lib/db/prisma";
 import { z } from "zod";
+import { sanitizeTieredPricingForStorage } from "@/lib/booking/pricing";
 
 const createSchema = z.object({
   categoryId: z.string().min(1),
@@ -15,6 +16,7 @@ const createSchema = z.object({
   maxSqFt: z.number().int().min(0).optional().nullable(),
   isPerSqFt: z.boolean().optional(),
   minPriceCents: z.number().int().min(0).optional().nullable(),
+  tieredPricing: z.any().optional().nullable(),
   active: z.boolean().optional(),
   taxIds: z.array(z.string().min(1)).optional(),
 });
@@ -92,6 +94,7 @@ export async function POST(req: NextRequest) {
         maxSqFt: parsed.data.maxSqFt ?? null,
         isPerSqFt: parsed.data.isPerSqFt ?? false,
         minPriceCents: parsed.data.minPriceCents ?? null,
+        tieredPricing: sanitizeTieredPricingForStorage(parsed.data.tieredPricing) as any,
         active: parsed.data.active ?? true,
       },
     });

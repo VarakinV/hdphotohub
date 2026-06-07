@@ -15,6 +15,12 @@ import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 
 import { getRecaptchaToken } from '@/lib/recaptcha/client';
+import {
+  calculateServicePriceCents,
+  formatQuantityLabel,
+  normalizeTieredPricing,
+  resolveServiceQuantity,
+} from '@/lib/booking/pricing';
 
 // Types for catalog payload
 type Catalog = {
@@ -52,6 +58,7 @@ type Catalog = {
       maxSqFt?: number | null;
       isPerSqFt?: boolean;
       minPriceCents?: number | null;
+      tieredPricing?: unknown;
       taxRatesBps: number[];
     }>;
   }>;
@@ -89,6 +96,7 @@ export default function PublicBookingPage() {
   const [selectedByCategory, setSelectedByCategory] = useState<
     Record<string, string[]>
   >({});
+  const [serviceQuantities, setServiceQuantities] = useState<Record<string, number>>({});
   const [notes, setNotes] = useState('');
   const [contact, setContact] = useState({
     firstName: '',
@@ -173,6 +181,7 @@ export default function PublicBookingPage() {
       if (d.garageMeasure) setGarageMeasure(d.garageMeasure);
       if (d.garagePhoto) setGaragePhoto(d.garagePhoto);
       if (d.selectedByCategory) setSelectedByCategory(d.selectedByCategory);
+      if (d.serviceQuantities) setServiceQuantities(d.serviceQuantities);
       if (d.notes) setNotes(d.notes);
       if (d.contact) setContact(d.contact);
       if (d.formattedAddress) setFormattedAddress(d.formattedAddress);
@@ -198,7 +207,7 @@ export default function PublicBookingPage() {
         JSON.stringify({
           address, unitNumber, size,
           basementMeasure, basementPhoto, garageMeasure, garagePhoto,
-          selectedByCategory, notes, contact,
+          selectedByCategory, serviceQuantities, notes, contact,
           formattedAddress, lat, lng, city, province, postalCode, country, placeId,
           promoCode,
           travelFee,
@@ -208,7 +217,7 @@ export default function PublicBookingPage() {
   }, [
     STORAGE_KEY, address, unitNumber, size,
     basementMeasure, basementPhoto, garageMeasure, garagePhoto,
-    selectedByCategory, notes, contact,
+    selectedByCategory, serviceQuantities, notes, contact,
     formattedAddress, lat, lng, city, province, postalCode, country, placeId,
     promoCode,
     travelFee,
@@ -264,34 +273,35 @@ export default function PublicBookingPage() {
         priceCents: number;
         taxRatesBps: number[];
         bufferBeforeMin: number;
+        quantity: number;
+        quantityLabel: string | null;
+        isTiered: boolean;
       }[];
     const byId = new Map<
       string,
-      { id: string; name: string; priceCents: number; taxRatesBps: number[]; bufferBeforeMin: number }
+      { id: string; name: string; priceCents: number; taxRatesBps: number[]; bufferBeforeMin: number; quantity: number; quantityLabel: string | null; isTiered: boolean }
     >();
     for (const cat of catalog.categories) {
       const svcIds = selectedByCategory[cat.id] || [];
       for (const id of svcIds) {
         const s = cat.services.find((x) => x.id === id);
         if (s) {
-          let effectivePrice = s.priceCents;
-          if (s.isPerSqFt && sizeNumber > 0) {
-            const computed = Math.round(s.priceCents * sizeNumber);
-            const floor = s.minPriceCents ?? 0;
-            effectivePrice = Math.max(computed, floor);
-          }
+          const calculated = calculateServicePriceCents(s, sizeNumber, serviceQuantities[s.id]);
           byId.set(s.id, {
             id: s.id,
             name: s.name,
-            priceCents: effectivePrice,
+            priceCents: calculated.priceCents,
             taxRatesBps: s.taxRatesBps,
             bufferBeforeMin: s.bufferBeforeMin,
+            quantity: calculated.quantity,
+            quantityLabel: calculated.quantityLabel,
+            isTiered: calculated.isTiered,
           });
         }
       }
     }
     return Array.from(byId.values());
-  }, [catalog, selectedByCategory, sizeNumber]);
+  }, [catalog, selectedByCategory, serviceQuantities, sizeNumber]);
 
   // Total buffer-before across all selected services (used to show service start time, not block start)
   const totalBufferBeforeMin = useMemo(
@@ -521,6 +531,8 @@ export default function PublicBookingPage() {
           body: JSON.stringify({
             code: promoCode.trim(),
             serviceIds,
+            serviceQuantities,
+            propertySizeSqFt: sizeNumber || null,
             contactEmail: contact.email || undefined,
           }),
         }
@@ -570,6 +582,11 @@ export default function PublicBookingPage() {
       setSubmitError(null);
       setSubmitting(true);
       const serviceIds = selectedServices.map((s) => s.id);
+      const selectedServiceQuantities = Object.fromEntries(
+        selectedServices
+          .filter((s) => s.isTiered)
+          .map((s) => [s.id, s.quantity])
+      );
       const recaptchaToken = await getRecaptchaToken('booking');
       const body = {
         address,
@@ -594,6 +611,7 @@ export default function PublicBookingPage() {
         contactPhone: contact.phone || null,
         company: contact.company || null,
         serviceIds,
+        serviceQuantities: selectedServiceQuantities,
         slotStart: selectedSlotISO,
         promoCode: promoCode.trim() || undefined,
         recaptchaToken: recaptchaToken || undefined,
@@ -641,6 +659,84 @@ export default function PublicBookingPage() {
         : [...current, serviceId];
       return { ...prev, [categoryId]: next };
     });
+  }
+
+  function renderServiceOption(
+    categoryId: string,
+    selectedIds: string[],
+    s: Catalog['categories'][number]['services'][number]
+  ) {
+    const selected = selectedIds.includes(s.id);
+    const tiered = normalizeTieredPricing(s.tieredPricing);
+    const quantity = resolveServiceQuantity(s.tieredPricing, serviceQuantities[s.id]);
+    const calculated = calculateServicePriceCents(s, sizeNumber, quantity);
+    const pricePrefix = tiered && !selected ? 'From ' : '';
+
+    return (
+      <div
+        key={s.id}
+        className={`w-full rounded-lg border p-3 md:p-2 hover:bg-accent transition-colors ${
+          selected ? 'border-primary bg-primary/5' : 'border-border'
+        }`}
+      >
+        <label className="flex items-start justify-between gap-3 cursor-pointer">
+          <div className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={() => toggleService(categoryId, s.id)}
+              className="mt-0.5 h-5 w-5 shrink-0 rounded border-gray-300"
+              aria-label={`Select ${s.name}`}
+            />
+            <div>
+              <div className="font-medium">{s.name}</div>
+              {s.description && (
+                <div className="text-xs text-muted-foreground">{s.description}</div>
+              )}
+            </div>
+          </div>
+          <div className="font-semibold whitespace-nowrap text-right">
+            {s.isPerSqFt ? (
+              sizeNumber > 0 ? (
+                <>
+                  {formatMoney(calculated.priceCents)}
+                  <div className="text-xs font-normal text-muted-foreground">{formatMoney(s.priceCents)}/sqft</div>
+                </>
+              ) : (
+                <>{formatMoney(s.priceCents)}/sqft</>
+              )
+            ) : (
+              <>{pricePrefix}{formatMoney(calculated.priceCents)}</>
+            )}
+          </div>
+        </label>
+
+        {selected && tiered && (
+          <div className="mt-3 border-t pt-3 pl-8">
+            <Label className="text-xs text-muted-foreground">
+              Number of {tiered.unitLabel.endsWith('s') ? tiered.unitLabel : `${tiered.unitLabel}s`}
+            </Label>
+            <select
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              value={String(quantity)}
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) =>
+                setServiceQuantities((prev) => ({
+                  ...prev,
+                  [s.id]: Number(e.target.value),
+                }))
+              }
+            >
+              {tiered.tiers.map((tier) => (
+                <option key={tier.quantity} value={tier.quantity}>
+                  {formatQuantityLabel(tier.quantity, tiered.unitLabel)} — {formatMoney(tier.priceCents)}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+    );
   }
 
   if (loading) {
@@ -933,48 +1029,7 @@ export default function PublicBookingPage() {
                       )}
 
                       <div className="space-y-2">
-                        {cat.services.map((s) => (
-                          <label
-                            key={s.id}
-                            className={`w-full rounded-lg border p-3 md:p-2 hover:bg-accent flex items-start justify-between gap-3 cursor-pointer transition-colors ${
-                              selectedIds.includes(s.id)
-                                ? 'border-primary bg-primary/5'
-                                : 'border-border'
-                            }`}
-                          >
-                            <div className="flex items-start gap-3">
-                              <input
-                                type="checkbox"
-                                checked={selectedIds.includes(s.id)}
-                                onChange={() => toggleService(cat.id, s.id)}
-                                className="mt-0.5 h-5 w-5 shrink-0 rounded border-gray-300"
-                                aria-label={`Select ${s.name}`}
-                              />
-                              <div>
-                                <div className="font-medium">{s.name}</div>
-                                {s.description && (
-                                  <div className="text-xs text-muted-foreground">
-                                    {s.description}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            <div className="font-semibold whitespace-nowrap text-right">
-                              {s.isPerSqFt ? (
-                                sizeNumber > 0 ? (
-                                  <>
-                                    {formatMoney(Math.max(Math.round(s.priceCents * sizeNumber), s.minPriceCents ?? 0))}
-                                    <div className="text-xs font-normal text-muted-foreground">{formatMoney(s.priceCents)}/sqft</div>
-                                  </>
-                                ) : (
-                                  <>{formatMoney(s.priceCents)}/sqft</>
-                                )
-                              ) : (
-                                formatMoney(s.priceCents)
-                              )}
-                            </div>
-                          </label>
-                        ))}
+                        {cat.services.map((s) => renderServiceOption(cat.id, selectedIds, s))}
                         {cat.services.length === 0 && (
                           <div className="text-sm text-muted-foreground">
                             No services match this size.
@@ -1011,48 +1066,7 @@ export default function PublicBookingPage() {
                       )}
 
                       <div className="space-y-2">
-                        {cat.services.map((s) => (
-                          <label
-                            key={s.id}
-                            className={`w-full rounded-lg border p-3 md:p-2 hover:bg-accent flex items-start justify-between gap-3 cursor-pointer transition-colors ${
-                              selectedIds.includes(s.id)
-                                ? 'border-primary bg-primary/5'
-                                : 'border-border'
-                            }`}
-                          >
-                            <div className="flex items-start gap-3">
-                              <input
-                                type="checkbox"
-                                checked={selectedIds.includes(s.id)}
-                                onChange={() => toggleService(cat.id, s.id)}
-                                className="mt-0.5 h-5 w-5 shrink-0 rounded border-gray-300"
-                                aria-label={`Select ${s.name}`}
-                              />
-                              <div>
-                                <div className="font-medium">{s.name}</div>
-                                {s.description && (
-                                  <div className="text-xs text-muted-foreground">
-                                    {s.description}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            <div className="font-semibold whitespace-nowrap text-right">
-                              {s.isPerSqFt ? (
-                                sizeNumber > 0 ? (
-                                  <>
-                                    {formatMoney(Math.max(Math.round(s.priceCents * sizeNumber), s.minPriceCents ?? 0))}
-                                    <div className="text-xs font-normal text-muted-foreground">{formatMoney(s.priceCents)}/sqft</div>
-                                  </>
-                                ) : (
-                                  <>{formatMoney(s.priceCents)}/sqft</>
-                                )
-                              ) : (
-                                formatMoney(s.priceCents)
-                              )}
-                            </div>
-                          </label>
-                        ))}
+                        {cat.services.map((s) => renderServiceOption(cat.id, selectedIds, s))}
                         {cat.services.length === 0 && (
                           <div className="text-sm text-muted-foreground">
                             No services match this size.

@@ -351,6 +351,7 @@ model Service {
   maxSqFt          Int?
   isPerSqFt        Boolean            @default(false)
   minPriceCents    Int?
+  tieredPricing    Json?
   active           Boolean            @default(true)
   sortOrder        Int                @default(0)
   taxes            ServiceTax[]
@@ -460,6 +461,8 @@ model BookingService {
   // Snapshots for historical accuracy
   serviceName    String
   unitPriceCents Int
+  quantity       Int     @default(1)
+  quantityLabel  String?
   taxCents       Int    @default(0)
 }
 

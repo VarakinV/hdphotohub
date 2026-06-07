@@ -5,6 +5,7 @@ import { createEventForAdmin } from "@/lib/google/calendar";
 import { sendBookingToGhl } from "@/lib/ghl";
 import { verifyRecaptchaServer } from "@/lib/recaptcha/verify";
 import { calculateTravelFee, getTravelFeeConfigForAdmin } from "@/lib/travel/fee";
+import { calculateServicePriceCents, formatQuantityLabel } from "@/lib/booking/pricing";
 
 function money(cents: number) { return `$${(cents/100).toFixed(2)}`; }
 function slugify(text: string) {
@@ -55,6 +56,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
       contactPhone,
       company,
       serviceIds,
+      serviceQuantities,
       slotStart,
       promoCode,
       recaptchaToken,
@@ -93,8 +95,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
         name: true,
         description: true,
         priceCents: true,
+        slug: true,
         isPerSqFt: true,
         minPriceCents: true,
+        tieredPricing: true,
         durationMin: true,
         bufferBeforeMin: true,
         bufferAfterMin: true,
@@ -107,14 +111,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
     // Calculate effective price for each service (accounting for per-sq-ft pricing)
     const size = Number(propertySizeSqFt) || 0;
     const effectivePrices: Record<string, number> = {};
+    const selectedQuantities: Record<string, number> = {};
+    const selectedQuantityLabels: Record<string, string | null> = {};
     for (const s of svcRows) {
-      if (s.isPerSqFt && size > 0) {
-        const computed = Math.round(s.priceCents * size);
-        const floor = s.minPriceCents ?? 0;
-        effectivePrices[s.id] = Math.max(computed, floor);
-      } else {
-        effectivePrices[s.id] = s.priceCents;
-      }
+      const calculated = calculateServicePriceCents(
+        s,
+        size,
+        serviceQuantities && typeof serviceQuantities === 'object' ? serviceQuantities[s.id] : undefined
+      );
+      effectivePrices[s.id] = calculated.priceCents;
+      selectedQuantities[s.id] = calculated.quantity;
+      selectedQuantityLabels[s.id] = calculated.quantityLabel;
     }
 
     // Compute totals and end time
@@ -298,6 +305,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
             serviceId: s.id,
             serviceName: s.name,
             unitPriceCents: effectivePrices[s.id],
+            quantity: selectedQuantities[s.id] || 1,
+            quantityLabel: selectedQuantityLabels[s.id] || null,
             taxCents: itemTax[s.id] || 0,
           })),
         },
@@ -341,8 +350,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
       const svcLines = svcRows.map((s) => {
         const catName = s.category?.name || '';
         const catDesc = s.category?.description || '';
+        const quantity = selectedQuantities[s.id] || 1;
+        const quantityLabel = selectedQuantityLabels[s.id];
         const parts = [
-          `• ${s.name}`,
+          `• ${s.name}${quantityLabel ? ` (${formatQuantityLabel(quantity, quantityLabel)})` : ''}`,
           catName ? `  Category: ${catName}` : null,
           catDesc ? `  ${catDesc}` : null,
         ].filter(Boolean);
@@ -427,7 +438,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
         const desc = s.description || '';
         const price = money(effectivePrices[s.id]);
         const perSqFtNote = s.isPerSqFt ? ` (${money(s.priceCents)}/sqft)` : '';
-        return `<li style="margin-bottom:8px;"><strong>${s.name}</strong>${perSqFtNote} — ${price}${catName ? `<br/><span style="color:#666;font-size:13px;">Category: ${catName}</span>` : ''}${catDesc ? `<br/><span style="color:#666;font-size:13px;">${catDesc}</span>` : ''}${desc ? `<br/><span style="color:#666;font-size:13px;">${desc}</span>` : ''}</li>`;
+        const quantity = selectedQuantities[s.id] || 1;
+        const quantityLabel = selectedQuantityLabels[s.id];
+        const quantityNote = quantityLabel ? ` — ${formatQuantityLabel(quantity, quantityLabel)}` : '';
+        return `<li style="margin-bottom:8px;"><strong>${s.name}</strong>${perSqFtNote}${quantityNote} — ${price}${catName ? `<br/><span style="color:#666;font-size:13px;">Category: ${catName}</span>` : ''}${catDesc ? `<br/><span style="color:#666;font-size:13px;">${catDesc}</span>` : ''}${desc ? `<br/><span style="color:#666;font-size:13px;">${desc}</span>` : ''}</li>`;
       }).join('');
 
       const customerSubject = `We received your booking request for ${formattedAddress || address}`;

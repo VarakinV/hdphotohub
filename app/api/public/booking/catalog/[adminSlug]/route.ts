@@ -54,6 +54,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ adm
             maxSqFt: true,
             isPerSqFt: true,
             minPriceCents: true,
+            tieredPricing: true,
             taxes: { select: { tax: { select: { id: true, name: true, rateBps: true } } } },
           },
         },

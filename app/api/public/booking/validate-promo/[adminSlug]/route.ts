@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
+import { calculateServicePriceCents } from "@/lib/booking/pricing";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ adminSlug: string }> }) {
   try {
     const { adminSlug } = await params;
     const body = await req.json().catch(() => ({}));
-    const { code, serviceIds, contactEmail } = body as {
+    const { code, serviceIds, contactEmail, serviceQuantities, propertySizeSqFt } = body as {
       code?: string;
       serviceIds?: string[];
       contactEmail?: string | null;
+      serviceQuantities?: Record<string, number>;
+      propertySizeSqFt?: number | null;
     };
 
     if (!adminSlug) return NextResponse.json({ error: "Missing adminSlug" }, { status: 400 });
@@ -54,9 +57,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
     // Compute eligible subtotal
     const svcRows = await prisma.service.findMany({
       where: { adminId: admin.id, id: { in: appliesToSubset ? selectedEligibleIds : serviceIds }, active: true },
-      select: { id: true, priceCents: true },
+      select: {
+        id: true,
+        priceCents: true,
+        isPerSqFt: true,
+        minPriceCents: true,
+        tieredPricing: true,
+      },
     });
-    const eligibleSubtotal = svcRows.reduce((acc, s) => acc + s.priceCents, 0);
+    const size = Number(propertySizeSqFt) || 0;
+    const eligibleSubtotal = svcRows.reduce((acc, s) => {
+      const price = calculateServicePriceCents(s, size, serviceQuantities?.[s.id]);
+      return acc + price.priceCents;
+    }, 0);
     if (eligibleSubtotal <= 0) return NextResponse.json({ error: "Nothing to discount" }, { status: 400 });
 
     let discountCents = 0;

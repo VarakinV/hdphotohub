@@ -224,6 +224,11 @@ export default function BookingDetailsPage() {
                         ) : null}
                       </span>
                     </div>
+                    {it.quantityLabel ? (
+                      <div className="mt-1 text-xs text-gray-600">
+                        Quantity: {it.quantity} {it.quantity === 1 || String(it.quantityLabel).endsWith('s') ? it.quantityLabel : `${it.quantityLabel}s`}
+                      </div>
+                    ) : null}
                     <div className="mt-1 text-xs text-gray-600">
                       {it.service?.category?.name ? (
                         <div>
