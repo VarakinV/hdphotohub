@@ -425,7 +425,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
     if (apiKey) {
       const resend = new Resend(apiKey);
       const dt = new Date(start);
-      const dateStr = dt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      const dateStr = dt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: settings.timeZone });
       const timeStr = dt
         .toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: settings.timeZone })
         .replace('AM', 'a.m.')
