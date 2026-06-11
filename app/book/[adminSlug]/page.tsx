@@ -69,6 +69,10 @@ function formatMoney(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
 function iconFromKey(key?: string | null) {
   if (!key) return LayersIcon;
   const name = key as keyof typeof Lucide;
@@ -250,6 +254,12 @@ export default function PublicBookingPage() {
 
   const sizeNumber =
     typeof size === 'number' ? size : parseInt(String(size || 0), 10) || 0;
+  const trimmedFirstName = contact.firstName.trim();
+  const trimmedLastName = contact.lastName.trim();
+  const trimmedEmail = contact.email.trim();
+  const trimmedPhone = contact.phone.trim();
+  const trimmedCompany = contact.company.trim();
+  const trimmedNotes = notes.trim();
 
   const filteredCategories = useMemo(() => {
     if (!catalog) return [] as Catalog['categories'];
@@ -302,6 +312,28 @@ export default function PublicBookingPage() {
     }
     return Array.from(byId.values());
   }, [catalog, selectedByCategory, serviceQuantities, sizeNumber]);
+
+  const validationErrors = {
+    address:
+      lat != null && lng != null
+        ? null
+        : 'Please select a valid property address from the suggestions.',
+    size: sizeNumber > 0 ? null : 'Property size is required',
+    services:
+      selectedServices.length > 0
+        ? null
+        : 'Select at least one service to choose an appointment time.',
+    time: selectedSlotISO ? null : 'Please select an appointment time.',
+    firstName: trimmedFirstName ? null : 'First name is required',
+    lastName: trimmedLastName ? null : 'Last name is required',
+    email: !trimmedEmail
+      ? 'Email is required'
+      : !isValidEmail(trimmedEmail)
+      ? 'Enter a valid email address'
+      : null,
+  };
+
+  const canSubmit = Object.values(validationErrors).every((value) => !value);
 
   // Total buffer-before across all selected services (used to show service start time, not block start)
   const totalBufferBeforeMin = useMemo(
@@ -533,7 +565,7 @@ export default function PublicBookingPage() {
             serviceIds,
             serviceQuantities,
             propertySizeSqFt: sizeNumber || null,
-            contactEmail: contact.email || undefined,
+            contactEmail: trimmedEmail || undefined,
           }),
         }
       );
@@ -578,6 +610,22 @@ export default function PublicBookingPage() {
   }, [slotsByDate, selectedDateKey]);
 
   async function handleSubmit() {
+    setTouched((prev) => ({
+      ...prev,
+      address: true,
+      size: true,
+      services: true,
+      time: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+    }));
+
+    if (!canSubmit) {
+      setSubmitError('Please fix the highlighted fields before submitting.');
+      return;
+    }
+
     try {
       setSubmitError(null);
       setSubmitting(true);
@@ -589,8 +637,8 @@ export default function PublicBookingPage() {
       );
       const recaptchaToken = await getRecaptchaToken('booking');
       const body = {
-        address,
-        formattedAddress: formattedAddress || address,
+        address: address.trim(),
+        formattedAddress: (formattedAddress || address).trim(),
         lat,
         lng,
         city,
@@ -604,12 +652,12 @@ export default function PublicBookingPage() {
         basementPhoto,
         garageMeasure,
         garagePhoto,
-        notes,
-        contactFirstName: contact.firstName,
-        contactLastName: contact.lastName,
-        contactEmail: contact.email,
-        contactPhone: contact.phone || null,
-        company: contact.company || null,
+        notes: trimmedNotes || null,
+        contactFirstName: trimmedFirstName,
+        contactLastName: trimmedLastName,
+        contactEmail: trimmedEmail,
+        contactPhone: trimmedPhone || null,
+        company: trimmedCompany || null,
         serviceIds,
         serviceQuantities: selectedServiceQuantities,
         slotStart: selectedSlotISO,
@@ -761,11 +809,14 @@ export default function PublicBookingPage() {
 
   // Progress states for stepper
   const stage = {
-    address: !!(lat && lng),
-    size: sizeNumber > 0,
-    services: selectedServices.length > 0,
-    time: !!selectedSlotISO,
-    contact: !!(contact.firstName && contact.lastName && contact.email),
+    address: !validationErrors.address,
+    size: !validationErrors.size,
+    services: !validationErrors.services,
+    time: !validationErrors.time,
+    contact:
+      !validationErrors.firstName &&
+      !validationErrors.lastName &&
+      !validationErrors.email,
   };
   const steps = [
     { key: 'Address', done: stage.address },
@@ -875,6 +926,11 @@ export default function PublicBookingPage() {
                   {formattedAddress}
                 </div>
               )}
+              {touched.address && validationErrors.address && (
+                <div className="text-xs text-red-500 mt-1">
+                  {validationErrors.address}
+                </div>
+              )}
             </div>
             <div>
               <Label className="text-sm text-muted-foreground">Unit # (If applicable)</Label>
@@ -935,8 +991,8 @@ export default function PublicBookingPage() {
                 }
                 onBlur={() => markTouched('size')}
               />
-              {touched.size && !sizeNumber && (
-                <div className="text-xs text-red-500 mt-1">Property size is required</div>
+              {touched.size && validationErrors.size && (
+                <div className="text-xs text-red-500 mt-1">{validationErrors.size}</div>
               )}
               <div className="text-sm text-muted-foreground mt-2">
                 Enter the total area to be measured, including basements,
@@ -1079,8 +1135,10 @@ export default function PublicBookingPage() {
               </div>
             </div>
 
-            <div className="text-sm text-muted-foreground">
-              Select at least one service to choose an appointment time.
+            <div className={`text-sm ${touched.services && validationErrors.services ? 'text-red-600' : 'text-muted-foreground'}`}>
+              {touched.services && validationErrors.services
+                ? validationErrors.services
+                : 'Select at least one service to choose an appointment time.'}
             </div>
           </div>
         </Card>
@@ -1091,6 +1149,9 @@ export default function PublicBookingPage() {
             Appointment Time
             {stage.time && <CheckCircle2 className="h-5 w-5 text-green-600" />}
           </h2>
+          {touched.time && validationErrors.time && (
+            <div className="mb-3 text-sm text-red-600">{validationErrors.time}</div>
+          )}
           {(() => {
             // Calendly-style: calendar left, time slots right
             function startOfMonth(d: Date) {
@@ -1264,35 +1325,35 @@ export default function PublicBookingPage() {
               <div>
                 <Label>First Name <span className="text-red-400">*</span></Label>
                 <Input
-                  className={`mt-1 ${touched.firstName && !contact.firstName.trim() ? 'border-red-400 ring-1 ring-red-200' : ''}`}
+                  className={`mt-1 ${touched.firstName && validationErrors.firstName ? 'border-red-400 ring-1 ring-red-200' : ''}`}
                   value={contact.firstName}
                   onChange={(e) =>
                     setContact({ ...contact, firstName: e.target.value })
                   }
                   onBlur={() => markTouched('firstName')}
                 />
-                {touched.firstName && !contact.firstName.trim() && (
-                  <div className="text-xs text-red-500 mt-1">First name is required</div>
+                {touched.firstName && validationErrors.firstName && (
+                  <div className="text-xs text-red-500 mt-1">{validationErrors.firstName}</div>
                 )}
               </div>
               <div>
                 <Label>Last Name <span className="text-red-400">*</span></Label>
                 <Input
-                  className={`mt-1 ${touched.lastName && !contact.lastName.trim() ? 'border-red-400 ring-1 ring-red-200' : ''}`}
+                  className={`mt-1 ${touched.lastName && validationErrors.lastName ? 'border-red-400 ring-1 ring-red-200' : ''}`}
                   value={contact.lastName}
                   onChange={(e) =>
                     setContact({ ...contact, lastName: e.target.value })
                   }
                   onBlur={() => markTouched('lastName')}
                 />
-                {touched.lastName && !contact.lastName.trim() && (
-                  <div className="text-xs text-red-500 mt-1">Last name is required</div>
+                {touched.lastName && validationErrors.lastName && (
+                  <div className="text-xs text-red-500 mt-1">{validationErrors.lastName}</div>
                 )}
               </div>
               <div className="md:col-span-2">
                 <Label>Email <span className="text-red-400">*</span></Label>
                 <Input
-                  className={`mt-1 ${touched.email && !contact.email.trim() ? 'border-red-400 ring-1 ring-red-200' : ''}`}
+                  className={`mt-1 ${touched.email && validationErrors.email ? 'border-red-400 ring-1 ring-red-200' : ''}`}
                   type="email"
                   value={contact.email}
                   onChange={(e) =>
@@ -1300,8 +1361,8 @@ export default function PublicBookingPage() {
                   }
                   onBlur={() => markTouched('email')}
                 />
-                {touched.email && !contact.email.trim() && (
-                  <div className="text-xs text-red-500 mt-1">Email is required</div>
+                {touched.email && validationErrors.email && (
+                  <div className="text-xs text-red-500 mt-1">{validationErrors.email}</div>
                 )}
               </div>
               <div>
@@ -1471,14 +1532,7 @@ export default function PublicBookingPage() {
             <Button
               className="px-14 py-6 text-lg md:text-2xl"
               onClick={handleSubmit}
-              disabled={
-                submitting ||
-                !selectedSlotISO ||
-                !contact.firstName ||
-                !contact.lastName ||
-                !contact.email ||
-                selectedServices.length === 0
-              }
+              disabled={submitting}
             >
               {submitting ? 'Submitting…' : 'Confirm Booking'}
             </Button>

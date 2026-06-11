@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { Resend } from "resend";
+import { z } from "zod";
 import { createEventForAdmin } from "@/lib/google/calendar";
 import { sendBookingToGhl } from "@/lib/ghl";
 import { verifyRecaptchaServer } from "@/lib/recaptcha/verify";
@@ -28,10 +29,50 @@ async function generateUniqueSlug(clientName: string, propertyAddress: string) {
   }
 }
 
+const bookingSubmitSchema = z.object({
+  address: z.string().trim().min(1, 'Property address is required').max(300),
+  formattedAddress: z.string().trim().max(500).optional().nullable(),
+  lat: z.number().finite().optional().nullable(),
+  lng: z.number().finite().optional().nullable(),
+  city: z.string().trim().max(120).optional().nullable(),
+  province: z.string().trim().max(120).optional().nullable(),
+  postalCode: z.string().trim().max(40).optional().nullable(),
+  country: z.string().trim().max(120).optional().nullable(),
+  placeId: z.string().trim().max(255).optional().nullable(),
+  propertySizeSqFt: z.number().int().refine((value) => value > 0, 'Property size is required'),
+  unitNumber: z.string().trim().max(40).optional().nullable(),
+  basementMeasure: z.boolean().optional(),
+  basementPhoto: z.boolean().optional(),
+  garageMeasure: z.boolean().optional(),
+  garagePhoto: z.boolean().optional(),
+  notes: z.string().trim().max(5000).optional().nullable(),
+  contactFirstName: z.string().trim().min(1, 'First name is required').max(80),
+  contactLastName: z.string().trim().min(1, 'Last name is required').max(80),
+  contactEmail: z.string().trim().email('Enter a valid email address').max(254),
+  contactPhone: z.string().trim().max(40).optional().nullable(),
+  company: z.string().trim().max(120).optional().nullable(),
+  serviceIds: z.array(z.string().min(1)).min(1, 'No services selected'),
+  serviceQuantities: z.record(z.string(), z.number().int().positive()).optional(),
+  slotStart: z.string().refine((value) => !Number.isNaN(new Date(value).getTime()), 'Please select a valid appointment time'),
+  promoCode: z.string().trim().max(100).optional(),
+  recaptchaToken: z.string().optional().nullable(),
+});
+
 export async function POST(req: NextRequest, { params }: { params: Promise<{ adminSlug: string }> }) {
   try {
     const { adminSlug } = await params;
-    const body = await req.json().catch(() => ({}));
+
+    if (!adminSlug) return NextResponse.json({ error: "Missing adminSlug" }, { status: 400 });
+
+    const parsed = bookingSubmitSchema.safeParse(await req.json().catch(() => ({})));
+    if (!parsed.success) {
+      const fieldErrors = parsed.error.flatten().fieldErrors;
+      const firstError = Object.values(fieldErrors).flat().find(Boolean);
+      return NextResponse.json(
+        { error: firstError || 'Invalid booking details', details: fieldErrors },
+        { status: 400 }
+      );
+    }
 
     const {
       address,
@@ -60,17 +101,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
       slotStart,
       promoCode,
       recaptchaToken,
-    } = body as any;
+    } = parsed.data;
 
-    if (!adminSlug) return NextResponse.json({ error: "Missing adminSlug" }, { status: 400 });
-    if (!address || !contactFirstName || !contactLastName || !contactEmail) return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     // reCAPTCHA v3 verification (if configured)
     const recaptcha = await verifyRecaptchaServer(recaptchaToken, 'booking');
     if (!recaptcha.ok) {
       return NextResponse.json({ error: 'reCAPTCHA failed' }, { status: 400 });
     }
-
-    if (!Array.isArray(serviceIds) || serviceIds.length === 0) return NextResponse.json({ error: "No services selected" }, { status: 400 });
 
     const idOrSlug = adminSlug;
     const admin = await prisma.user.findFirst({
@@ -125,7 +162,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
     }
 
     // Compute totals and end time
-    const start = new Date(slotStart || Date.now());
+    const start = new Date(slotStart);
     const coreDurationMin = svcRows.reduce((acc, s) => acc + s.durationMin, 0);
     const beforeBufferMin = svcRows.reduce((acc, s) => acc + s.bufferBeforeMin, 0);
     const afterBufferMin = svcRows.reduce((acc, s) => acc + s.bufferAfterMin, 0);
