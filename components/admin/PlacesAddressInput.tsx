@@ -20,6 +20,9 @@ export default function PlacesAddressInput({
   defaultPostalCode,
   defaultCountry,
   defaultPlaceId,
+  placeholder = 'Search address',
+  className = 'border rounded-md w-full p-2',
+  onValueChange,
   onResolved,
 }: {
   name?: string;
@@ -32,6 +35,9 @@ export default function PlacesAddressInput({
   defaultPostalCode?: string | null;
   defaultCountry?: string | null;
   defaultPlaceId?: string | null;
+  placeholder?: string;
+  className?: string;
+  onValueChange?: (value: string) => void;
   onResolved?: (data: {
     formatted: string;
     street?: string;
@@ -60,10 +66,27 @@ export default function PlacesAddressInput({
       process.env.GOOGLE_MAPS_API_KEY;
     if (!key) return; // no key, render plain input
 
-    const ensurePlaces = () => {
+    const ensurePlaces = async () => {
       if (window.google?.maps?.places) return Promise.resolve();
+      if (window.google?.maps?.importLibrary) {
+        try {
+          await window.google.maps.importLibrary('places');
+          return;
+        } catch {
+          // Fall through to script loading below.
+        }
+      }
       if (!window.__googleMapsPlacesPromise) {
         window.__googleMapsPlacesPromise = new Promise<void>((resolve) => {
+          const existingPlaces = document.querySelector(
+            'script[data-google-maps-places="true"],script[src*="libraries=places"]'
+          ) as HTMLScriptElement | null;
+          if (existingPlaces) {
+            existingPlaces.addEventListener('load', () => resolve(), { once: true });
+            existingPlaces.addEventListener('error', () => resolve(), { once: true });
+            return;
+          }
+
           const existing = document.querySelector(
             'script[data-google-maps="true"],script#google-maps-js,script[src*="maps.googleapis.com/maps/api/js"]'
           ) as HTMLScriptElement | null;
@@ -72,8 +95,25 @@ export default function PlacesAddressInput({
               resolve();
               return;
             }
-            existing.addEventListener('load', () => resolve(), { once: true });
+            existing.addEventListener('load', async () => {
+              if (window.google?.maps?.importLibrary && !window.google?.maps?.places) {
+                try {
+                  await window.google.maps.importLibrary('places');
+                } catch {}
+              }
+              resolve();
+            }, { once: true });
             existing.addEventListener('error', () => resolve(), { once: true });
+            if (window.google?.maps && !window.google?.maps?.places) {
+              const el = document.createElement('script');
+              el.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places`;
+              el.async = true;
+              el.defer = true;
+              el.setAttribute('data-google-maps-places', 'true');
+              el.onload = () => resolve();
+              el.onerror = () => resolve();
+              document.head.appendChild(el);
+            }
             return;
           }
           const el = document.createElement('script');
@@ -81,6 +121,7 @@ export default function PlacesAddressInput({
           el.async = true;
           el.defer = true;
           el.setAttribute('data-google-maps', 'true');
+          el.setAttribute('data-google-maps-places', 'true');
           el.onload = () => resolve();
           el.onerror = () => resolve();
           document.head.appendChild(el);
@@ -123,6 +164,7 @@ export default function PlacesAddressInput({
         '';
       // Show street in the visible input so forms submit street-only
       if (inputRef.current) inputRef.current.value = street || formatted || '';
+      onValueChange?.(street || formatted || '');
       if (formattedRef.current) formattedRef.current.value = formatted || '';
       if (latRef.current) latRef.current.value = lat != null ? String(lat) : '';
       if (lngRef.current) lngRef.current.value = lng != null ? String(lng) : '';
@@ -151,8 +193,9 @@ export default function PlacesAddressInput({
         name={name}
         defaultValue={defaultValue}
         ref={inputRef}
-        placeholder="Search address"
-        className="border rounded-md w-full p-2"
+        placeholder={placeholder}
+        className={className}
+        onChange={(event) => onValueChange?.(event.target.value)}
       />
       {/* Hidden fields for formatted + coordinates + components */}
       <input

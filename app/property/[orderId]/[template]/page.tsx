@@ -7,6 +7,7 @@ import PropertyTemplateV1 from '@/components/property/templates/PropertyTemplate
 import PropertyTemplateV2 from '@/components/property/templates/PropertyTemplateV2';
 import PropertyTemplateV3 from '@/components/property/templates/PropertyTemplateV3';
 import SimilarHomesLeadPopup from '@/components/property/SimilarHomesLeadPopup';
+import HomeWorthWidget from '@/components/property/HomeWorthWidget';
 
 async function getOrder(orderId: string) {
   return prisma.order.findUnique({
@@ -92,6 +93,7 @@ export default async function PropertyPage({
         listPrice={order.listPrice}
         area={area || 'this area'}
       />
+      <HomeWorthWidget orderId={order.id} />
     </div>
   );
 }
