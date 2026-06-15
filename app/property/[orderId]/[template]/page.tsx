@@ -8,6 +8,7 @@ import PropertyTemplateV2 from '@/components/property/templates/PropertyTemplate
 import PropertyTemplateV3 from '@/components/property/templates/PropertyTemplateV3';
 import SimilarHomesLeadPopup from '@/components/property/SimilarHomesLeadPopup';
 import HomeWorthWidget from '@/components/property/HomeWorthWidget';
+import MortgageCalculatorTag from '@/components/property/MortgageCalculatorTag';
 
 async function getOrder(orderId: string) {
   return prisma.order.findUnique({
@@ -93,6 +94,7 @@ export default async function PropertyPage({
         listPrice={order.listPrice}
         area={area || 'this area'}
       />
+      <MortgageCalculatorTag orderId={order.id} template={template} />
       <HomeWorthWidget orderId={order.id} />
     </div>
   );
