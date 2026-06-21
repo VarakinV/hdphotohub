@@ -42,6 +42,29 @@ export async function GET(req: NextRequest) {
     }
     const byMonthCounts = await Promise.all(byMonthPromises);
 
+    // AOV by month for selected year (from Booking.totalCents)
+    const aovByMonthPromises: Promise<{ sum: number; count: number }>[] = [];
+    for (let m = 0; m < 12; m++) {
+      const { start, end } = getMonthRange(year, m);
+      aovByMonthPromises.push(
+        prisma.booking
+          .aggregate({
+            where: {
+              adminId: session.user.id,
+              createdAt: { gte: start, lt: end },
+            },
+            _sum: { totalCents: true },
+            _count: true,
+          })
+          .then((r) => ({
+            sum: (r._sum.totalCents as number) || 0,
+            count: r._count,
+          }))
+      );
+    }
+    const aovByMonthRaw = await Promise.all(aovByMonthPromises);
+    const aovByMonthSeries = aovByMonthRaw.map((r) => (r.count > 0 ? Math.round(r.sum / r.count) : 0));
+
     // Top realtors this month (by number of orders)
     const grouped = await prisma.order.groupBy({
       by: ["realtorId"],
@@ -74,6 +97,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       totals: { month: totalThisMonth, allTime: totalAllTime },
       byMonth: { year, series: byMonthCounts },
+      aovByMonth: { year, series: aovByMonthSeries },
       topRealtors,
       lastOrders,
     });

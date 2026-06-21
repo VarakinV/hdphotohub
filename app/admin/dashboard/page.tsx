@@ -44,6 +44,7 @@ export default function AdminDashboard() {
   type DashboardStats = {
     totals: { month: number; allTime: number };
     byMonth: { year: number; series: number[] };
+    aovByMonth: { year: number; series: number[] };
     topRealtors: {
       count: number;
       realtor: {
@@ -426,6 +427,75 @@ export default function AdminDashboard() {
                               </TooltipTrigger>
                               <TooltipContent>
                                 {`${months[i]}: ${v} orders`}
+                              </TooltipContent>
+                            </Tooltip>
+                            <div className="mt-2 text-xs text-gray-600">
+                              {months[i]}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </TooltipProvider>
+                  );
+                })()}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Average Order Value by Month */}
+        <Card className="mt-8">
+          <CardHeader>
+            <div>
+              <CardTitle>Average Order Value</CardTitle>
+              <CardDescription>
+                Average booking value by month for {year}
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {loadingStats || !stats ? (
+              <div className="h-40 flex items-center justify-center text-gray-500">
+                Loading chart…
+              </div>
+            ) : (
+              <div className="w-full">
+                {(() => {
+                  const series = stats.aovByMonth.series;
+                  const max = Math.max(1, ...series);
+                  const months = [
+                    'Jan',
+                    'Feb',
+                    'Mar',
+                    'Apr',
+                    'May',
+                    'Jun',
+                    'Jul',
+                    'Aug',
+                    'Sep',
+                    'Oct',
+                    'Nov',
+                    'Dec',
+                  ];
+                  const usd = (cents: number) =>
+                    '$' + (cents / 100).toFixed(2);
+                  return (
+                    <TooltipProvider>
+                      <div className="grid grid-cols-12 gap-3 items-end h-56">
+                        {series.map((v, i) => (
+                          <div
+                            key={i}
+                            className="flex flex-col items-center justify-end"
+                          >
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div
+                                  className="w-4 bg-emerald-500/80 rounded-t"
+                                  style={{ height: `${(v / max) * 180}px` }}
+                                />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {`${months[i]}: ${usd(v)}`}
                               </TooltipContent>
                             </Tooltip>
                             <div className="mt-2 text-xs text-gray-600">
