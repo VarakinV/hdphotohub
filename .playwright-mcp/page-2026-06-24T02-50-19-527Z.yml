@@ -1,0 +1,259 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - navigation [ref=e4]:
+      - generic [ref=e5]:
+        - link "KIC Realty" [ref=e6] [cursor=pointer]:
+          - /url: "#overview"
+          - img "KIC Realty" [ref=e7]
+        - button "Open menu" [ref=e9] [cursor=pointer]:
+          - img [ref=e10]
+    - generic [ref=e11]:
+      - generic [ref=e13]:
+        - generic [ref=e14]:
+          - img "138 Corner Glen Square NE" [ref=e17]
+          - img "138 Corner Glen Square NE" [ref=e20]
+          - img "138 Corner Glen Square NE" [ref=e23]
+          - img "138 Corner Glen Square NE" [ref=e26]
+          - img "138 Corner Glen Square NE" [ref=e29]
+        - generic [ref=e31]:
+          - link "Share on Facebook" [ref=e32] [cursor=pointer]:
+            - /url: https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fapp.photos4realestate.ca%2Fproperty%2Fcmqckpvjh0001l204d01carz3%2Fv6&quote=138%20Corner%20Glen%20Square%20NE
+            - img [ref=e33]
+          - link "Share on X" [ref=e35] [cursor=pointer]:
+            - /url: https://twitter.com/intent/tweet?url=https%3A%2F%2Fapp.photos4realestate.ca%2Fproperty%2Fcmqckpvjh0001l204d01carz3%2Fv6&text=138%20Corner%20Glen%20Square%20NE
+            - img [ref=e36]
+          - button [ref=e38] [cursor=pointer]:
+            - generic [ref=e39]:
+              - img
+      - generic:
+        - generic:
+          - generic [ref=e40]: For Sale
+          - heading "138 Corner Glen Square NE" [level=1] [ref=e42]
+          - paragraph [ref=e43]: Calgary, Alberta, T3N 2S3
+          - generic [ref=e44]:
+            - generic [ref=e45]:
+              - img [ref=e46]
+              - strong [ref=e49]: "4"
+              - text: Beds
+            - generic [ref=e50]:
+              - img [ref=e51]
+              - strong [ref=e54]: "3"
+              - text: Baths
+            - generic [ref=e55]:
+              - img [ref=e56]
+              - strong [ref=e61]: "2413"
+              - text: Sq Ft
+            - generic [ref=e62]:
+              - img [ref=e63]
+              - text: Built
+              - strong [ref=e65]: "2025"
+          - generic [ref=e66]:
+            - generic [ref=e67]:
+              - paragraph [ref=e68]: Listing Price
+              - paragraph [ref=e69]: $814,900
+            - button "Book a Showing" [ref=e71]:
+              - img [ref=e72]
+              - text: Book a Showing
+      - generic:
+        - img
+    - main [ref=e74]:
+      - generic [ref=e75]:
+        - generic [ref=e77]: Property Details
+        - generic [ref=e79]:
+          - generic [ref=e80]: Welcome to this brand-new home offering just under 2,250 sq.ft. of thoughtfully designed living space, featuring 4 bedrooms, 3.5 bathrooms, a bonus room, and exceptional potential for future development. The main floor showcases durable luxury vinyl plank flooring throughout, 9' ceilings, and an open-concept layout designed for both everyday living and entertaining. The stunning kitchen serves as the heart of the home, featuring a large white quartz island, white cabinetry, champagne bronze faucet and cabinet hardware, and an abundance of storage and workspace. A fully equipped spice kitchen adds even more functionality with its own gas range and sink, making meal preparation effortless. The spacious living area is enhanced by an elegant electric fireplace and modern pot lighting throughout the kitchen and living room, creating a bright and inviting atmosphere. A dedicated main floor den provides the perfect space for a home office, study, or flex room. Upstairs, you'll find four generously sized bedrooms, a versatile bonus room, and the convenience of keeping the whole family on one level. The primary retreat features a luxurious 5-piece ensuite, while a secondary bedroom enjoys its own private 4-piece ensuite. An additional 4-piece bathroom serves the remaining bedrooms, making this home ideal for growing families or multi-generational living. Matte black hardware throughout the home provides a modern and cohesive design aesthetic. The unfinished basement features 9' ceilings, a separate side entrance, and rough-ins for a future suite (a secondary suite would be subject to approval and permitting by the city/municipality), offering outstanding potential for future development or additional living space. Completing the home is a double attached garage and a rear deck area with a gas line ready for your BBQ. As a brand-new build, this home offers the benefits of modern construction, contemporary finishes, and the opportunity to be the very first owner. Combining sty lish design, functional living spaces, and future development potential, this is an exceptional opportunity for homeowners and investors alike. Situated near Calgary International Airport with quick access to Deerfoot Trail and Stoney Trail, Cornerstone continues to grow with exciting new amenities, offering exceptional convenience and a vibrant community lifestyle.
+          - generic [ref=e81]:
+            - generic [ref=e82]:
+              - img [ref=e84]
+              - generic [ref=e87]: "4"
+              - generic [ref=e88]: Bedrooms
+            - generic [ref=e89]:
+              - img [ref=e91]
+              - generic [ref=e94]: "3"
+              - generic [ref=e95]: Bathrooms
+            - generic [ref=e96]:
+              - img [ref=e98]
+              - generic [ref=e103]: "2413"
+              - generic [ref=e104]: Sq Ft
+            - generic [ref=e105]:
+              - img [ref=e107]
+              - generic [ref=e109]: "2025"
+              - generic [ref=e110]: Year Built
+          - generic [ref=e111]:
+            - generic [ref=e112]:
+              - img [ref=e113]
+              - generic [ref=e116]:
+                - generic [ref=e117]: MLS® Number
+                - generic [ref=e118]: A2321292
+            - generic [ref=e119]:
+              - img [ref=e120]
+              - generic [ref=e123]:
+                - generic [ref=e124]: Price
+                - generic [ref=e125]: $814,900
+      - generic [ref=e126]:
+        - generic [ref=e128]: Key Features
+        - heading "Property Highlights" [level=2] [ref=e129]
+        - paragraph [ref=e130]: Everything that makes this property stand out.
+        - generic [ref=e131]:
+          - generic [ref=e132]:
+            - img [ref=e134]
+            - generic [ref=e136]: Brand-new home with nearly 2,250 sq. ft. of living space
+          - generic [ref=e137]:
+            - img [ref=e139]
+            - generic [ref=e141]: 4 bedrooms, 3.5 bathrooms & spacious bonus room
+          - generic [ref=e142]:
+            - img [ref=e144]
+            - generic [ref=e146]: Open-concept main floor with 9’ ceilings & luxury vinyl plank flooring
+          - generic [ref=e147]:
+            - img [ref=e149]
+            - generic [ref=e151]: Modern kitchen with quartz island, champagne bronze finishes & ample storage
+          - generic [ref=e152]:
+            - img [ref=e154]
+            - generic [ref=e156]: Fully equipped spice kitchen with gas range & sink
+          - generic [ref=e157]:
+            - img [ref=e159]
+            - generic [ref=e161]: Main floor den ideal for office or flex space
+          - generic [ref=e162]:
+            - img [ref=e164]
+            - generic [ref=e166]: Primary suite with 5-piece ensuite & secondary ensuite bedroom
+          - generic [ref=e167]:
+            - img [ref=e169]
+            - generic [ref=e171]: Unfinished basement with side entrance & future suite potential (subject to approval)
+          - generic [ref=e172]:
+            - img [ref=e174]
+            - generic [ref=e176]: Double attached garage & BBQ gas line on rear deck
+      - generic [ref=e177]:
+        - generic [ref=e179]: Photo Gallery
+        - heading "Every Detail, Beautifully Captured" [level=2] [ref=e180]
+        - paragraph [ref=e181]: Professional photography showcasing the finest features of this property.
+        - generic [ref=e182]:
+          - generic:
+            - generic:
+              - img "01.jpg"
+          - generic:
+            - generic:
+              - img "02.jpg"
+          - generic:
+            - generic:
+              - img "03.jpg"
+          - generic:
+            - generic:
+              - img "04.jpg"
+          - generic:
+            - generic:
+              - img "05.jpg"
+          - generic:
+            - generic:
+              - img "06.jpg"
+          - generic:
+            - generic:
+              - img "07.jpg"
+          - generic:
+            - generic:
+              - img "08.jpg"
+          - generic:
+            - generic:
+              - img "09.jpg"
+        - generic [ref=e183]:
+          - generic:
+            - generic:
+              - img "01.jpg"
+          - button "View All 50 Photos" [ref=e184] [cursor=pointer]
+      - generic [ref=e185]:
+        - generic [ref=e187]: Floor Plans
+        - heading "Detailed Floor Plans" [level=2] [ref=e188]
+        - paragraph [ref=e189]: Review the layout and dimensions of each level.
+        - generic [ref=e190]:
+          - generic [ref=e191]:
+            - img "900-floor_imperial_en_1.jpg" [ref=e194] [cursor=pointer]
+            - generic [ref=e195]:
+              - heading "900-floor_imperial_en_1" [level=3] [ref=e196]
+              - button "View Full Size" [ref=e197] [cursor=pointer]:
+                - img [ref=e198]
+                - text: View Full Size
+          - generic [ref=e203]:
+            - img "901-floor_imperial_en_2.jpg" [ref=e206] [cursor=pointer]
+            - generic [ref=e207]:
+              - heading "901-floor_imperial_en_2" [level=3] [ref=e208]
+              - button "View Full Size" [ref=e209] [cursor=pointer]:
+                - img [ref=e210]
+                - text: View Full Size
+      - generic [ref=e215]:
+        - generic [ref=e217]: Virtual Tour
+        - heading "Explore in 3D" [level=2] [ref=e218]
+        - paragraph [ref=e219]: Take an interactive tour and experience the property as if you were walking through it in person.
+        - generic [ref=e220]:
+          - iframe [ref=e222]
+          - generic [ref=e223]:
+            - img [ref=e225]
+            - generic [ref=e228]:
+              - paragraph [ref=e229]: 3D Virtual Tour
+              - paragraph [ref=e230]: Interactive floor plans & measurements
+      - generic [ref=e231]:
+        - generic [ref=e233]: Location
+        - heading "Prime Location" [level=2] [ref=e234]
+        - paragraph [ref=e235]: Explore the neighbourhood and nearby amenities.
+      - generic [ref=e240]:
+        - generic [ref=e242]: Get In Touch
+        - generic [ref=e243]:
+          - generic [ref=e244]:
+            - heading "Interested in This Property?" [level=2] [ref=e245]
+            - paragraph [ref=e246]: Contact your agent today to schedule a private showing or to learn more about this exceptional home.
+            - generic [ref=e247]:
+              - generic [ref=e248]:
+                - img [ref=e250]
+                - generic [ref=e252]:
+                  - generic [ref=e253]: Direct Line
+                  - link "403-630-8212" [ref=e254] [cursor=pointer]:
+                    - /url: tel:4036308212
+              - generic [ref=e255]:
+                - img [ref=e257]
+                - generic [ref=e260]:
+                  - generic [ref=e261]: Email
+                  - link "ricardo.serrano@kicrealty.com" [ref=e262] [cursor=pointer]:
+                    - /url: mailto:ricardo.serrano@kicrealty.com
+          - generic [ref=e263]:
+            - heading "Send a Message" [level=3] [ref=e264]
+            - generic [ref=e265]: We'll get back to you within 24 hours.
+            - region "Notifications alt+T"
+            - generic [ref=e266]:
+              - generic [ref=e267]:
+                - generic [ref=e268]:
+                  - text: Name
+                  - textbox "Name" [ref=e269]
+                - generic [ref=e270]:
+                  - text: Email
+                  - textbox "Email" [ref=e271]
+                - generic [ref=e272]:
+                  - text: Phone
+                  - textbox "Phone" [ref=e273]
+                - generic [ref=e274]:
+                  - text: Message
+                  - textbox "Message" [ref=e275]
+              - button "Send" [ref=e277] [cursor=pointer]
+    - contentinfo [ref=e278]:
+      - generic [ref=e279]:
+        - img "REALTOR and MLS trademarks" [ref=e281]
+        - generic [ref=e282]:
+          - paragraph [ref=e283]: The trademarks REALTOR®, REALTORS®, and the REALTOR® logo are controlled by The Canadian Real Estate Association (CREA) and identify real estate professionals who are members of CREA.
+          - paragraph [ref=e284]: The trademarks MLS®, Multiple Listing Service® and the associated logos are owned by The Canadian Real Estate Association (CREA) and identify the quality of services provided by real estate professionals who are members of CREA. Used under license.
+        - generic [ref=e285]:
+          - paragraph [ref=e286]:
+            - text: Powered by
+            - link "Photos 4 Real Estate" [ref=e287] [cursor=pointer]:
+              - /url: https://photos4realestate.ca/
+            - text: · © 2026 All Rights Reserved
+          - generic [ref=e288]:
+            - link "Terms" [ref=e289] [cursor=pointer]:
+              - /url: https://photos4realestate.ca/terms-and-conditions/
+            - generic [ref=e290]: ·
+            - link "Privacy" [ref=e291] [cursor=pointer]:
+              - /url: https://photos4realestate.ca/privacy-policy/
+    - generic [ref=e293]:
+      - generic [ref=e294]:
+        - paragraph [ref=e295]: Listed by Ricardo Serrano
+        - paragraph [ref=e296]: $814,900
+      - generic [ref=e297]:
+        - link "Call Now" [ref=e298] [cursor=pointer]:
+          - /url: tel:4036308212
+        - button "Message" [ref=e299] [cursor=pointer]
+  - alert [ref=e300]
