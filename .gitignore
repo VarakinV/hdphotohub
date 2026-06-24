@@ -44,3 +44,6 @@ next-env.d.ts
 
 # Reference examples (local only)
 .examples
+
+# Playwright MCP browser tool output (snapshots, screenshots, logs)
+.playwright-mcp
