@@ -17,10 +17,10 @@ import {
   Instagram,
   Linkedin,
   Youtube,
-  Twitter,
   Link2,
 } from 'lucide-react';
 import { TikTokIcon } from '@/components/icons/TikTokIcon';
+import { XIcon } from '@/components/icons/XIcon';
 
 export default function PropertyTemplateV2({
   order,
@@ -434,7 +434,7 @@ export default function PropertyTemplateV2({
                         rel="noopener noreferrer"
                         aria-label="Twitter/X"
                       >
-                        <Twitter className="h-5 w-5" />
+                        <XIcon className="h-5 w-5" />
                       </a>
                     )}
                     {order.realtor.pinterestUrl && (

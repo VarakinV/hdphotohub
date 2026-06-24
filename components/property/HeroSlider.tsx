@@ -2,7 +2,8 @@
 
 import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
-import { Facebook, Instagram, Twitter } from 'lucide-react';
+import { Facebook, Instagram } from 'lucide-react';
+import { XIcon } from '@/components/icons/XIcon';
 import { CopyButton } from '@/components/common/CopyButton';
 
 interface HeroSliderProps {
@@ -106,7 +107,7 @@ export default function HeroSlider({
           className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-black hover:bg-white transition"
           aria-label="Share on X"
         >
-          <Twitter className="w-5 h-5" />
+          <XIcon className="w-4 h-4" />
         </a>
         {/* Instagram does not have a web share intent; use copy link with icon */}
         <CopyButton

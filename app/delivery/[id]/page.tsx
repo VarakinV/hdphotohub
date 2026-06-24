@@ -564,17 +564,26 @@ export default async function DeliveryPage({
             <div className="h-px bg-gray-200/80" />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {[1, 2, 3].map((v) => {
+            {[6, 5, 4, 3, 2, 1].map((v) => {
+              const names: Record<number, string> = {
+                6: 'Nivo',
+                5: 'Lin',
+                4: 'Juno',
+                3: 'Axis',
+                2: 'Nox',
+                1: 'Sera',
+              };
+              const name = names[v];
               const url = `${baseUrl}/property/${order.id}/v${v}`;
               return (
                 <div key={v} className="border rounded-md overflow-hidden">
                   <div className="px-3 py-2 text-sm font-medium bg-gray-50 border-b">
-                    Variant {v}
+                    {name}
                   </div>
 
                   <SitePreview
                     src={`/property/${order.id}/v${v}`}
-                    title={`Property Website Variant ${v}`}
+                    title={`Property Website ${name}`}
                   />
                   <div className="p-3 flex items-center justify-between">
                     <Button

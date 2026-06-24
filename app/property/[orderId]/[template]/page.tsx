@@ -6,6 +6,9 @@ import { headers } from 'next/headers';
 import PropertyTemplateV1 from '@/components/property/templates/PropertyTemplateV1';
 import PropertyTemplateV2 from '@/components/property/templates/PropertyTemplateV2';
 import PropertyTemplateV3 from '@/components/property/templates/PropertyTemplateV3';
+import PropertyTemplateV4 from '@/components/property/templates/PropertyTemplateV4';
+import PropertyTemplateV5 from '@/components/property/templates/PropertyTemplateV5';
+import PropertyTemplateV6 from '@/components/property/templates/PropertyTemplateV6';
 import SimilarHomesLeadPopup from '@/components/property/SimilarHomesLeadPopup';
 import HomeWorthWidget from '@/components/property/HomeWorthWidget';
 import MortgageCalculatorTag from '@/components/property/MortgageCalculatorTag';
@@ -86,7 +89,10 @@ export default async function PropertyPage({
       {tNum === 1 && <PropertyTemplateV1 order={order} baseUrl={baseUrl} />}
       {tNum === 2 && <PropertyTemplateV2 order={order} baseUrl={baseUrl} />}
       {tNum === 3 && <PropertyTemplateV3 order={order} baseUrl={baseUrl} />}
-      {![1, 2, 3].includes(tNum) && (
+      {tNum === 4 && <PropertyTemplateV4 order={order} baseUrl={baseUrl} />}
+      {tNum === 5 && <PropertyTemplateV5 order={order} baseUrl={baseUrl} />}
+      {tNum === 6 && <PropertyTemplateV6 order={order} baseUrl={baseUrl} />}
+      {![1, 2, 3, 4, 5, 6].includes(tNum) && (
         <PropertyTemplateV1 order={order} baseUrl={baseUrl} />
       )}
       <SimilarHomesLeadPopup
