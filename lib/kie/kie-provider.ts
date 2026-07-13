@@ -62,7 +62,7 @@ export async function transformToTwilight(
       callBackUrl: callbackUrl,
       input: {
         prompt:
-          'Transform this daytime real estate photo into a realistic twilight version. Keep the details of the house unchanged. Keep lighting natural, warm interior glow, and realistic sky.',
+          'Transform this daytime real estate photo into a realistic twilight version. CRITICAL: Preserve the exact architectural structure of the house — do not add, remove, or modify any windows, doors, walls, roof, chimneys, columns, steps, railings, light fixtures, or any other structural elements. Preserve all existing landscaping exactly — do not add, remove, or modify any trees, bushes, plants, fences, walkways, driveways, or yard features. Only change the lighting to simulate natural twilight conditions: add warm interior light glow through existing windows, realistic dusk sky colors, and subtle ambient lighting. The house structure, landscaping, and all visible elements must remain pixel-identical to the original photo.',
         image_input: [imageUrl],
         aspect_ratio: '4:3',
         resolution: '2K',
@@ -101,7 +101,7 @@ export async function generateVideo(
   return withRetry(async () => {
     const body = {
       prompt:
-        'Create a cinematic real estate transition video. Start with the daytime image, smoothly transition into the twilight version over 3-5 seconds. Add a subtle slow zoom effect. Duration 6-8 seconds total.',
+        'Create a cinematic real estate transition video. CRITICAL: Preserve the exact architectural structure and all elements of the house throughout the entire transition — no windows, doors, walls, roof, landscaping, trees, bushes, fences, or any other elements should appear, disappear, or change shape at any point during the video. Only the lighting and sky should change. Start with the daytime image, smoothly transition into the twilight version over 3-5 seconds. Add a subtle slow zoom effect. Duration 6-8 seconds total.',
       imageUrls: [dayImageUrl, twilightImageUrl],
       model: 'veo3_fast',
       callBackUrl: callbackUrl,
