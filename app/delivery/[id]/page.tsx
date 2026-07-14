@@ -273,7 +273,7 @@ export default async function DeliveryPage({
                   'v3-9x16': 'Vertical Reel 3 - For Sale',
                   'v4-9x16': 'Vertical Reel 4 - Just Listed',
                   'v5-9x16': 'Vertical Reel 5 - For Sale',
-                  'v6-9x16': 'Vertical Reel 6 - New On The Market',
+                  'v6-9x16': 'Vertical Reel 6 - Coming Soon',
                   'v7-9x16': 'Seasonal 1 - For Sale',
                   'v8-9x16': 'Seasonal 2 - New Listing',
                   'v9-9x16': 'Seasonal 3 - For Sale',
