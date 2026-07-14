@@ -220,7 +220,7 @@ export default async function DeliveryPage({
                       <source src={v.url} type="video/mp4" />
                     </video>
                   </div>
-                  <div className="p-2 text-center">
+                  <div className="p-2 flex gap-2">
                     <DownloadLinkButton
                       url={v.url}
                       label="Download"
@@ -228,6 +228,15 @@ export default async function DeliveryPage({
                         (v as any).filename ??
                         (v.url.split('/').pop() || 'video.mp4')
                       }
+                      className="flex-1"
+                    />
+                    <CopyButton
+                      text={v.url}
+                      label="Copy Public Link"
+                      copiedLabel="Copied!"
+                      size="sm"
+                      icon={<Copy className="w-4 h-4" />}
+                      className="flex-1"
                     />
                   </div>
                 </div>
@@ -298,12 +307,23 @@ export default async function DeliveryPage({
                         </span>
                       )}
                     </div>
-                    <div className="p-2 text-center">
-                      <DownloadLinkButton
-                        url={r.url}
-                        label="Download"
-                        fileName={`reel-${r.variantKey}.mp4`}
-                      />
+                    <div className="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x">
+                      <div className="sm:flex-1 p-2 text-center">
+                        <DownloadLinkButton
+                          url={r.url}
+                          label="Download"
+                          fileName={`reel-${r.variantKey}.mp4`}
+                        />
+                      </div>
+                      <div className="sm:flex-1 p-2 text-center">
+                        <CopyButton
+                          text={r.url}
+                          label="Copy Link"
+                          copiedLabel="Copied!"
+                          size="sm"
+                          icon={<Copy className="w-4 h-4" />}
+                        />
+                      </div>
                     </div>
                   </div>
                 ));
@@ -340,12 +360,23 @@ export default async function DeliveryPage({
                         </span>
                       )}
                     </div>
-                    <div className="p-2 text-center">
-                      <DownloadLinkButton
-                        url={r.finalUrl}
-                        label="Download"
-                        fileName={`ai-twilight-reel${i > 0 ? `-${i + 1}` : ''}.mp4`}
-                      />
+                    <div className="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x">
+                      <div className="sm:flex-1 p-2 text-center">
+                        <DownloadLinkButton
+                          url={r.finalUrl}
+                          label="Download"
+                          fileName={`ai-twilight-reel${i > 0 ? `-${i + 1}` : ''}.mp4`}
+                        />
+                      </div>
+                      <div className="sm:flex-1 p-2 text-center">
+                        <CopyButton
+                        text={r.finalUrl}
+                        label="Copy Public Link"
+                          copiedLabel="Copied!"
+                          size="sm"
+                          icon={<Copy className="w-4 h-4" />}
+                        />
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -398,11 +429,20 @@ export default async function DeliveryPage({
                         </span>
                       )}
                     </div>
-                    <div className="p-2 text-center">
+                    <div className="p-2 flex gap-2">
                       <DownloadLinkButton
                         url={r.url}
                         label="Download"
                         fileName={`slideshow-${r.variantKey}.mp4`}
+                        className="flex-1"
+                      />
+                      <CopyButton
+                        text={r.url}
+                        label="Copy Public Link"
+                        copiedLabel="Copied!"
+                        size="sm"
+                        icon={<Copy className="w-4 h-4" />}
+                        className="flex-1"
                       />
                     </div>
                   </div>
@@ -598,7 +638,7 @@ export default async function DeliveryPage({
                     </Button>
                     <CopyButton
                       text={url}
-                      label="Copy Public Link"
+                      label="Copy Link"
                       icon={<Copy className="w-4 h-4 mr-2" />}
                     />
                   </div>
