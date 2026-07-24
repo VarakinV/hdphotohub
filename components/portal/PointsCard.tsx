@@ -61,8 +61,8 @@ function AnimatedCounter({
 export default function PointsCard({ points }: PointsCardProps) {
   const rewards = useMemo(
     () => [
-      { label: 'Drone Photos', pts: 12500, Icon: Drone },
-      { label: 'Social Media Reel (video)', pts: 20000, Icon: Clapperboard },
+      { label: 'Drone Photos', pts: 10000, Icon: Drone },
+      { label: 'Social Media Reel (video)', pts: 30000, Icon: Clapperboard },
       { label: 'Virtual Staging (1 photo)', pts: 3500, Icon: ImageIcon },
       { label: 'Virtual Staging (3 photos)', pts: 10000, Icon: ImageIcon },
       { label: 'Virtual Twilight (1 photo)', pts: 3500, Icon: Sun },
