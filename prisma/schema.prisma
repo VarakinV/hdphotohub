@@ -44,6 +44,7 @@ model User {
   PromoCode             PromoCode[]
   Account               Account[]
   Session               Session[]
+  qrCodesCreated        QRCode[]            @relation("QRCodesCreatedBy")
 }
 
 model Realtor {
@@ -149,6 +150,7 @@ model Order {
   reelSources   OrderReelSourceImage[]
   flyers        OrderFlyer[]
   aiReels       OrderAiReel[]
+  qrAssignments QRAssignment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -266,24 +268,30 @@ model Invitation {
 }
 
 model PropertyPage {
-  id        String   @id @default(cuid())
-  orderId   String
-  order     Order    @relation(fields: [orderId], references: [id])
-  template  Int
-  urlPath   String
-  published Boolean  @default(true)
-  createdAt DateTime @default(now())
+  id            String         @id @default(cuid())
+  orderId       String
+  order         Order          @relation(fields: [orderId], references: [id])
+  template      Int
+  urlPath       String
+  published     Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  qrAssignments QRAssignment[]
 }
 
 model PropertyInquiry {
-  id        String   @id @default(cuid())
-  orderId   String
-  order     Order    @relation(fields: [orderId], references: [id])
-  name      String
-  email     String
-  phone     String?
-  message   String
-  createdAt DateTime @default(now())
+  id             String        @id @default(cuid())
+  orderId        String
+  order          Order         @relation(fields: [orderId], references: [id])
+  name           String
+  email          String
+  phone          String?
+  message        String?
+  source         LeadSource    @default(WEBSITE)
+  qrAssignmentId String?
+  qrAssignment   QRAssignment? @relation(fields: [qrAssignmentId], references: [id])
+  createdAt      DateTime      @default(now())
+
+  @@index([qrAssignmentId])
 }
 
 model PasswordResetToken {
@@ -612,6 +620,17 @@ enum ReelStatus {
   FAILED
 }
 
+enum QRCodeStatus {
+  UNASSIGNED
+  ACTIVE
+  ARCHIVED
+}
+
+enum LeadSource {
+  WEBSITE
+  QR_CODE
+}
+
 enum AiReelStepStatus {
   PENDING
   PROCESSING
@@ -885,4 +904,67 @@ model FreeQr {
 
   @@unique([leadId, variantKey])
   @@index([leadId, status])
+}
+
+// QR Code Lead Capture models
+model QRCode {
+  id              String       @id @default(cuid())
+  seq             Int          @unique @default(autoincrement())
+  displayId       String       @unique
+  status          QRCodeStatus @default(UNASSIGNED)
+  createdByUserId String
+  createdByUser   User         @relation("QRCodesCreatedBy", fields: [createdByUserId], references: [id])
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  assignments QRAssignment[]
+  printables  QRPrintable[]
+
+  @@index([status])
+}
+
+model QRAssignment {
+  id              String        @id @default(cuid())
+  qrCodeId        String
+  qrCode          QRCode        @relation(fields: [qrCodeId], references: [id])
+  orderId         String
+  order           Order         @relation(fields: [orderId], references: [id])
+  propertyPageId  String?
+  propertyPage    PropertyPage? @relation(fields: [propertyPageId], references: [id])
+  sendWeeklyStats Boolean       @default(true)
+  assignedAt      DateTime      @default(now())
+  unassignedAt    DateTime?
+
+  scans QRScanEvent[]
+  leads PropertyInquiry[]
+
+  @@index([qrCodeId, unassignedAt])
+  @@index([orderId])
+}
+
+model QRScanEvent {
+  id           String       @id @default(cuid())
+  assignmentId String
+  assignment   QRAssignment @relation(fields: [assignmentId], references: [id])
+  scannedAt    DateTime     @default(now())
+  sessionHash  String
+  userAgent    String?
+
+  @@index([assignmentId, scannedAt])
+}
+
+model QRPrintable {
+  id         String     @id @default(cuid())
+  qrCodeId   String
+  qrCode     QRCode     @relation(fields: [qrCodeId], references: [id])
+  variantKey String
+  status     ReelStatus @default(QUEUED)
+  svgUrl     String?
+  pngUrl     String?
+  pdfUrl     String?
+  error      String?
+  createdAt  DateTime   @default(now())
+
+  @@unique([qrCodeId, variantKey])
+  @@index([qrCodeId, status])
 }

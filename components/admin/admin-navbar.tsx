@@ -31,6 +31,7 @@ function NavLinks({
       { href: '/admin/clients', label: 'Clients' },
       { href: '/admin/orders', label: 'Orders' },
       { href: '/admin/bookings', label: 'Bookings' },
+      { href: '/admin/qr-codes', label: 'QR Codes' },
     ];
     if (isSuperadmin) base.push({ href: '/admin/users', label: 'Users' });
     return base;

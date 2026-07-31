@@ -22,6 +22,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const items = [
     { href: '/portal', label: 'Portal' },
     { href: '/portal/orders', label: 'My Orders' },
+    { href: '/portal/qr-codes', label: 'My QR Codes' },
   ];
   return (
     <nav className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">

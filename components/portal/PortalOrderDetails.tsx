@@ -27,7 +27,9 @@ import {
   Ruler,
   Paperclip,
   Link2,
+  QrCode,
 } from 'lucide-react';
+import { OrderQRCodes } from '@/components/orders/OrderQRCodes';
 
 interface Order {
   id: string;
@@ -59,14 +61,14 @@ interface Order {
 export function PortalOrderDetails({ orderId }: { orderId: string }) {
   const [order, setOrder] = useState<Order | null>(null);
   const [tab, setTab] = useState<
-    'property' | 'photos' | 'videos' | 'floor' | 'attach' | 'embed'
+    'property' | 'photos' | 'videos' | 'floor' | 'attach' | 'embed' | 'qr'
   >('property');
   const [photoRefresh, setPhotoRefresh] = useState(0);
   const [videoRefresh, setVideoRefresh] = useState(0);
   const [floorRefresh, setFloorRefresh] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  type TabKey = 'property' | 'photos' | 'videos' | 'floor' | 'attach' | 'embed';
+  type TabKey = 'property' | 'photos' | 'videos' | 'floor' | 'attach' | 'embed' | 'qr';
   type TabDef = { key: TabKey; label: string; icon: React.ElementType };
 
   const tabsList: TabDef[] = [
@@ -76,6 +78,7 @@ export function PortalOrderDetails({ orderId }: { orderId: string }) {
     { key: 'floor', label: 'Floor Plans', icon: Ruler },
     { key: 'attach', label: 'PDFs', icon: Paperclip },
     { key: 'embed', label: 'iGUIDE', icon: Link2 },
+    { key: 'qr', label: 'QR Codes', icon: QrCode },
   ];
 
   const [attachRefresh, setAttachRefresh] = useState(0);
@@ -533,6 +536,12 @@ export function PortalOrderDetails({ orderId }: { orderId: string }) {
               onAdded={() => setEmbedRefresh((n) => n + 1)}
             />
             <EmbedsList orderId={order.id} refreshToken={embedRefresh} />
+          </div>
+        )}
+
+        {tab === 'qr' && order && (
+          <div className="space-y-4">
+            <OrderQRCodes orderId={order.id} />
           </div>
         )}
       </div>

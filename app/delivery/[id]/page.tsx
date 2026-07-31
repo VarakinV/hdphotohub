@@ -36,6 +36,19 @@ async function getOrder(id: string) {
         },
         orderBy: { createdAt: 'desc' },
       },
+      qrAssignments: {
+        where: { unassignedAt: null },
+        include: {
+          qrCode: {
+            include: {
+              printables: {
+                where: { status: 'COMPLETE' },
+                orderBy: { createdAt: 'asc' },
+              },
+            },
+          },
+        },
+      },
     },
   });
   return order;
@@ -647,6 +660,86 @@ export default async function DeliveryPage({
             })}
           </div>
         </section>
+
+        {/* Lead Capture QR Codes */}
+        {(() => {
+          const allPrintables = order.qrAssignments.flatMap((a) =>
+            a.qrCode.printables.map((p) => ({
+              ...p,
+              displayId: a.qrCode.displayId,
+            }))
+          );
+
+          if (allPrintables.length === 0) return null;
+
+          const variantLabels: Record<string, string> = {
+            'bare-qr': 'Bare QR Code',
+            'rider-scan-info': 'Sign Rider - Scan for Info',
+            'rider-scan-tour-price': 'Sign Rider - Tour & Price',
+            'rider-scan-see-inside': 'Sign Rider - See Inside',
+            'decal-scan-info': 'Decal - Scan for Info',
+            'decal-scan-tour-price': 'Decal - Tour & Price',
+            'decal-scan-see-inside': 'Decal - See Inside',
+          };
+
+          return (
+            <section id="qr-codes" className="space-y-3 scroll-mt-24">
+              <div className="space-y-2">
+                <h2 className="text-2xl md:text-3xl font-semibold">
+                  Lead Capture QR Codes
+                </h2>
+                <p className="text-sm text-gray-600">
+                  Download and print these as a sign rider or decal for your yard sign. When a buyer scans it, they can view the property instantly or leave their contact info — so every scan and lead gets tracked automatically in your portal.
+                </p>
+                <div className="h-px bg-gray-200/80" />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {allPrintables.map((p) => {
+                  const label = variantLabels[p.variantKey] || p.variantKey;
+                  return (
+                    <div key={p.id} className="border rounded-md overflow-hidden">
+                      <div className="px-3 py-2 text-sm font-medium bg-gray-50 border-b">
+                        {label}
+                      </div>
+                      <div className="relative aspect-square bg-white flex items-center justify-center p-4">
+                        {p.pngUrl ? (
+                          <Image
+                            src={p.pngUrl}
+                            alt={label}
+                            fill
+                            className="object-contain"
+                          />
+                        ) : (
+                          <div className="text-gray-400 text-sm">No preview</div>
+                        )}
+                      </div>
+                      <div className="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x">
+                        {p.pngUrl && (
+                          <div className="sm:flex-1 p-2 text-center">
+                            <DownloadLinkButton
+                              url={p.pngUrl}
+                              label="Download PNG"
+                              fileName={`qr-${p.displayId}-${p.variantKey}.png`}
+                            />
+                          </div>
+                        )}
+                        {p.pdfUrl && (
+                          <div className="sm:flex-1 p-2 text-center">
+                            <DownloadLinkButton
+                              url={p.pdfUrl}
+                              label="Download PDF"
+                              fileName={`qr-${p.displayId}-${p.variantKey}.pdf`}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })()}
 
         <div className="text-xs text-gray-500 text-center py-6">
           Powered by Photos 4 Real Estate

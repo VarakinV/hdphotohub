@@ -41,9 +41,11 @@ import {
   Link2,
   FileText,
   Sparkles,
+  QrCode,
 } from 'lucide-react';
 import { AiReelUploader } from '@/components/orders/ai-reel-uploader';
 import AiReelsList from '@/components/orders/ai-reels-list';
+import { OrderQRCodes } from '@/components/orders/OrderQRCodes';
 
 interface Order {
   id: string;
@@ -94,6 +96,7 @@ export default function OrderDetailsPage() {
     | 'floor'
     | 'attach'
     | 'embed'
+    | 'qr'
   >('property');
   const [photoRefresh, setPhotoRefresh] = useState(0);
   const [videoRefresh, setVideoRefresh] = useState(0);
@@ -148,7 +151,8 @@ export default function OrderDetailsPage() {
     | 'flyers'
     | 'floor'
     | 'attach'
-    | 'embed';
+    | 'embed'
+    | 'qr';
   type TabDef = { key: TabKey; label: string; icon: React.ElementType };
 
   const tabsList: TabDef[] = [
@@ -161,6 +165,7 @@ export default function OrderDetailsPage() {
     { key: 'floor', label: 'Floor Plans', icon: Ruler },
     { key: 'attach', label: 'PDFs', icon: Paperclip },
     { key: 'embed', label: 'iGUIDE', icon: Link2 },
+    { key: 'qr', label: 'QR Codes', icon: QrCode },
   ];
 
   return (
@@ -676,6 +681,12 @@ export default function OrderDetailsPage() {
                 onAdded={() => setEmbedRefresh((n) => n + 1)}
               />
               <EmbedsList orderId={order.id} refreshToken={embedRefresh} />
+            </div>
+          )}
+
+          {tab === 'qr' && order && (
+            <div className="space-y-4">
+              <OrderQRCodes orderId={order.id} />
             </div>
           )}
         </div>
