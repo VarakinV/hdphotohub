@@ -49,7 +49,7 @@ function getVariantCopy(variant: PrintVariant): string | null {
     case 'rider-scan-tour-price':
       return 'Scan for photos<br>Virtual tour & price';
     case 'decal-scan-tour-price':
-      return 'Scan for photos, virtual tour & price';
+      return 'Scan for photos<br>Virtual tour & price';
     case 'rider-scan-see-inside':
     case 'decal-scan-see-inside':
       return 'See inside — scan me';
