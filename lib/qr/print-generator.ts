@@ -111,17 +111,20 @@ async function generatePrintHtml(
     const qrPngDataUrl = await generateQrPng(qrUrl, dims.qrSize, BRAND);
     
     const copyHtml = copy
-      ? `<div style="font-family: 'Arial Narrow', Arial, sans-serif; font-stretch: condensed; font-size: ${dims.fontSize}px; font-weight: bold; color: ${RIDER_TEXT}; line-height: 1.1; white-space: nowrap;">${copy}</div>`
+      ? `<div style="font-family: 'Roboto Condensed', 'Arial Narrow', Arial, sans-serif; font-size: ${dims.fontSize}px; font-weight: 700; color: ${RIDER_TEXT}; line-height: 1.1; white-space: nowrap;">${copy}</div>`
       : '';
 
     const displayIdHtml =
-      `<div style="font-family: 'Arial Narrow', Arial, sans-serif; font-stretch: condensed; font-size: ${Math.max(dims.fontSize * 0.4, 24)}px; color: ${RIDER_TEXT}; margin-top: 10px; text-align: center;">${displayId}</div>`;
+      `<div style="font-family: 'Roboto Condensed', 'Arial Narrow', Arial, sans-serif; font-size: ${Math.max(dims.fontSize * 0.4, 24)}px; color: ${RIDER_TEXT}; margin-top: 10px; text-align: center;">${displayId}</div>`;
 
     return `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="UTF-8">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body {
@@ -259,6 +262,9 @@ export async function generateQrPrintArtifacts(
       deviceScaleFactor: 2,
     });
     await page.setContent(html, { waitUntil: ['load'] });
+    
+    // Wait for fonts to load (important for Google Fonts)
+    await page.evaluate(() => document.fonts.ready);
 
     const body = await page.$('body');
     if (!body) {
