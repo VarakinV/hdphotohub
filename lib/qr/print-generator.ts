@@ -176,15 +176,19 @@ async function generatePrintHtml(
   }
 
   const qrPngDataUrl = await generateQrPng(qrUrl, dims.qrSize);
+  const isDecal = variant.startsWith('decal-');
+  const containerPadding = isDecal ? 10 : 20;
+  const copyMarginTop = isDecal ? 8 : 20;
+  const displayIdMarginTop = isDecal ? 4 : 10;
 
   const copyHtml = copy
-    ? `<div style="font-family: Arial, sans-serif; font-size: ${dims.fontSize}px; font-weight: bold; color: ${BRAND}; text-align: center; margin-top: 20px;">${copy}</div>`
+    ? `<div style="font-family: Arial, sans-serif; font-size: ${dims.fontSize}px; font-weight: bold; color: ${BRAND}; text-align: center; margin-top: ${copyMarginTop}px;">${copy}</div>`
     : '';
 
   const displayIdHtml =
     variant !== 'bare-qr'
-      ? `<div style="font-family: Arial, sans-serif; font-size: ${Math.max(dims.fontSize * 0.6, 16)}px; color: #666; text-align: center; margin-top: 10px;">${displayId}</div>`
-      : `<div style="font-family: Arial, sans-serif; font-size: 24px; color: #666; text-align: center; margin-top: 10px;">${displayId}</div>`;
+      ? `<div style="font-family: Arial, sans-serif; font-size: ${Math.max(dims.fontSize * 0.6, 16)}px; color: #666; text-align: center; margin-top: ${displayIdMarginTop}px;">${displayId}</div>`
+      : `<div style="font-family: Arial, sans-serif; font-size: 24px; color: #666; text-align: center; margin-top: ${displayIdMarginTop}px;">${displayId}</div>`;
 
   return `
     <!DOCTYPE html>
@@ -208,7 +212,7 @@ async function generatePrintHtml(
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          padding: 20px;
+          padding: ${containerPadding}px;
         }
       </style>
     </head>
