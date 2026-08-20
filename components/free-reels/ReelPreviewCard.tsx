@@ -9,9 +9,17 @@ interface ReelPreviewCardProps {
 
 export function ReelPreviewCard({ reel, fallbackImage }: ReelPreviewCardProps) {
   const labelMap: Record<string, string> = {
-    'v1-9x16': 'Vertical Reel 1 - Just Listed',
+    'v1-9x16': 'Vertical Reel 1 - Coming Soon',
     'v3-9x16': 'Vertical Reel 3 - For Sale',
     'v4-9x16': 'Vertical Reel 4 - Just Listed',
+    'v10-9x16': 'Vertical Reel 10 - Just Listed',
+    'v11-9x16': 'Vertical Reel 11 - For Sale',
+    'v12-9x16': 'Vertical Reel 12 - For Sale',
+    'v13-9x16': 'Vertical Reel 13 - For Sale',
+    'v14-9x16': 'Vertical Reel 14 - For Sale',
+    'v15-9x16': 'Vertical Reel 15 - New Listing',
+    'v16-9x16': 'Vertical Reel 16 - For Sale',
+    'v17-9x16': 'Vertical Reel 17 - New Listing',
   };
   return (
     <div className="border rounded-md overflow-hidden">

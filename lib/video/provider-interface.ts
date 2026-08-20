@@ -8,6 +8,7 @@ export type WebhookEvent = {
   width?: number;
   height?: number;
   duration?: number;
+  error?: string;
 };
 
 export interface VideoProvider {
@@ -22,7 +23,17 @@ export type ShotVariant =
   | 'v1-16x9'  // legacy
   | 'v2-16x9'  // legacy template-based horizontal
   | 'v2-9x16'  // Vertical 2 For Sale (template V2) or legacy template-based vertical
+  | 'v3-9x16'
+  | 'v4-9x16'
+  | 'v5-9x16'
+  | 'v6-9x16'
+  | 'v7-9x16'
+  | 'v8-9x16'
+  | 'v9-9x16'
   | 'h1-16x9'  // Horizontal 1 Slideshow (template H1)
+  | 'h2-16x9'
+  | 'h3-16x9'
+  | 'h4-16x9'
 ;
 
 export type TemplateMerge = { find: string; replace: string };

@@ -6,8 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -206,22 +207,62 @@ model Embed {
 }
 
 model OrderReel {
-  id         String     @id @default(cuid())
-  orderId    String
-  order      Order      @relation(fields: [orderId], references: [id])
-  variantKey String
-  provider   String
-  renderId   String
-  status     ReelStatus
-  url        String?
-  thumbnail  String?
-  width      Int?
-  height     Int?
-  error      String?
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  id           String          @id @default(cuid())
+  orderId      String
+  order        Order           @relation(fields: [orderId], references: [id])
+  variantKey   String
+  provider     String
+  renderId     String
+  status       ReelStatus
+  url          String?
+  thumbnail    String?
+  width        Int?
+  height       Int?
+  error        String?
+  musicTrackId String?
+  musicTrack   VideoMusicTrack? @relation(fields: [musicTrackId], references: [id])
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
 
   @@index([orderId, status])
+  @@index([musicTrackId])
+}
+
+model VideoMusicTrack {
+  id        String           @id @default(cuid())
+  name      String
+  fileUrl   String
+  duration  Float            // seconds
+  genre     String?
+  mood      String?          // "upbeat" | "elegant" | "calm" ...
+  isActive  Boolean          @default(true)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  reels     OrderReel[]
+  templates VideoTemplate[]
+
+  @@index([isActive])
+}
+
+model VideoTemplate {
+  id                  String           @id @default(cuid())
+  variantKey          String           @unique
+  provider            String           @default("remotion")
+  status              String           @default("draft")
+  name                String
+  description         String?
+  width               Int
+  height              Int
+  fps                 Float            @default(30)
+  durationInFrames    Int
+  compositionId       String
+  schemaJson          Json?
+  defaultMusicTrackId String?
+  defaultMusicTrack   VideoMusicTrack? @relation(fields: [defaultMusicTrackId], references: [id])
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@index([status, provider])
 }
 
 model OrderReelSourceImage {

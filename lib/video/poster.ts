@@ -2,6 +2,33 @@ import ffmpeg from 'fluent-ffmpeg';
 import ffmpegPath from 'ffmpeg-static';
 import fs from 'fs';
 import path from 'path';
+import { prisma } from '@/lib/db/prisma';
+import { posterSeekSecondsForDuration } from '@/lib/video/poster-timing';
+
+/**
+ * Pick a representative poster frame time for a Remotion reel.
+ * - `REMOTION_POSTER_SEEK_SECONDS` env var wins (explicit override).
+ * - Otherwise 35% into the reel using the template's registered duration
+ *   (durationInFrames / fps), so the thumbnail lands mid-scene instead of in
+ *   the opening animation (which is what a fixed 1s grab produced).
+ * - Falls back to 3s when the template row is missing.
+ */
+export async function remotionPosterSeekSeconds(variantKey: string): Promise<number> {
+  const override = Number(process.env.REMOTION_POSTER_SEEK_SECONDS);
+  if (Number.isFinite(override) && override >= 0) return override;
+  try {
+    const t = await prisma.videoTemplate.findUnique({
+      where: { variantKey },
+      select: { durationInFrames: true, fps: true },
+    });
+    if (t?.durationInFrames && t?.fps) {
+      return posterSeekSecondsForDuration(t.durationInFrames, t.fps);
+    }
+  } catch {
+    // Template lookup failure — fall through to the default.
+  }
+  return 3;
+}
 
 /**
  * Check if we're running on Vercel (serverless environment where ffmpeg won't work)
@@ -50,13 +77,14 @@ function findFfmpegPath(): string | null {
 }
 
 /**
- * Extract the first video frame as a JPEG buffer from a remote video URL.
+ * Extract a single video frame as a JPEG buffer from a remote video URL.
  * - Uses ffmpeg-static binary path if available.
  * - Streams the frame via image2pipe to avoid filesystem writes.
  * - Resolves to a JPEG Buffer or throws on failure.
  * - Returns empty buffer on Vercel (ffmpeg not available in serverless)
+ * @param seekSeconds Time offset (seconds) of the frame to grab; default 1.
  */
-export async function extractPosterFromVideoUrl(videoUrl: string): Promise<Buffer> {
+export async function extractPosterFromVideoUrl(videoUrl: string, seekSeconds = 1): Promise<Buffer> {
   if (!videoUrl || !/^https?:\/\//i.test(videoUrl)) {
     throw new Error('Invalid video URL for poster extraction');
   }
@@ -79,7 +107,7 @@ export async function extractPosterFromVideoUrl(videoUrl: string): Promise<Buffe
     try {
       const chunks: Buffer[] = [];
       const cmd = ffmpeg(videoUrl)
-        .seekInput(1)
+        .seekInput(Math.max(0, seekSeconds))
         .outputOptions(['-frames:v', '1', '-vcodec', 'mjpeg'])
         .format('image2pipe')
         .on('error', (err: Error) => {

@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth/auth';
 import { prisma } from '@/lib/db/prisma';
 import { J2VProvider } from '@/lib/video/j2v-provider';
 import { formatPhoneNumber } from '@/lib/utils';
+import { resolvePropertyAddress } from '@/lib/video/remotion-queue';
 
 function dimsForVariant(variant: string): { width: number; height: number } {
   switch (variant) {
@@ -129,16 +130,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const provider = new J2VProvider();
     const images = sources.map((s) => s.url);
 
-    // Address & realtor info
-    const street = order.propertyAddressOverride || order.propertyAddress || '';
-    const city = order.propertyCityOverride || order.propertyCity || '';
-    const postal = order.propertyPostalCodeOverride || order.propertyPostalCode || '';
-    const province = order.propertyProvince || '';
-    const formatted = order.propertyFormattedAddress;
-    const hasOverrides = !!(order.propertyAddressOverride || order.propertyCityOverride || order.propertyPostalCodeOverride);
-    const address = hasOverrides
-      ? [street, [city, province].filter(Boolean).join(' '), postal].filter(Boolean).join(', ').replace(/,\s*,/g, ', ').trim()
-      : (formatted || [street, [city, province].filter(Boolean).join(' '), postal].filter(Boolean).join(', ').replace(/,\s*,/g, ', ').trim());
+    // Address & realtor info (overrides win)
+    const { address, street, city, postalCode: postal } = resolvePropertyAddress(order);
 
     const rinfo = order.realtor as any;
     const meta = {

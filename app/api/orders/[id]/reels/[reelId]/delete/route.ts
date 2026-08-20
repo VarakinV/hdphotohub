@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth/auth';
 import { prisma } from '@/lib/db/prisma';
 import { ShotstackProvider } from '@/lib/video/shotstack-provider';
 import { deleteFromS3, isS3Available } from '@/lib/utils/s3';
+import { deleteRender, type AwsRegion } from '@remotion/lambda/client';
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string; reelId: string }> }) {
   try {
@@ -31,6 +32,23 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
         await provider.deleteByRenderId(reel.renderId);
       } catch (e) {
         console.warn('Shotstack delete failed (ignored):', e);
+      }
+    }
+
+    // Purge the render from the Remotion bucket (progress files + out.mp4)
+    if (
+      (reel.provider || '').toLowerCase() === 'remotion' &&
+      reel.renderId &&
+      reel.renderId !== 'pending'
+    ) {
+      try {
+        await deleteRender({
+          renderId: reel.renderId,
+          bucketName: process.env.REMOTION_BUCKET_NAME || '',
+          region: (process.env.REMOTION_AWS_REGION || 'ca-central-1') as AwsRegion,
+        });
+      } catch (e) {
+        console.warn('Remotion deleteRender failed (ignored):', e);
       }
     }
 

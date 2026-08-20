@@ -23,6 +23,7 @@ import { ReelImagesUploader } from '@/components/orders/reel-images-uploader';
 import { ReelImagesGrid } from '@/components/orders/reel-images-grid';
 import { GenerateReelsButton } from '@/components/orders/generate-reels-button';
 import { GenerateReelsJ2VButton } from '@/components/orders/generate-reels-j2v-button';
+import { GenerateReelsRemotionButton } from '@/components/orders/generate-reels-remotion-button';
 import ReelsList from '@/components/orders/reels-list';
 import { GenerateFlyersButton } from '@/components/orders/generate-flyers-button';
 import FlyersList from '@/components/orders/flyers-list';
@@ -617,6 +618,11 @@ export default function OrderDetailsPage() {
                 />
               </div>
               <GenerateReelsJ2VButton
+                orderId={order.id}
+                refreshToken={reelRefresh}
+                onStarted={() => setReelRefresh((n) => n + 1)}
+              />
+              <GenerateReelsRemotionButton
                 orderId={order.id}
                 refreshToken={reelRefresh}
                 onStarted={() => setReelRefresh((n) => n + 1)}

@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Loader2, RefreshCw, Trash2 } from 'lucide-react';
+import { Loader2, Music2, RefreshCw, Trash2 } from 'lucide-react';
 
 function statusColor(s: string) {
   switch (s) {
@@ -23,8 +23,10 @@ function variantLabel(v: string) {
   // Horizontal slideshows
   if (v === 'h1-16x9') return 'H1: Horizontal 1 Slideshow (16x9)';
   if (v === 'h2-16x9') return 'H2: Horizontal 2 Slideshow (16x9)';
+  if (v === 'h3-16x9') return 'H3: Horizontal 3 Slideshow (16x9)';
+  if (v === 'h4-16x9') return 'H4: Horizontal 4 Slideshow (16x9)';
   // Vertical reels
-  if (v === 'v1-9x16') return 'Vertical Reel 1 - Just Listed';
+  if (v === 'v1-9x16') return 'Vertical Reel 1 - Coming Soon';
   if (v === 'v2-9x16') return 'Vertical Reel 2 - For Sale';
   if (v === 'v3-9x16') return 'Vertical Reel 3 - For Sale';
   if (v === 'v4-9x16') return 'Vertical Reel 4 - Just Listed';
@@ -33,6 +35,14 @@ function variantLabel(v: string) {
   if (v === 'v7-9x16') return 'Seasonal 1 - For Sale';
   if (v === 'v8-9x16') return 'Seasonal 2 - New Listing';
   if (v === 'v9-9x16') return 'Seasonal 3 - For Sale';
+  if (v === 'v10-9x16') return 'Vertical Reel 10 - Just Listed';
+  if (v === 'v11-9x16') return 'Vertical Reel 11 - For Sale';
+  if (v === 'v12-9x16') return 'Vertical Reel 12 - For Sale';
+  if (v === 'v13-9x16') return 'Vertical Reel 13 - For Sale';
+  if (v === 'v14-9x16') return 'Vertical Reel 14 - For Sale';
+  if (v === 'v15-9x16') return 'Vertical Reel 15 - New Listing';
+  if (v === 'v16-9x16') return 'Vertical Reel 16 - For Sale';
+  if (v === 'v17-9x16') return 'Vertical Reel 17 - New Listing';
   // Backward-compatible legacy labels (older reels)
   if (v === 'v1-1x1') return 'V1 • 1:1';
   if (v === 'v1-16x9') return 'V1 • 16:9';
@@ -59,6 +69,14 @@ function storageInfo(url?: string): { label: string; cls: string } | null {
   }
 }
 
+function providerBadge(provider?: string) {
+  const p = (provider || '').toLowerCase();
+  if (p === 'remotion') return { label: 'Remotion', cls: 'bg-indigo-100 text-indigo-800' };
+  if (p === 'j2v') return { label: 'J2V', cls: 'bg-sky-100 text-sky-800' };
+  if (p) return { label: p, cls: 'bg-gray-100 text-gray-800' };
+  return null;
+}
+
 export default function ReelsList({
   orderId,
   refreshToken = 0,
@@ -67,9 +85,11 @@ export default function ReelsList({
   refreshToken?: number;
 }) {
   const [reels, setReels] = useState<any[]>([]);
+  const [tracks, setTracks] = useState<{ id: string; name: string; duration: number }[]>([]);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [changingMusicId, setChangingMusicId] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -87,9 +107,47 @@ export default function ReelsList({
     }
   };
 
+  const changeMusic = async (reel: any, musicTrackId: string) => {
+    if (changingMusicId) return;
+    setChangingMusicId(reel.id);
+    try {
+      const res = await fetch(
+        `/api/orders/${orderId}/reels/${reel.id}/retry`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ musicTrackId }),
+        }
+      );
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || 'Failed to re-render with music');
+      toast.success(musicTrackId ? 'Re-rendering with new music' : 'Re-rendering without music');
+      await load();
+    } catch (e: any) {
+      toast.error(e.message || String(e));
+    } finally {
+      setChangingMusicId(null);
+    }
+  };
+
   useEffect(() => {
     load();
   }, [orderId]);
+
+  useEffect(() => {
+    fetch('/api/music-tracks', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((j) =>
+        setTracks(
+          (j.tracks || []).map((t: any) => ({
+            id: t.id,
+            name: t.name,
+            duration: t.duration || 0,
+          }))
+        )
+      )
+      .catch(() => setTracks([]));
+  }, []);
 
   const onRetry = async (rid: string) => {
     try {
@@ -265,6 +323,15 @@ export default function ReelsList({
                   <div className="text-sm font-medium">
                     {variantLabel(r.variantKey)}
                   </div>
+                  {providerBadge(r.provider) && (
+                    <span
+                      className={`px-2 py-0.5 text-xs rounded ${
+                        providerBadge(r.provider)!.cls
+                      }`}
+                    >
+                      {providerBadge(r.provider)!.label}
+                    </span>
+                  )}
                   <span
                     className={`px-2 py-0.5 text-xs rounded ${statusColor(
                       r.status
@@ -272,6 +339,11 @@ export default function ReelsList({
                   >
                     {r.status}
                   </span>
+                  {r.musicTrack?.name && (
+                    <span className="text-xs text-gray-600 inline-flex items-center gap-1">
+                      ♪ {r.musicTrack.name}
+                    </span>
+                  )}
                   {r.url &&
                     (() => {
                       const si = storageInfo(r.url);
@@ -295,6 +367,29 @@ export default function ReelsList({
                   )}
                 </div>
                 <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:ml-auto">
+                  {/* Per-reel music picker — re-renders with the selected track (Remotion only) */}
+                  {(r.provider || '').toLowerCase() === 'remotion' && tracks.length > 0 && (
+                    <div className="flex items-center gap-1" title="Assign music and re-render">
+                      <Music2 className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                      {changingMusicId === r.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-400" />
+                      ) : (
+                        <select
+                          value={r.musicTrack?.id || ''}
+                          onChange={(e) => changeMusic(r, e.target.value)}
+                          className="border rounded px-1.5 py-1 text-xs bg-white max-w-[150px]"
+                        >
+                          <option value="">No music</option>
+                          {tracks.map((t) => (
+                            <option key={t.id} value={t.id}>
+                              {t.name}
+                              {t.duration > 0 ? ` (${t.duration.toFixed(1)}s)` : ''}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                  )}
                   {/* Actions */}
                   {r.status === 'COMPLETE' && (
                     <>

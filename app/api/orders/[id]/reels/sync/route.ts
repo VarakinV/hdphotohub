@@ -5,8 +5,10 @@ import { auth } from '@/lib/auth/auth';
 import { prisma } from '@/lib/db/prisma';
 import { ShotstackProvider } from '@/lib/video/shotstack-provider';
 import { J2VProvider } from '@/lib/video/j2v-provider';
+import { RemotionProvider } from '@/lib/video/remotion-provider';
+import { startRemotionBatch } from '@/lib/video/remotion-queue';
 import { isS3Available, uploadBufferToS3WithPath } from '@/lib/utils/s3';
-import { extractPosterFromVideoUrl } from '@/lib/video/poster';
+import { extractPosterFromVideoUrl, remotionPosterSeekSeconds } from '@/lib/video/poster';
 
 function mapStatus(s?: string): 'QUEUED' | 'RENDERING' | 'COMPLETE' | 'FAILED' {
   const v = (s || '').toLowerCase();
@@ -50,10 +52,12 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
           if (!reel.renderId || reel.renderId === 'pending') return { id: reel.id, skipped: true };
           const st = reel.provider === 'j2v'
             ? await (new J2VProvider()).getStatus(reel.renderId)
-            : await (new ShotstackProvider()).getStatusRobust(reel.renderId);
+            : reel.provider === 'remotion'
+              ? await (new RemotionProvider()).getStatus(reel.renderId)
+              : await (new ShotstackProvider()).getStatusRobust(reel.renderId);
           const status = mapStatus(st.status);
 
-          // Copy video to S3 if still on Shotstack CDN
+          // Copy video to S3 if still on a CDN bucket (Shotstack/JSON2Video/Remotion)
           let finalUrl = st.url as string | undefined;
           if (status === 'COMPLETE' && finalUrl && isS3Available()) {
             try {
@@ -61,7 +65,10 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
               const host = u.hostname || '';
               const isShotstackCdn = host.includes('shotstack.io');
               const isJ2V = host.includes('json2video');
-              if (isShotstackCdn || isJ2V) {
+              const isRemotionBucket =
+                host.includes('remotionlambda') ||
+                u.pathname.startsWith('/remotionlambda');
+              if (isShotstackCdn || isJ2V || isRemotionBucket) {
                 const basePath = `orders/${reel.orderId}/reels/videos`;
                 const safeVar = (reel.variantKey || 'reel').replace(/[^A-Za-z0-9_-]/g, '_');
                 const name = `${safeVar}-${(reel.renderId || '').slice(0, 8)}.mp4`;
@@ -82,7 +89,9 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
           let thumbnail = st.thumbnail as string | undefined;
           if (status === 'COMPLETE' && (finalUrl || st.url) && !thumbnail && !reel.thumbnail && isS3Available()) {
             try {
-              const buf = await extractPosterFromVideoUrl(finalUrl || st.url!);
+              const seekSeconds =
+                reel.provider === 'remotion' ? await remotionPosterSeekSeconds(reel.variantKey) : 1;
+              const buf = await extractPosterFromVideoUrl(finalUrl || st.url!, seekSeconds);
               if (buf && buf.length > 0) {
                 const basePath = `orders/${reel.orderId}/reels/posters`;
                 const safeVar = (reel.variantKey || 'reel').replace(/[^A-Za-z0-9_-]/g, '_');
@@ -108,6 +117,12 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
           });
           return { id: reel.id, status, hasUrl: !!(finalUrl ?? st.url), hasThumbnail: !!thumbnail };
         } catch (e: any) {
+          // A status lookup failure (config/transient) should not kill a render
+          // that may still be running. Keep the current status and retry next poll.
+          if (reel.status === 'QUEUED' || reel.status === 'RENDERING') {
+            console.warn('Reel status lookup failed, keeping current status', { id: reel.id, renderId: reel.renderId, e });
+            return { id: reel.id, status: reel.status };
+          }
           await prisma.orderReel.update({
             where: { id: reel.id },
             data: { status: 'FAILED', error: String(e?.message || e) },
@@ -117,7 +132,18 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
       })
     );
 
-    return NextResponse.json({ ok: true, count: updates.length, updates });
+    // Drive the Remotion queue as a safety net: start QUEUED reels for this order
+    // that were never picked up (e.g. no webhook fired). Claiming is atomic, so a
+    // concurrent runner (generate/webhook) starting the same reel is a no-op.
+    let queueStarted = 0;
+    try {
+      const q = await startRemotionBatch({ limit: 1, orderId: id });
+      queueStarted = q.started;
+    } catch (e) {
+      console.warn('Sync: Remotion queue kick failed', { id, e });
+    }
+
+    return NextResponse.json({ ok: true, count: updates.length, updates, queueStarted });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: 'Failed to sync reels' }, { status: 500 });

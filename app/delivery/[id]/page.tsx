@@ -279,9 +279,14 @@ export default async function DeliveryPage({
                   'v7-9x16',
                   'v8-9x16',
                   'v9-9x16',
+                  'v10-9x16',
+                  'v11-9x16',
+                  'v12-9x16',
+                  'v13-9x16',
+                  'v14-9x16',
                 ];
                 const labelMap: Record<string, string> = {
-                  'v1-9x16': 'Vertical Reel 1 - Just Listed',
+                  'v1-9x16': 'Vertical Reel 1 - Coming Soon',
                   'v2-9x16': 'Vertical Reel 2 - For Sale',
                   'v3-9x16': 'Vertical Reel 3 - For Sale',
                   'v4-9x16': 'Vertical Reel 4 - Just Listed',
@@ -290,6 +295,14 @@ export default async function DeliveryPage({
                   'v7-9x16': 'Seasonal 1 - For Sale',
                   'v8-9x16': 'Seasonal 2 - New Listing',
                   'v9-9x16': 'Seasonal 3 - For Sale',
+                  'v10-9x16': 'Vertical Reel 10 - Just Listed',
+                  'v11-9x16': 'Vertical Reel 11 - For Sale',
+                  'v12-9x16': 'Vertical Reel 12 - For Sale',
+                  'v13-9x16': 'Vertical Reel 13 - For Sale',
+                  'v14-9x16': 'Vertical Reel 14 - For Sale',
+                  'v15-9x16': 'Vertical Reel 15 - New Listing',
+                  'v16-9x16': 'Vertical Reel 16 - For Sale',
+                  'v17-9x16': 'Vertical Reel 17 - New Listing',
                 };
                 const idx = (k: string) => {
                   const i = orderKeys.indexOf((k || '').toLowerCase());
@@ -408,10 +421,12 @@ export default async function DeliveryPage({
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {(() => {
-                const orderKeys = ['h1-16x9', 'h2-16x9'];
+                const orderKeys = ['h1-16x9', 'h2-16x9', 'h3-16x9', 'h4-16x9'];
                 const labelMap: Record<string, string> = {
                   'h1-16x9': 'Slideshow 1 - Property Showcase',
                   'h2-16x9': 'Slideshow 2 - Property Showcase',
+                  'h3-16x9': 'Slideshow 3 - Property Showcase',
+                  'h4-16x9': 'Slideshow 4 - Just Listed',
                 };
                 const idx = (k: string) => {
                   const i = orderKeys.indexOf((k || '').toLowerCase());

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/auth';
 import { prisma } from '@/lib/db/prisma';
 import { ShotstackProvider } from '@/lib/video/shotstack-provider';
+import { resolvePropertyAddress } from '@/lib/video/remotion-queue';
 
 function dimsForVariant(variant: string): { width: number; height: number } {
   switch (variant) {
@@ -121,15 +122,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const images = sources.map((s) => s.url);
 
     // Build address (prefer overrides; fallback to formatted or components)
-    const street = order.propertyAddressOverride || order.propertyAddress || '';
-    const city = order.propertyCityOverride || order.propertyCity || '';
-    const postal = order.propertyPostalCodeOverride || order.propertyPostalCode || '';
-    const province = order.propertyProvince || '';
-    const formatted = order.propertyFormattedAddress;
-    const hasOverrides = !!(order.propertyAddressOverride || order.propertyCityOverride || order.propertyPostalCodeOverride);
-    const address = hasOverrides
-      ? [street, [city, province].filter(Boolean).join(' '), postal].filter(Boolean).join(', ').replace(/,\s*,/g, ', ').trim()
-      : (formatted || [street, [city, province].filter(Boolean).join(' '), postal].filter(Boolean).join(', ').replace(/,\s*,/g, ', ').trim());
+    const { address, street, city, postalCode: postal } = resolvePropertyAddress(order);
 
     const rinfo = order.realtor as any;
     const meta = {

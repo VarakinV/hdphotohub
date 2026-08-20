@@ -3,7 +3,9 @@ import { auth } from '@/lib/auth/auth';
 import { prisma } from '@/lib/db/prisma';
 import { ShotstackProvider } from '@/lib/video/shotstack-provider';
 import { J2VProvider } from '@/lib/video/j2v-provider';
+import { RemotionProvider } from '@/lib/video/remotion-provider';
 import { formatPhoneNumber } from '@/lib/utils';
+import { resolvePropertyAddress } from '@/lib/video/remotion-queue';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string; reelId: string }> }) {
   try {
@@ -30,6 +32,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const sources = await prisma.orderReelSourceImage.findMany({ where: { orderId: id }, orderBy: { sortOrder: 'asc' } });
     if (sources.length < 3) return NextResponse.json({ error: 'Need at least 3 images' }, { status: 400 });
+
+    // Optional body: per-reel music selection. Persisted and baked in at render.
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch {
+      // no body
+    }
+    let musicTrackId = reel.musicTrackId;
+    if (typeof body?.musicTrackId === 'string') {
+      musicTrackId = body.musicTrackId.trim() || null;
+    }
+    if (musicTrackId !== reel.musicTrackId) {
+      await prisma.orderReel.update({ where: { id: reelId }, data: { musicTrackId } });
+    }
 
     const hdrs = req.headers;
     const host = hdrs.get('x-forwarded-host') ?? hdrs.get('host');
@@ -62,28 +79,50 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       webhookUrlJ2V = base ? `${base}/api/integrations/json2video/webhook${tokenJ2V ? `?token=${tokenJ2V}` : ''}` : undefined;
     }
 
+    // Remotion webhook URL
+    const explicitWebhookRemotion = process.env.REMOTION_WEBHOOK_URL?.trim();
+    const tokenRemotion = process.env.REMOTION_WEBHOOK_TOKEN;
+    let webhookUrlRemotion: string | undefined;
+    if (explicitWebhookRemotion) {
+      const hasPath = /\/api\/integrations\/remotion(\?|$)/i.test(explicitWebhookRemotion);
+      webhookUrlRemotion = hasPath ? explicitWebhookRemotion : `${explicitWebhookRemotion.replace(/\/$/, '')}/api/integrations/remotion`;
+      if (tokenRemotion) webhookUrlRemotion += (webhookUrlRemotion.includes('?') ? '&' : '?') + `token=${tokenRemotion}`;
+    } else {
+      const base = (fallbackBase || '').replace(/\/$/, '');
+      webhookUrlRemotion = base ? `${base}/api/integrations/remotion${tokenRemotion ? `?token=${tokenRemotion}` : ''}` : undefined;
+    }
+
     const isJ2V = (reel.provider || '').toLowerCase() === 'j2v';
-    const provider = isJ2V ? new J2VProvider() : new ShotstackProvider();
+    const isRemotion = (reel.provider || '').toLowerCase() === 'remotion';
+    const provider = isJ2V ? new J2VProvider() : isRemotion ? new RemotionProvider() : new ShotstackProvider();
     const images = sources.map((s) => s.url);
 
-    // Build address and meta similar to initial generate
-    const street = order.propertyAddressOverride || order.propertyAddress || '';
-    const city = order.propertyCityOverride || order.propertyCity || '';
-    const postal = order.propertyPostalCodeOverride || order.propertyPostalCode || '';
-    const province = order.propertyProvince || '';
-    const formatted = order.propertyFormattedAddress;
-    const hasOverrides = !!(order.propertyAddressOverride || order.propertyCityOverride || order.propertyPostalCodeOverride);
-    const address = hasOverrides
-      ? [street, [city, province].filter(Boolean).join(' '), postal].filter(Boolean).join(', ').replace(/,\s*,/g, ', ').trim()
-      : (formatted || [street, [city, province].filter(Boolean).join(' '), postal].filter(Boolean).join(', ').replace(/,\s*,/g, ', ').trim());
+    // Remotion: resolve music track (baked in at render)
+    let musicTrackUrl: string | undefined;
+    if (isRemotion && musicTrackId) {
+      const track = await prisma.videoMusicTrack.findUnique({ where: { id: musicTrackId }, select: { fileUrl: true } });
+      musicTrackUrl = track?.fileUrl || undefined;
+    }
+
+    // Build address and meta similar to initial generate (overrides win)
+    const { address, street, city, postalCode: postal, province } = resolvePropertyAddress(order);
 
     const rinfo = order.realtor as any;
     const meta = {
+      orderId: id,
       address,
+      street,
+      city,
+      postalCode: postal,
+      province,
+      bedrooms: order.bedrooms || 0,
+      bathrooms: order.bathrooms || 0,
+      sqft: order.propertySize || 0,
       realtorPhone: rinfo?.phone || '',
       realtorHeadshot: rinfo?.headshot || '',
       realtorLogo: rinfo?.companyLogo || '',
       realtorName: `${rinfo?.firstName || ''} ${rinfo?.lastName || ''}`.trim(),
+      musicTrackUrl,
     };
 
     // Build template merge (same for both templates)
@@ -136,7 +175,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
            reel.variantKey === 'v2-16x9' ? templateH1S :
            reel.variantKey === 'v2-9x16' ? templateV1S : '');
 
-      const { renderId } = await provider.render({ images, variantKey: reel.variantKey as any, webhookUrl: (isJ2V ? webhookUrlJ2V : webhookUrl) || '', meta, ...(tid ? { templateId: tid, merge } : {}) });
+      const { renderId } = await provider.render({ images, variantKey: reel.variantKey as any, webhookUrl: (isJ2V ? webhookUrlJ2V : isRemotion ? webhookUrlRemotion : webhookUrl) || '', meta, ...(tid ? { templateId: tid, merge } : {}) });
       await prisma.orderReel.update({ where: { id: reelId }, data: { renderId, status: 'RENDERING', url: null, thumbnail: null, error: null } });
       return NextResponse.json({ ok: true, renderId });
     } catch (err: any) {

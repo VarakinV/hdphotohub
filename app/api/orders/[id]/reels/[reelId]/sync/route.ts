@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/auth';
 import { prisma } from '@/lib/db/prisma';
 import { isS3Available, uploadBufferToS3WithPath } from '@/lib/utils/s3';
-import { extractPosterFromVideoUrl } from '@/lib/video/poster';
+import { extractPosterFromVideoUrl, remotionPosterSeekSeconds } from '@/lib/video/poster';
 
 export const runtime = 'nodejs';
 
@@ -56,7 +56,9 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     let thumbnail = reel.thumbnail as string | null;
     if (!thumbnail) {
       try {
-        const posterBuf = await extractPosterFromVideoUrl(updatedUrl);
+        const seekSeconds =
+          reel.provider === 'remotion' ? await remotionPosterSeekSeconds(reel.variantKey) : 1;
+        const posterBuf = await extractPosterFromVideoUrl(updatedUrl, seekSeconds);
         if (posterBuf && posterBuf.length > 0) {
           const basePath = `orders/${reel.orderId}/reels/posters`;
           const safeVar = (reel.variantKey || 'reel').replace(/[^A-Za-z0-9_-]/g, '_');

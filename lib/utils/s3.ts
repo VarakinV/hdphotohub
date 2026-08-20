@@ -83,9 +83,17 @@ export async function deleteFromS3(fileUrl: string): Promise<void> {
   }
 
   try {
-    // Extract the key from the URL
     const url = new URL(fileUrl);
-    const key = url.pathname.substring(1); // Remove leading slash
+    let key = url.pathname.substring(1); // Remove leading slash
+
+    // Path-style URLs look like: s3.<region>.amazonaws.com/<bucket>/<key>
+    // (no bucket in the hostname), so strip the bucket prefix from the path.
+    const host = url.hostname || '';
+    const isPathStyle =
+      host === 's3.amazonaws.com' || /^s3[.-]/.test(host);
+    if (isPathStyle && key.startsWith(`${BUCKET_NAME}/`)) {
+      key = key.substring(BUCKET_NAME.length + 1);
+    }
 
     const command = new DeleteObjectCommand({
       Bucket: BUCKET_NAME,

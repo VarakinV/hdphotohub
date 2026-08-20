@@ -19,7 +19,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       if (!realtorId || order.realtorId !== realtorId) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    const reels = await prisma.orderReel.findMany({ where: { orderId: id }, orderBy: [{ createdAt: 'desc' }] });
+    const reels = await prisma.orderReel.findMany({
+      where: { orderId: id },
+      orderBy: [{ createdAt: 'desc' }],
+      include: { musicTrack: { select: { id: true, name: true } } },
+    });
     return NextResponse.json(reels);
   } catch (e) {
     console.error(e);
