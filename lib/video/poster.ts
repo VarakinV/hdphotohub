@@ -31,13 +31,6 @@ export async function remotionPosterSeekSeconds(variantKey: string): Promise<num
 }
 
 /**
- * Check if we're running on Vercel (serverless environment where ffmpeg won't work)
- */
-function isVercelEnvironment(): boolean {
-  return !!(process.env.VERCEL || process.env.VERCEL_ENV || process.env.VERCEL_URL);
-}
-
-/**
  * Try to find ffmpeg binary path
  */
 function findFfmpegPath(): string | null {
@@ -81,18 +74,11 @@ function findFfmpegPath(): string | null {
  * - Uses ffmpeg-static binary path if available.
  * - Streams the frame via image2pipe to avoid filesystem writes.
  * - Resolves to a JPEG Buffer or throws on failure.
- * - Returns empty buffer on Vercel (ffmpeg not available in serverless)
  * @param seekSeconds Time offset (seconds) of the frame to grab; default 1.
  */
 export async function extractPosterFromVideoUrl(videoUrl: string, seekSeconds = 1): Promise<Buffer> {
   if (!videoUrl || !/^https?:\/\//i.test(videoUrl)) {
     throw new Error('Invalid video URL for poster extraction');
-  }
-
-  // Skip on Vercel - ffmpeg binaries don't work in serverless environment
-  if (isVercelEnvironment()) {
-    console.log('[Poster] Skipping thumbnail generation on Vercel (ffmpeg not available in serverless)');
-    return Buffer.alloc(0);
   }
 
   // Find and configure ffmpeg binary
