@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db/prisma';
-import { RemotionProvider } from '@/lib/video/remotion-provider';
+import { RemotionProvider, VARIANT_COMPOSITION, buildInputProps } from '@/lib/video/remotion-provider';
 
 // How long a claimed-but-not-started row may sit in RENDERING before we assume
 // the claimer crashed and re-queue it.
@@ -94,6 +94,44 @@ export function buildRenderMeta(order: any, sources: { url: string }[], musicTra
     realtorName: `${rinfo?.firstName || ''} ${rinfo?.lastName || ''}`.trim(),
     musicTrackUrl,
   };
+}
+
+// Reconstruct the composition + inputProps needed to render a thumbnail still
+// for a Remotion reel. Loads the same order/sources/music data the video render
+// used, so the thumbnail frame matches the reel exactly.
+export async function buildRemotionThumbnailContext(reel: {
+  orderId: string;
+  variantKey: string;
+  musicTrackId?: string | null;
+}): Promise<{ composition: string; inputProps: Record<string, unknown> }> {
+  const order = await prisma.order.findUnique({
+    where: { id: reel.orderId },
+    include: {
+      realtor: { select: { id: true, firstName: true, lastName: true, phone: true, headshot: true, companyLogo: true } },
+    },
+  });
+  if (!order) throw new Error(`Order not found: ${reel.orderId}`);
+
+  const sources = await prisma.orderReelSourceImage.findMany({
+    where: { orderId: reel.orderId },
+    orderBy: { sortOrder: 'asc' },
+  });
+
+  let musicTrackUrl: string | undefined;
+  if (reel.musicTrackId) {
+    const track = await prisma.videoMusicTrack.findUnique({
+      where: { id: reel.musicTrackId },
+      select: { fileUrl: true },
+    });
+    musicTrackUrl = track?.fileUrl || undefined;
+  }
+
+  const composition = VARIANT_COMPOSITION[reel.variantKey];
+  if (!composition) throw new Error(`No composition for variant ${reel.variantKey}`);
+
+  const meta = buildRenderMeta(order, sources, musicTrackUrl);
+  const inputProps = buildInputProps(sources.map((s) => s.url), reel.variantKey, meta);
+  return { composition, inputProps };
 }
 
 async function startSingleReel(reel: any) {

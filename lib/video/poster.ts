@@ -31,6 +31,15 @@ export async function remotionPosterSeekSeconds(variantKey: string): Promise<num
 }
 
 /**
+ * Frame number (not seconds) for the Remotion still-render thumbnail path.
+ * All Remotion compositions run at 30fps.
+ */
+export async function remotionPosterFrame(variantKey: string): Promise<number> {
+  const seconds = await remotionPosterSeekSeconds(variantKey);
+  return Math.max(0, Math.round(seconds * 30));
+}
+
+/**
  * Try to find ffmpeg binary path
  */
 function findFfmpegPath(): string | null {

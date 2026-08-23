@@ -1,8 +1,10 @@
 import {
   renderMediaOnLambda,
+  renderStillOnLambda,
   getRenderProgress,
   type RenderMediaOnLambdaInput,
   type RenderMediaOnLambdaOutput,
+  type RenderStillOnLambdaInput,
   type GetRenderProgressInput,
   type RenderProgress,
   type AwsRegion,
@@ -71,6 +73,36 @@ function toStatValue(v: unknown): string | number | undefined {
   return s === '' ? undefined : s;
 }
 
+// Build the Remotion inputProps from a render meta object. Shared by the video
+// render and the thumbnail still render so both use identical props.
+export function buildInputProps(
+  images: string[],
+  variantKey: string,
+  meta: Record<string, unknown> | undefined
+): Record<string, unknown> {
+  return {
+    images,
+    variantKey,
+    property: {
+      address: (meta as any)?.address || '',
+      street: (meta as any)?.street || '',
+      city: (meta as any)?.city || '',
+      postalCode: (meta as any)?.postalCode || '',
+      province: (meta as any)?.province || '',
+      bedrooms: toStatValue((meta as any)?.bedrooms),
+      bathrooms: toStatValue((meta as any)?.bathrooms),
+      sqft: toStatValue((meta as any)?.sqft) || undefined,
+    },
+    realtor: {
+      name: (meta as any)?.realtorName || '',
+      phone: (meta as any)?.realtorPhone || '',
+      headshotUrl: (meta as any)?.realtorHeadshot || '',
+      logoUrl: (meta as any)?.realtorLogo || '',
+    },
+    musicTrackUrl: (meta as any)?.musicTrackUrl || undefined,
+  };
+}
+
 function lambdaConfig() {
   const region = process.env.REMOTION_AWS_REGION || 'ca-central-1';
   const functionName = process.env.REMOTION_FUNCTION_NAME?.trim();
@@ -107,27 +139,7 @@ export class RemotionProvider implements VideoProvider {
     }
 
     // inputProps shape mirrors remotion/lib/types.ts reelPropsSchema / slideshowPropsSchema
-    const inputProps: any = {
-      images,
-      variantKey,
-      property: {
-        address: meta?.address || '',
-        street: meta?.street || '',
-        city: meta?.city || '',
-        postalCode: meta?.postalCode || '',
-        province: meta?.province || '',
-        bedrooms: toStatValue(meta?.bedrooms),
-        bathrooms: toStatValue(meta?.bathrooms),
-        sqft: toStatValue(meta?.sqft) || undefined,
-      },
-      realtor: {
-        name: meta?.realtorName || '',
-        phone: meta?.realtorPhone || '',
-        headshotUrl: meta?.realtorHeadshot || '',
-        logoUrl: meta?.realtorLogo || '',
-      },
-      musicTrackUrl: meta?.musicTrackUrl || undefined,
-    };
+    const inputProps = buildInputProps(images, variantKey, meta as Record<string, unknown> | undefined);
 
     // Optional: direct write to your own S3 bucket (requires the Lambda role to
     // have PutObject on that bucket). Leave unset — output lands in Remotion's
@@ -165,6 +177,31 @@ export class RemotionProvider implements VideoProvider {
     const res: RenderMediaOnLambdaOutput = await renderMediaOnLambda(input);
 
     return { renderId: res.renderId };
+  }
+
+  // Render a single frame (thumbnail) with the same Lambda pipeline used for the
+  // video. Used instead of ffmpeg, which is unavailable in Vercel serverless.
+  async renderThumbnail(
+    composition: string,
+    inputProps: Record<string, unknown>,
+    frame: number
+  ): Promise<Buffer> {
+    const input: RenderStillOnLambdaInput = {
+      functionName: this.functionName,
+      region: this.region,
+      serveUrl: this.serveUrl,
+      composition,
+      inputProps,
+      imageFormat: 'jpeg',
+      frame,
+      privacy: 'public',
+    };
+    const res = await renderStillOnLambda(input);
+    const resp = await fetch(res.url);
+    if (!resp.ok) {
+      throw new Error(`Failed to fetch rendered thumbnail: ${resp.status}`);
+    }
+    return Buffer.from(await resp.arrayBuffer());
   }
 
   async getStatus(renderId: string): Promise<WebhookEvent> {

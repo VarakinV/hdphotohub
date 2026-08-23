@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
+export const maxDuration = 60;
 
 import { prisma } from '@/lib/db/prisma';
 import { RemotionProvider } from '@/lib/video/remotion-provider';
-import { startRemotionBatch } from '@/lib/video/remotion-queue';
+import { startRemotionBatch, buildRemotionThumbnailContext } from '@/lib/video/remotion-queue';
 import { validateWebhookSignature } from '@remotion/lambda/client';
 import { isS3Available, uploadBufferToS3WithPath } from '@/lib/utils/s3';
-import { extractPosterFromVideoUrl, remotionPosterSeekSeconds } from '@/lib/video/poster';
+import { remotionPosterFrame } from '@/lib/video/poster';
 
 function mapStatus(s?: string): 'QUEUED' | 'RENDERING' | 'COMPLETE' | 'FAILED' {
   const v = (s || '').toLowerCase();
@@ -109,16 +110,17 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Poster thumbnail (FFmpeg — only where available, same as J2V path)
+    // Poster thumbnail via Remotion still render (ffmpeg is unavailable in Vercel serverless)
     if (status === 'COMPLETE' && resolvedUrl) {
       try {
         const reel = await prisma.orderReel.findFirst({
           where: { renderId: evt.renderId, provider: 'remotion' },
-          select: { id: true, orderId: true, variantKey: true, thumbnail: true },
+          select: { id: true, orderId: true, variantKey: true, musicTrackId: true, thumbnail: true },
         });
         if (reel && !reel.thumbnail && isS3Available()) {
-          const seekSeconds = await remotionPosterSeekSeconds(reel.variantKey);
-          const buf = await extractPosterFromVideoUrl(resolvedUrl, seekSeconds);
+          const { composition, inputProps } = await buildRemotionThumbnailContext(reel);
+          const frame = await remotionPosterFrame(reel.variantKey);
+          const buf = await provider.renderThumbnail(composition, inputProps, frame);
           if (buf && buf.length > 0) {
             const basePath = `orders/${reel.orderId}/reels/posters`;
             const safeVar = (reel.variantKey || 'reel').replace(/[^A-Za-z0-9_-]/g, '_');
