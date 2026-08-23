@@ -70,19 +70,19 @@ const SceneImage: React.FC<{ src: string; direction: PanDirection }> = ({
 
   return (
     <AbsoluteFill style={{ opacity, overflow: 'hidden' }}>
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: 3000,
-          height: 1200,
-          display: 'flex',
-          justifyContent: 'center',
-        }}
-      >
-        <CameraMotionBlur samples={4} shutterAngle={180}>
+      <CameraMotionBlur samples={4} shutterAngle={180}>
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: 3000,
+            height: 1200,
+            display: 'flex',
+            justifyContent: 'center',
+          }}
+        >
           <Img
             src={src}
             style={{
@@ -91,8 +91,8 @@ const SceneImage: React.FC<{ src: string; direction: PanDirection }> = ({
               transform: `scale(${scale}) translate(${x}px, ${y}px)`,
             }}
           />
-        </CameraMotionBlur>
-      </div>
+        </div>
+      </CameraMotionBlur>
       <div
         style={{
           position: 'absolute',
