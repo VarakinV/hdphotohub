@@ -8,6 +8,7 @@ import {
   useCurrentFrame,
   Easing,
 } from 'remotion';
+import { CameraMotionBlur } from '@remotion/motion-blur';
 import type { ReelProps } from '../../lib/types';
 import { MusicOverlay } from '../shared';
 import { ptSans, sourceSerifPro, bebasNeue, inter } from '../../lib/fonts';
@@ -74,16 +75,18 @@ const HeroImage: React.FC<{ src: string }> = ({ src }) => {
         maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 60%, rgba(0,0,0,0) 100%)',
       }}
     >
-      <Img
-        src={src}
-        style={{
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          transform: `scale(${scale}) translateX(${x}px)`,
-          transformOrigin: 'center center',
-        }}
-      />
+      <CameraMotionBlur samples={8} shutterAngle={180}>
+        <Img
+          src={src}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            transform: `scale(${scale}) translateX(${x}px)`,
+            transformOrigin: 'center center',
+          }}
+        />
+      </CameraMotionBlur>
     </div>
   );
 };

@@ -7,6 +7,7 @@ import {
   Easing,
   Sequence,
 } from 'remotion';
+import { CameraMotionBlur } from '@remotion/motion-blur';
 import type { ReelProps } from '../../lib/types';
 import { MusicOverlay } from '../shared';
 import { sourceSerifPro, inter, bebasNeue, grapeNuts } from '../../lib/fonts';
@@ -57,15 +58,17 @@ const Scene1Image: React.FC<{ src: string }> = ({ src }) => {
 
   return (
     <AbsoluteFill style={{ opacity, overflow: 'hidden' }}>
-      <Img
-        src={src}
-        style={{
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          transform: `scale(${scale}) translate(${translateX}px, ${translateY}px)`,
-        }}
-      />
+      <CameraMotionBlur samples={8} shutterAngle={180}>
+        <Img
+          src={src}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            transform: `scale(${scale}) translate(${translateX}px, ${translateY}px)`,
+          }}
+        />
+      </CameraMotionBlur>
       <div
         style={{
           position: 'absolute',
@@ -212,34 +215,36 @@ const PolaroidPhoto: React.FC<{
   });
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        left,
-        top,
-        width: 560,
-        height: 660,
-        padding: 14,
-        paddingBottom: 56,
-        backgroundColor: WHITE,
-        borderRadius: 8,
-        transform: `rotate(${rotate}deg)`,
-        opacity,
-        boxShadow: '0 20px 60px rgba(0,0,0,0.35)',
-        boxSizing: 'border-box',
-        overflow: 'hidden',
-      }}
-    >
-      <Img
-        src={src}
+    <CameraMotionBlur samples={8} shutterAngle={180}>
+      <div
         style={{
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          borderRadius: 4,
+          position: 'absolute',
+          left,
+          top,
+          width: 560,
+          height: 660,
+          padding: 14,
+          paddingBottom: 56,
+          backgroundColor: WHITE,
+          borderRadius: 8,
+          transform: `rotate(${rotate}deg)`,
+          opacity,
+          boxShadow: '0 20px 60px rgba(0,0,0,0.35)',
+          boxSizing: 'border-box',
+          overflow: 'hidden',
         }}
-      />
-    </div>
+      >
+        <Img
+          src={src}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            borderRadius: 4,
+          }}
+        />
+      </div>
+    </CameraMotionBlur>
   );
 };
 
@@ -481,16 +486,18 @@ const Scene4: React.FC<{
           overflow: 'hidden',
         }}
       >
-        <Img
-          src={src}
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            transform: `scale(${scale})`,
-            transformOrigin: 'center center',
-          }}
-        />
+        <CameraMotionBlur samples={8} shutterAngle={180}>
+          <Img
+            src={src}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              transform: `scale(${scale})`,
+              transformOrigin: 'center center',
+            }}
+          />
+        </CameraMotionBlur>
       </div>
       <div
         style={{

@@ -30,6 +30,7 @@
     "@remotion/lottie": "4.0.507",
     "@remotion/media": "4.0.507",
     "@remotion/media-utils": "4.0.507",
+    "@remotion/motion-blur": "^4.0.507",
     "@remotion/paths": "4.0.507",
     "@remotion/player": "4.0.507",
     "@remotion/shapes": "4.0.507",

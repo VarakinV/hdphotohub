@@ -1,5 +1,6 @@
 import React from 'react';
 import { AbsoluteFill, Img, interpolate, useCurrentFrame, Easing, Sequence } from 'remotion';
+import { CameraMotionBlur } from '@remotion/motion-blur';
 import type { ReelProps } from '../../lib/types';
 import { MusicOverlay } from '../shared';
 import { ptSans, sourceSerifPro } from '../../lib/fonts';
@@ -41,19 +42,21 @@ const ComingSoonScene: React.FC<{
 
   return (
     <AbsoluteFill>
-      <Img
-        src={src}
-        style={{
-          position: 'absolute',
-          left: 130,
-          top: 420,
-          width: 950,
-          height: 670,
-          objectFit: 'cover',
-          opacity,
-          transform: `scale(1.14) translate(${translateX}px, ${translateY}px)`,
-        }}
-      />
+      <CameraMotionBlur samples={8} shutterAngle={180}>
+        <Img
+          src={src}
+          style={{
+            position: 'absolute',
+            left: 130,
+            top: 420,
+            width: 950,
+            height: 670,
+            objectFit: 'cover',
+            opacity,
+            transform: `scale(1.14) translate(${translateX}px, ${translateY}px)`,
+          }}
+        />
+      </CameraMotionBlur>
     </AbsoluteFill>
   );
 };

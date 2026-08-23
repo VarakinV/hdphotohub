@@ -7,6 +7,7 @@ import {
   useCurrentFrame,
   Easing,
 } from 'remotion';
+import { CameraMotionBlur } from '@remotion/motion-blur';
 import { Ruler, BedDouble, Bath } from 'lucide-react';
 import type { ReelProps } from '../../lib/types';
 import { MusicOverlay } from '../shared';
@@ -57,40 +58,42 @@ const CarouselImage: React.FC<{ src: string; index: number; frame: number }> = (
   const zIndex = Math.round(10 - distance * 5);
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        top: CAROUSEL_CENTER_Y - IMG_H / 2,
-        left: CENTER_LEFT + index * SLOT_PX - offset,
-        width: IMG_W,
-        height: IMG_H,
-        opacity,
-        zIndex,
-      }}
-    >
+    <CameraMotionBlur samples={8} shutterAngle={180}>
       <div
         style={{
-          width: '100%',
-          height: '100%',
-          transform: `scale(${scale})`,
-          transformOrigin: 'center center',
-          borderRadius: 8,
-          border: `6px solid ${WHITE}`,
-          overflow: 'hidden',
-          boxShadow: '0 10px 30px rgba(0,0,0,0.35)',
-          backgroundColor: WHITE,
+          position: 'absolute',
+          top: CAROUSEL_CENTER_Y - IMG_H / 2,
+          left: CENTER_LEFT + index * SLOT_PX - offset,
+          width: IMG_W,
+          height: IMG_H,
+          opacity,
+          zIndex,
         }}
       >
-        <Img
-          src={src}
+        <div
           style={{
             width: '100%',
             height: '100%',
-            objectFit: 'cover',
+            transform: `scale(${scale})`,
+            transformOrigin: 'center center',
+            borderRadius: 8,
+            border: `6px solid ${WHITE}`,
+            overflow: 'hidden',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.35)',
+            backgroundColor: WHITE,
           }}
-        />
+        >
+          <Img
+            src={src}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+            }}
+          />
+        </div>
       </div>
-    </div>
+    </CameraMotionBlur>
   );
 };
 

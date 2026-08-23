@@ -7,6 +7,7 @@ import {
   Easing,
   Sequence,
 } from 'remotion';
+import { CameraMotionBlur } from '@remotion/motion-blur';
 import type { ReelProps } from '../../lib/types';
 import { MusicOverlay } from '../shared';
 import { inter, ptSans, grapeNuts } from '../../lib/fonts';
@@ -81,14 +82,16 @@ const SceneImage: React.FC<{ src: string; direction: PanDirection }> = ({
           justifyContent: 'center',
         }}
       >
-        <Img
-          src={src}
-          style={{
-            height: '100%',
-            width: 'auto',
-            transform: `scale(${scale}) translate(${x}px, ${y}px)`,
-          }}
-        />
+        <CameraMotionBlur samples={8} shutterAngle={180}>
+          <Img
+            src={src}
+            style={{
+              height: '100%',
+              width: 'auto',
+              transform: `scale(${scale}) translate(${x}px, ${y}px)`,
+            }}
+          />
+        </CameraMotionBlur>
       </div>
       <div
         style={{

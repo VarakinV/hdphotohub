@@ -1,5 +1,6 @@
 import React from 'react';
 import { AbsoluteFill, Img, interpolate, useCurrentFrame, Easing, Sequence } from 'remotion';
+import { CameraMotionBlur } from '@remotion/motion-blur';
 import type { SlideshowProps } from '../../lib/types';
 import { MusicOverlay } from '../shared';
 import { inter } from '../../lib/fonts';
@@ -97,46 +98,48 @@ const SliceScene: React.FC<{
   const { x, y } = panOffset(pan, panT);
 
   return (
-    <AbsoluteFill
-      style={{ transform: `scale(${PAN_ZOOM}) translate(${x}px, ${y}px)` }}
-    >
-      {prevSrc ? (
-        <Img
-          src={prevSrc}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-          }}
-        />
-      ) : null}
-      {Array.from({ length: BANDS }).map((_, i) => (
-        <div
-          key={i}
-          style={{
-            position: 'absolute',
-            top: i * BAND_H,
-            left: 0,
-            width: '100%',
-            height: BAND_H,
-            transform: `translateY(${(i % 2 === 0 ? -1 : 1) * 80 * (1 - conv)}px)`,
-            opacity: Math.min(frame / 8, 1),
-          }}
-        >
+    <CameraMotionBlur samples={8} shutterAngle={180}>
+      <AbsoluteFill
+        style={{ transform: `scale(${PAN_ZOOM}) translate(${x}px, ${y}px)` }}
+      >
+        {prevSrc ? (
           <Img
-            src={src}
+            src={prevSrc}
             style={{
+              position: 'absolute',
+              inset: 0,
               width: '100%',
               height: '100%',
               objectFit: 'cover',
-              objectPosition: `center ${-(baseY + i * BAND_H)}px`,
             }}
           />
-        </div>
-      ))}
-    </AbsoluteFill>
+        ) : null}
+        {Array.from({ length: BANDS }).map((_, i) => (
+          <div
+            key={i}
+            style={{
+              position: 'absolute',
+              top: i * BAND_H,
+              left: 0,
+              width: '100%',
+              height: BAND_H,
+              transform: `translateY(${(i % 2 === 0 ? -1 : 1) * 80 * (1 - conv)}px)`,
+              opacity: Math.min(frame / 8, 1),
+            }}
+          >
+            <Img
+              src={src}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: `center ${-(baseY + i * BAND_H)}px`,
+              }}
+            />
+          </div>
+        ))}
+      </AbsoluteFill>
+    </CameraMotionBlur>
   );
 };
 
@@ -167,17 +170,19 @@ const IntroScene: React.FC<{
 
   return (
     <AbsoluteFill style={{ backgroundColor: '#0a0a0a' }}>
-      <Img
-        src={src}
-        style={{
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          transform: `scale(${zoom}) translateY(-3px)`,
-        }}
-      />
+      <CameraMotionBlur samples={8} shutterAngle={180}>
+        <Img
+          src={src}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            transform: `scale(${zoom}) translateY(-3px)`,
+          }}
+        />
+      </CameraMotionBlur>
       <AbsoluteFill style={{ backgroundColor: 'rgba(0,0,0,0.4)' }} />
       <div
         style={{
@@ -400,34 +405,38 @@ const OutroScene: React.FC<{
     <AbsoluteFill
       style={{ background: 'linear-gradient(135deg, #0b1220 0%, #111827 100%)' }}
     >
-      {frame < SLICE && (
-        <Img
-          src={prevSrc}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            transform: `translateX(${1920 * slideT}px)`,
-          }}
-        />
-      )}
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          bottom: 0,
-          left: headLeft,
-          width: headWidth,
-          overflow: 'hidden',
-        }}
-      >
-        <Img
-          src={realtor.headshotUrl}
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-        />
-      </div>
+      <CameraMotionBlur samples={8} shutterAngle={180}>
+        <AbsoluteFill>
+          {frame < SLICE && (
+            <Img
+              src={prevSrc}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                transform: `translateX(${1920 * slideT}px)`,
+              }}
+            />
+          )}
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              bottom: 0,
+              left: headLeft,
+              width: headWidth,
+              overflow: 'hidden',
+            }}
+          >
+            <Img
+              src={realtor.headshotUrl}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          </div>
+        </AbsoluteFill>
+      </CameraMotionBlur>
       <div
         style={{
           position: 'absolute',

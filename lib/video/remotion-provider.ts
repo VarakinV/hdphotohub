@@ -163,6 +163,8 @@ export class RemotionProvider implements VideoProvider {
       codec: 'h264',
       imageFormat: 'jpeg',
       jpegQuality: 90,
+      crf: 15,
+      x264Preset: 'slower',
       maxRetries: 1,
       privacy: 'public',
       outName,

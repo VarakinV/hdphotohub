@@ -1,5 +1,6 @@
 import React from 'react';
 import { AbsoluteFill, Img, interpolate, useCurrentFrame, Easing, Sequence } from 'remotion';
+import { CameraMotionBlur } from '@remotion/motion-blur';
 import type { SlideshowProps } from '../../lib/types';
 import { MusicOverlay } from '../shared';
 import { playfairDisplay, inter } from '../../lib/fonts';
@@ -43,15 +44,17 @@ const PanelScene: React.FC<{ src: string }> = ({ src }) => {
           backgroundColor: '#111',
         }}
       >
-        <Img
-          src={src}
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            transform: `scale(${scale})`,
-          }}
-        />
+        <CameraMotionBlur samples={8} shutterAngle={180}>
+          <Img
+            src={src}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              transform: `scale(${scale})`,
+            }}
+          />
+        </CameraMotionBlur>
       </div>
     </AbsoluteFill>
   );

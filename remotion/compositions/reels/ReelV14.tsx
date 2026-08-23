@@ -8,6 +8,7 @@ import {
   useCurrentFrame,
   Easing,
 } from 'remotion';
+import { CameraMotionBlur } from '@remotion/motion-blur';
 import type { ReelProps } from '../../lib/types';
 import { MusicOverlay } from '../shared';
 import { inter, ptSans, sourceSerifPro, bebasNeue } from '../../lib/fonts';
@@ -67,29 +68,31 @@ const SlidingImage: React.FC<{
   );
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        top: IMG_TOP,
-        left,
-        width: IMG_WIDTH,
-        height: IMG_HEIGHT,
-        border: '8px solid white',
-        borderRadius: 6,
-        overflow: 'hidden',
-        boxSizing: 'border-box',
-        zIndex: 5,
-      }}
-    >
-      <Img
-        src={src}
+    <CameraMotionBlur samples={8} shutterAngle={180}>
+      <div
         style={{
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
+          position: 'absolute',
+          top: IMG_TOP,
+          left,
+          width: IMG_WIDTH,
+          height: IMG_HEIGHT,
+          border: '8px solid white',
+          borderRadius: 6,
+          overflow: 'hidden',
+          boxSizing: 'border-box',
+          zIndex: 5,
         }}
-      />
-    </div>
+      >
+        <Img
+          src={src}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+          }}
+        />
+      </div>
+    </CameraMotionBlur>
   );
 };
 

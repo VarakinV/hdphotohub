@@ -8,6 +8,7 @@ import {
   useCurrentFrame,
   Easing,
 } from 'remotion';
+import { CameraMotionBlur } from '@remotion/motion-blur';
 import type { ReelProps } from '../../lib/types';
 import { MusicOverlay } from '../shared';
 import { ptSans, sourceSerifPro, bebasNeue } from '../../lib/fonts';
@@ -90,26 +91,28 @@ const RotatingImage: React.FC<{
         zIndex: 5,
       }}
     >
-      <div
-        style={{
-          width: IMG_WIDTH,
-          height: IMG_HEIGHT,
-          border: `${BORDER_WIDTH}px solid ${WHITE}`,
-          boxSizing: 'border-box',
-          transform: `rotate(${rotate}deg) scale(${scale})`,
-          transformOrigin: 'center center',
-          overflow: 'hidden',
-        }}
-      >
-        <Img
-          src={src}
+      <CameraMotionBlur samples={8} shutterAngle={180}>
+        <div
           style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
+            width: IMG_WIDTH,
+            height: IMG_HEIGHT,
+            border: `${BORDER_WIDTH}px solid ${WHITE}`,
+            boxSizing: 'border-box',
+            transform: `rotate(${rotate}deg) scale(${scale})`,
+            transformOrigin: 'center center',
+            overflow: 'hidden',
           }}
-        />
-      </div>
+        >
+          <Img
+            src={src}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+            }}
+          />
+        </div>
+      </CameraMotionBlur>
     </div>
   );
 };

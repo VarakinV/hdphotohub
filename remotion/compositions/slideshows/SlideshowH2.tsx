@@ -1,5 +1,6 @@
 import React from 'react';
 import { AbsoluteFill, Img, interpolate, useCurrentFrame, Easing, Sequence } from 'remotion';
+import { CameraMotionBlur } from '@remotion/motion-blur';
 import type { SlideshowProps } from '../../lib/types';
 import { MusicOverlay } from '../shared';
 import { playfairDisplay, inter } from '../../lib/fonts';
@@ -44,18 +45,20 @@ const HeroScene: React.FC<{ src: string }> = ({ src }) => {
 
   return (
     <AbsoluteFill>
-      <Img
-        src={src}
-        style={{
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          opacity,
-          transform: `scale(${scale})`,
-        }}
-      />
+      <CameraMotionBlur samples={8} shutterAngle={180}>
+        <Img
+          src={src}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            opacity,
+            transform: `scale(${scale})`,
+          }}
+        />
+      </CameraMotionBlur>
       <AbsoluteFill
         style={{
           background: `linear-gradient(to top, rgba(10,10,10,0.92) 0%, rgba(10,10,10,0.4) 45%, rgba(10,10,10,0.25) 100%)`,

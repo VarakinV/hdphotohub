@@ -8,6 +8,7 @@ import {
   Sequence,
   OffthreadVideo,
 } from 'remotion';
+import { CameraMotionBlur } from '@remotion/motion-blur';
 import type { ReelProps } from '../../lib/types';
 import { MusicOverlay } from '../shared';
 import { sourceSerifPro, anton, bebasNeue, inter } from '../../lib/fonts';
@@ -61,17 +62,19 @@ const Scene1Image: React.FC<{ src: string }> = ({ src }) => {
 
   return (
     <AbsoluteFill style={{ opacity }}>
-      <Img
-        src={src}
-        style={{
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          transform: `scale(${scale}) translateX(${translateX}px)`,
-        }}
-      />
+      <CameraMotionBlur samples={8} shutterAngle={180}>
+        <Img
+          src={src}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            transform: `scale(${scale}) translateX(${translateX}px)`,
+          }}
+        />
+      </CameraMotionBlur>
       {/* Subtle dark gradient so text stays readable over any photo */}
       <div
         style={{
@@ -112,15 +115,17 @@ const StackedImage: React.FC<{ src: string; top: number }> = ({ src, top }) => {
         opacity,
       }}
     >
-      <Img
-        src={src}
-        style={{
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          transform: `scale(${scale})`,
-        }}
-      />
+      <CameraMotionBlur samples={8} shutterAngle={180}>
+        <Img
+          src={src}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            transform: `scale(${scale})`,
+          }}
+        />
+      </CameraMotionBlur>
     </div>
   );
 };
