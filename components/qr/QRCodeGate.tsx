@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { getRecaptchaToken } from '@/lib/recaptcha/client';
 import { Loader2, Lock, Check } from 'lucide-react';
@@ -190,6 +189,7 @@ export function QRCodeGate({ displayId, status, assignment }: QRCodeGateProps) {
 
   const bypassUrl = assignment.order.propertyPageUrlPath || `/property/${assignment.order.id}/v1`;
   const realtorName = `${assignment.realtor.firstName} ${assignment.realtor.lastName}`;
+  const streetAddress = assignment.order.propertyAddress.split(',')[0].trim();
 
   return (
     <div className="min-h-screen relative">
@@ -232,26 +232,18 @@ export function QRCodeGate({ displayId, status, assignment }: QRCodeGateProps) {
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-2xl p-6 md:p-8 max-w-md w-full">
-            <div className="text-center mb-6">
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-                {(() => {
-                  const addr = assignment.order.propertyAddress;
-                  // Remove postal code (5 digits, optionally with -4) and country
-                  return addr
-                    .replace(/,\s*\d{5}(?:-\d{4})?/g, '')
-                    .replace(/,\s*USA\s*$/i, '')
-                    .replace(/USA\s*$/i, '')
-                    .trim();
-                })()}
+          <div className="bg-white rounded-lg shadow-2xl p-4 md:p-6 max-w-md w-full">
+            <div className="text-center mb-4">
+              <h1 className="text-lg md:text-xl font-bold text-gray-900 mb-1 truncate">
+                {streetAddress}
               </h1>
               <p className="text-gray-600 text-sm">
                 Unlock premium property details
               </p>
             </div>
 
-            <div className="mb-6 bg-gray-50 rounded-lg p-4">
-              <ul className="space-y-2 text-sm text-gray-700">
+            <div className="mb-4 bg-gray-50 rounded-lg p-3">
+              <ul className="space-y-1.5 text-sm text-gray-700">
                 <li className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-green-600 flex-shrink-0" />
                   <span>Property Details & Pricing</span>
@@ -275,9 +267,8 @@ export function QRCodeGate({ displayId, status, assignment }: QRCodeGateProps) {
               </ul>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-3">
               <div>
-                <Label htmlFor="name" className="mb-2 block">Name *</Label>
                 <Input
                   ref={nameInputRef}
                   id="name"
@@ -293,9 +284,10 @@ export function QRCodeGate({ displayId, status, assignment }: QRCodeGateProps) {
                     }
                   }}
                   placeholder="Your name"
+                  aria-label="Your name"
                   required
                   disabled={submitting}
-                  className={`min-h-[48px] ${errors.name ? 'border-red-500' : ''}`}
+                  className={`h-11 ${errors.name ? 'border-red-500' : ''}`}
                 />
                 {errors.name && (
                   <p className="text-xs text-red-500 mt-1" role="alert" aria-live="polite">{errors.name}</p>
@@ -303,7 +295,6 @@ export function QRCodeGate({ displayId, status, assignment }: QRCodeGateProps) {
               </div>
 
               <div>
-                <Label htmlFor="email" className="mb-2 block">Email</Label>
                 <Input
                   id="email"
                   type="email"
@@ -319,9 +310,10 @@ export function QRCodeGate({ displayId, status, assignment }: QRCodeGateProps) {
                       }
                     }
                   }}
-                  placeholder="your@email.com"
+                  placeholder="you@email.com"
+                  aria-label="Email address"
                   disabled={submitting}
-                  className={`min-h-[48px] ${errors.email ? 'border-red-500' : ''}`}
+                  className={`h-11 ${errors.email ? 'border-red-500' : ''}`}
                 />
                 {errors.email && !errors.phone && (
                   <p className="text-xs text-red-500 mt-1" role="alert" aria-live="polite">{errors.email}</p>
@@ -329,7 +321,6 @@ export function QRCodeGate({ displayId, status, assignment }: QRCodeGateProps) {
               </div>
 
               <div>
-                <Label htmlFor="phone" className="mb-2 block">Phone</Label>
                 <Input
                   id="phone"
                   type="tel"
@@ -346,8 +337,9 @@ export function QRCodeGate({ displayId, status, assignment }: QRCodeGateProps) {
                     }
                   }}
                   placeholder="(555) 123-4567"
+                  aria-label="Phone number"
                   disabled={submitting}
-                  className={`min-h-[48px] ${errors.phone ? 'border-red-500' : ''}`}
+                  className={`h-11 ${errors.phone ? 'border-red-500' : ''}`}
                 />
                 {errors.phone && !errors.email && (
                   <p className="text-xs text-red-500 mt-1" role="alert" aria-live="polite">{errors.phone}</p>
@@ -366,12 +358,12 @@ export function QRCodeGate({ displayId, status, assignment }: QRCodeGateProps) {
               </div>
 
               <p className="text-xs text-gray-500 text-center">
-                * Please provide either email or phone
+                Provide either your email or phone
               </p>
 
               <Button
                 type="submit"
-                className="w-full min-h-[48px]"
+                className="w-full h-11"
                 disabled={submitting}
                 size="lg"
               >
@@ -384,6 +376,19 @@ export function QRCodeGate({ displayId, status, assignment }: QRCodeGateProps) {
                   'See All Property Details'
                 )}
               </Button>
+
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  setErrors({});
+                  setShowSuccess(true);
+                  setCountdown(3);
+                }}
+                className="w-full text-center text-xs text-gray-500 underline underline-offset-2 hover:text-gray-700 transition-colors"
+              >
+                Or skip to property details
+              </button>
 
               <div className="flex items-center justify-center gap-1.5 text-xs text-gray-500">
                 <Lock className="h-3 w-3" />
@@ -398,18 +403,18 @@ export function QRCodeGate({ displayId, status, assignment }: QRCodeGateProps) {
             </form>
 
             {(assignment.realtor.headshot || assignment.realtor.companyLogo) && (
-              <div className="mt-6 pt-6 border-t">
+              <div className="mt-4 pt-4 border-t">
                 <div className="flex items-center justify-center gap-4">
                   {assignment.realtor.headshot && (
                     <div className="flex items-center gap-2">
                       <Image
                         src={assignment.realtor.headshot}
                         alt={realtorName}
-                        width={40}
-                        height={40}
+                        width={32}
+                        height={32}
                         className="rounded-full object-cover"
                       />
-                      <span className="text-sm text-gray-600">{realtorName}</span>
+                      <span className="text-xs text-gray-600">{realtorName}</span>
                     </div>
                   )}
                   {assignment.realtor.companyLogo && assignment.realtor.companyName && (
@@ -417,31 +422,16 @@ export function QRCodeGate({ displayId, status, assignment }: QRCodeGateProps) {
                       <Image
                         src={assignment.realtor.companyLogo}
                         alt={assignment.realtor.companyName}
-                        width={40}
-                        height={40}
+                        width={32}
+                        height={32}
                         className="object-contain"
                       />
-                      <span className="text-sm text-gray-600">{assignment.realtor.companyName}</span>
+                      <span className="text-xs text-gray-600">{assignment.realtor.companyName}</span>
                     </div>
                   )}
                 </div>
               </div>
             )}
-
-            <div className="mt-6 pt-4 border-t text-center">
-              <button
-                type="button"
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  setErrors({});
-                  setShowSuccess(true);
-                  setCountdown(3);
-                }}
-                className="text-[10px] text-gray-400 hover:text-gray-500 transition-colors"
-              >
-                Skip to property details
-              </button>
-            </div>
           </div>
         )}
       </div>
