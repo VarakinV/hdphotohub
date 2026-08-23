@@ -400,6 +400,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ adm
       const description = [
         `Client: ${contactFirstName} ${contactLastName}${contactPhone ? ` (${contactPhone})` : ''}`,
         notes ? `Client notes: ${notes}` : null,
+        unitNumber ? `Unit#: ${unitNumber}` : null,
         basementMeasure || basementPhoto
           ? `Basement: ${[basementMeasure && 'Measure', basementPhoto && 'Photo']
               .filter(Boolean)
