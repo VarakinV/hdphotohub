@@ -75,7 +75,7 @@ const HeroImage: React.FC<{ src: string }> = ({ src }) => {
         maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 60%, rgba(0,0,0,0) 100%)',
       }}
     >
-      <CameraMotionBlur samples={8} shutterAngle={180}>
+      <CameraMotionBlur samples={4} shutterAngle={180}>
         <Img
           src={src}
           style={{

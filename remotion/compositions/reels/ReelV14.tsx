@@ -68,7 +68,7 @@ const SlidingImage: React.FC<{
   );
 
   return (
-    <CameraMotionBlur samples={8} shutterAngle={180}>
+    <CameraMotionBlur samples={4} shutterAngle={180}>
       <div
         style={{
           position: 'absolute',

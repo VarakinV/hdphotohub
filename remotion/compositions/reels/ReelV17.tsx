@@ -45,11 +45,8 @@ function carouselOffset(frame: number): number {
   return (step + progress) * SLOT_PX;
 }
 
-const CarouselImage: React.FC<{ src: string; index: number; frame: number }> = ({
-  src,
-  index,
-  frame,
-}) => {
+const CarouselImage: React.FC<{ src: string; index: number }> = ({ src, index }) => {
+  const frame = useCurrentFrame();
   const offset = carouselOffset(frame);
   const centerSlot = offset / SLOT_PX;
   const distance = Math.min(Math.abs(centerSlot - index), 1);
@@ -58,42 +55,40 @@ const CarouselImage: React.FC<{ src: string; index: number; frame: number }> = (
   const zIndex = Math.round(10 - distance * 5);
 
   return (
-    <CameraMotionBlur samples={8} shutterAngle={180}>
+    <div
+      style={{
+        position: 'absolute',
+        top: CAROUSEL_CENTER_Y - IMG_H / 2,
+        left: CENTER_LEFT + index * SLOT_PX - offset,
+        width: IMG_W,
+        height: IMG_H,
+        opacity,
+        zIndex,
+      }}
+    >
       <div
         style={{
-          position: 'absolute',
-          top: CAROUSEL_CENTER_Y - IMG_H / 2,
-          left: CENTER_LEFT + index * SLOT_PX - offset,
-          width: IMG_W,
-          height: IMG_H,
-          opacity,
-          zIndex,
+          width: '100%',
+          height: '100%',
+          transform: `scale(${scale})`,
+          transformOrigin: 'center center',
+          borderRadius: 8,
+          border: `6px solid ${WHITE}`,
+          overflow: 'hidden',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.35)',
+          backgroundColor: WHITE,
         }}
       >
-        <div
+        <Img
+          src={src}
           style={{
             width: '100%',
             height: '100%',
-            transform: `scale(${scale})`,
-            transformOrigin: 'center center',
-            borderRadius: 8,
-            border: `6px solid ${WHITE}`,
-            overflow: 'hidden',
-            boxShadow: '0 10px 30px rgba(0,0,0,0.35)',
-            backgroundColor: WHITE,
+            objectFit: 'cover',
           }}
-        >
-          <Img
-            src={src}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-            }}
-          />
-        </div>
+        />
       </div>
-    </CameraMotionBlur>
+    </div>
   );
 };
 
@@ -323,7 +318,6 @@ export const ReelV17: React.FC<ReelProps> = ({
   realtor,
   musicTrackUrl,
 }) => {
-  const frame = useCurrentFrame();
   const imageSources = Array.from(
     { length: SLOTS },
     (_, i) => images[Math.min(i, images.length - 1)] ?? ''
@@ -363,11 +357,13 @@ export const ReelV17: React.FC<ReelProps> = ({
         NEW LISTING
       </div>
 
-      <div style={{ position: 'absolute', top: 0, left: 0, width: 1080, height: 1920 }}>
-        {imageSources.map((src, i) => (
-          <CarouselImage key={i} src={src} index={i} frame={frame} />
-        ))}
-      </div>
+      <CameraMotionBlur samples={4} shutterAngle={180}>
+        <div style={{ position: 'absolute', top: 0, left: 0, width: 1080, height: 1920 }}>
+          {imageSources.map((src, i) => (
+            <CarouselImage key={i} src={src} index={i} />
+          ))}
+        </div>
+      </CameraMotionBlur>
 
       <StatsRow property={property} />
       <AddressBlock property={property} />

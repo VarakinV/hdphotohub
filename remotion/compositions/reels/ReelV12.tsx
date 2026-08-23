@@ -82,7 +82,7 @@ const SceneImage: React.FC<{ src: string; direction: PanDirection }> = ({
           justifyContent: 'center',
         }}
       >
-        <CameraMotionBlur samples={8} shutterAngle={180}>
+        <CameraMotionBlur samples={4} shutterAngle={180}>
           <Img
             src={src}
             style={{

@@ -91,7 +91,7 @@ const RotatingImage: React.FC<{
         zIndex: 5,
       }}
     >
-      <CameraMotionBlur samples={8} shutterAngle={180}>
+      <CameraMotionBlur samples={4} shutterAngle={180}>
         <div
           style={{
             width: IMG_WIDTH,

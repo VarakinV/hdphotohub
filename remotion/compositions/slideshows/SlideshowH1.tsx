@@ -44,7 +44,7 @@ const PanelScene: React.FC<{ src: string }> = ({ src }) => {
           backgroundColor: '#111',
         }}
       >
-        <CameraMotionBlur samples={8} shutterAngle={180}>
+        <CameraMotionBlur samples={4} shutterAngle={180}>
           <Img
             src={src}
             style={{

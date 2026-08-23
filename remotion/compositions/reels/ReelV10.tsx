@@ -17,7 +17,7 @@ export const REEL_V10_DURATION = 480; // 16s @ 30fps
 const SCENE_DURATION = 120; // 4s @ 30fps
 
 const BG_VIDEO_URL =
-  'https://photos4remedia.s3.ca-central-1.amazonaws.com/shotstack-templates/Blue-Circle-Bg-Video.mp4';
+  'https://photos4remedia.s3.ca-central-1.amazonaws.com/orders/reels-assets/Blue-Circle-Bg-Video-h264.mp4';
 
 // Helpers
 const fadeInOut = (frame: number, duration: number, fadeFrames = 15) => {
@@ -62,7 +62,7 @@ const Scene1Image: React.FC<{ src: string }> = ({ src }) => {
 
   return (
     <AbsoluteFill style={{ opacity }}>
-      <CameraMotionBlur samples={8} shutterAngle={180}>
+      <CameraMotionBlur samples={4} shutterAngle={180}>
         <Img
           src={src}
           style={{
@@ -115,7 +115,7 @@ const StackedImage: React.FC<{ src: string; top: number }> = ({ src, top }) => {
         opacity,
       }}
     >
-      <CameraMotionBlur samples={8} shutterAngle={180}>
+      <CameraMotionBlur samples={4} shutterAngle={180}>
         <Img
           src={src}
           style={{

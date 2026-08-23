@@ -58,7 +58,7 @@ const Scene1Image: React.FC<{ src: string }> = ({ src }) => {
 
   return (
     <AbsoluteFill style={{ opacity, overflow: 'hidden' }}>
-      <CameraMotionBlur samples={8} shutterAngle={180}>
+      <CameraMotionBlur samples={4} shutterAngle={180}>
         <Img
           src={src}
           style={{
@@ -215,7 +215,7 @@ const PolaroidPhoto: React.FC<{
   });
 
   return (
-    <CameraMotionBlur samples={8} shutterAngle={180}>
+    <CameraMotionBlur samples={4} shutterAngle={180}>
       <div
         style={{
           position: 'absolute',
@@ -486,7 +486,7 @@ const Scene4: React.FC<{
           overflow: 'hidden',
         }}
       >
-        <CameraMotionBlur samples={8} shutterAngle={180}>
+        <CameraMotionBlur samples={4} shutterAngle={180}>
           <Img
             src={src}
             style={{

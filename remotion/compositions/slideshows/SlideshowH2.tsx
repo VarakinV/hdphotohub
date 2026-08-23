@@ -45,7 +45,7 @@ const HeroScene: React.FC<{ src: string }> = ({ src }) => {
 
   return (
     <AbsoluteFill>
-      <CameraMotionBlur samples={8} shutterAngle={180}>
+      <CameraMotionBlur samples={4} shutterAngle={180}>
         <Img
           src={src}
           style={{

@@ -98,7 +98,7 @@ const SliceScene: React.FC<{
   const { x, y } = panOffset(pan, panT);
 
   return (
-    <CameraMotionBlur samples={8} shutterAngle={180}>
+    <CameraMotionBlur samples={4} shutterAngle={180}>
       <AbsoluteFill
         style={{ transform: `scale(${PAN_ZOOM}) translate(${x}px, ${y}px)` }}
       >
@@ -170,7 +170,7 @@ const IntroScene: React.FC<{
 
   return (
     <AbsoluteFill style={{ backgroundColor: '#0a0a0a' }}>
-      <CameraMotionBlur samples={8} shutterAngle={180}>
+      <CameraMotionBlur samples={4} shutterAngle={180}>
         <Img
           src={src}
           style={{
@@ -405,7 +405,7 @@ const OutroScene: React.FC<{
     <AbsoluteFill
       style={{ background: 'linear-gradient(135deg, #0b1220 0%, #111827 100%)' }}
     >
-      <CameraMotionBlur samples={8} shutterAngle={180}>
+      <CameraMotionBlur samples={4} shutterAngle={180}>
         <AbsoluteFill>
           {frame < SLICE && (
             <Img
