@@ -491,12 +491,17 @@ model Booking {
   // Calendar integration
   googleEventId String?
 
+  // GHL booking reminder (sent ~24h before start by the booking-reminders cron)
+  reminderSentAt   DateTime? // when the GHL reminder push succeeded
+  reminderForStart DateTime? // the booking.start the last sent reminder corresponded to
+
   items     BookingService[]
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
 
   @@index([adminId, start, end])
   @@index([realtorId])
+  @@index([status, start])
 }
 
 model BookingService {

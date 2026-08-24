@@ -14,7 +14,7 @@ export type GhlCustomField = { key: string; field_value: string };
 
 export interface GhlUpsertContactInput {
   firstName: string;
-  lastName: string;
+  lastName?: string;
   email: string;
   phone?: string | null;
   locationId: string;
@@ -55,7 +55,7 @@ export async function upsertContact(input: GhlUpsertContactInput): Promise<strin
     headers: getBaseHeaders(),
     body: JSON.stringify({
       firstName: input.firstName,
-      lastName: input.lastName,
+      ...(input.lastName ? { lastName: input.lastName } : {}),
       email: input.email,
       locationId: input.locationId,
       ...(input.phone ? { phone: input.phone } : {}),
@@ -148,6 +148,24 @@ export async function createAppointment(params: {
 }
 
 
+// Shared helpers
+
+// Format a booking start into the "contact field" values used by Go High Level:
+//   dateStr: YYYY-MM-DD (Date Picker field)
+//   timeStr: 1:00 PM (12h clock)
+function formatBookingDateParts(startISO: string, timeZone?: string | null) {
+  const dt = new Date(startISO);
+  const tz = timeZone || 'UTC';
+  const dateStr = dt.toLocaleDateString('en-CA', { timeZone: tz });
+  const timeStr = dt.toLocaleString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: tz,
+  });
+  return { dateStr, timeStr };
+}
+
 // Orchestrate end-to-end booking push
 export async function sendBookingToGhl(params: {
   contactFirstName: string;
@@ -166,17 +184,7 @@ export async function sendBookingToGhl(params: {
       return;
     }
 
-    const dt = new Date(params.startISO);
-    const tz = params.timeZone || 'UTC';
-    // Date: YYYY-MM-DD (Date Picker field)
-    const dateStr = dt.toLocaleDateString('en-CA', { timeZone: tz });
-    // Time: 1:00 PM (12h)
-    const timeStr = dt.toLocaleString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-      timeZone: tz,
-    });
+    const { dateStr, timeStr } = formatBookingDateParts(params.startISO, params.timeZone);
 
     const customFields: GhlCustomField[] = [
       { key: 'booking_address', field_value: params.address },
@@ -227,6 +235,52 @@ export async function sendBookingToGhl(params: {
     await addTags(contactId, tags);
   } catch (e) {
     console.warn('[GHL] sendBookingToGhl failed; continuing', e);
+  }
+}
+
+// Push a pre-booking reminder (~24h before start) to Go High Level.
+// 1. Upsert the contact with fresh booking custom fields (address, date, time).
+// 2. Apply the "booking reminder" tag, which triggers the GHL "Booking Reminders"
+//    automation that sends the reminder SMS.
+// Returns true only when both steps succeeded (so the cron can record the send).
+export async function sendBookingReminderToGhl(params: {
+  contactFirstName: string;
+  contactLastName?: string;
+  contactEmail: string;
+  contactPhone?: string | null;
+  address: string;
+  startISO: string; // booking start in ISO
+  timeZone?: string | null; // for local date/time formatting
+  tag?: string; // defaults to env GHL_REMINDER_TAG or "booking reminder"
+}): Promise<boolean> {
+  try {
+    const locationId = getEnv('GHL_LOCATION_ID');
+    if (!locationId) {
+      console.warn('[GHL] Skipped reminder: GHL_LOCATION_ID is not set');
+      return false;
+    }
+
+    const { dateStr, timeStr } = formatBookingDateParts(params.startISO, params.timeZone);
+
+    const contactId = await upsertContact({
+      firstName: params.contactFirstName,
+      lastName: params.contactLastName || undefined,
+      email: params.contactEmail,
+      phone: params.contactPhone || undefined,
+      locationId,
+      customFields: [
+        { key: 'booking_address', field_value: params.address },
+        { key: 'booking_date_and_time', field_value: dateStr },
+        { key: 'booking_time', field_value: timeStr },
+      ],
+    });
+    if (!contactId) return false; // already logged
+
+    const tag = params.tag || getEnv('GHL_REMINDER_TAG', 'booking reminder') || 'booking reminder';
+    return await addTags(contactId, [tag]);
+  } catch (e) {
+    console.warn('[GHL] sendBookingReminderToGhl failed; continuing', e);
+    return false;
   }
 }
 
