@@ -135,7 +135,7 @@ const TextOverlay: React.FC<{
         style={{
           position: 'absolute',
           left: 365,
-          top: 425,
+          top: 525,
           width: 350,
           height: 350,
           borderRadius: '50%',
@@ -158,7 +158,7 @@ const TextOverlay: React.FC<{
       <div
         style={{
           position: 'absolute',
-          top: 830,
+          top: 930,
           left: 0,
           right: 0,
           textAlign: 'center',
@@ -177,7 +177,7 @@ const TextOverlay: React.FC<{
       <div
         style={{
           position: 'absolute',
-          top: 930,
+          top: 1030,
           left: 0,
           right: 0,
           textAlign: 'center',
@@ -198,7 +198,7 @@ const TextOverlay: React.FC<{
         style={{
           position: 'absolute',
           left: 369,
-          top: 1100,
+          top: 1200,
           width: 342,
           height: 125,
           objectFit: 'contain',
