@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Card } from '@/components/ui/card';
 import {
   Drone,
   Clapperboard,
@@ -52,7 +51,7 @@ function AnimatedCounter({
   }, [value, duration]);
 
   return (
-    <div className="text-4xl sm:text-5xl font-extrabold tracking-tight text-[#ca4153]">
+    <div className="num text-4xl font-extrabold tracking-tight text-brick-500 sm:text-5xl">
       {display.toLocaleString()}
     </div>
   );
@@ -72,33 +71,35 @@ export default function PointsCard({ points }: PointsCardProps) {
   );
 
   return (
-    <Card className="bg-white rounded-lg shadow p-4 mb-4">
+    <div className="rounded-2xl border border-border bg-card p-4.5 sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-lg font-medium">Your Points</h2>
-          <p className="text-sm text-gray-600">Track and redeem your rewards</p>
+          <h2 className="font-display text-[16px] font-semibold">Your Points</h2>
+          <p className="text-sm text-muted-foreground">
+            Track and redeem your rewards
+          </p>
         </div>
-        <Sparkles className="h-5 w-5 text-primary/80" />
+        <Sparkles className="h-5 w-5 text-brick-500" />
       </div>
 
       <div className="mt-3">
         <AnimatedCounter value={Math.max(0, Number(points) || 0)} />
-        <div className="text-sm text-gray-500 mt-1">Total points</div>
+        <div className="text-sm text-muted-foreground mt-1">Total points</div>
       </div>
 
       {/* Rewards grid */}
-      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {rewards.map(({ label, pts, Icon }) => (
           <div
             key={label}
-            className="flex items-center gap-3 rounded-lg border border-gray-200 p-3 hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-3 rounded-xl border border-border p-3 transition-colors hover:bg-surface-2"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-700">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-border bg-surface-2 text-navy-700 dark:text-[#aab4e6]">
               <Icon className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-              <div className="text-sm font-medium truncate">{label}</div>
-              <div className="text-xs text-gray-500">
+              <div className="truncate text-sm font-medium">{label}</div>
+              <div className="text-xs text-muted-foreground">
                 {pts.toLocaleString()} points
               </div>
             </div>
@@ -107,9 +108,11 @@ export default function PointsCard({ points }: PointsCardProps) {
       </div>
 
       {/* How to earn */}
-      <div className="mt-4 rounded-lg border border-gray-200 p-3 bg-white/50">
-        <div className="text-lg font-medium mb-1">How to Earn Points</div>
-        <ul className="text-sm text-gray-600 space-y-1">
+      <div className="mt-4 rounded-xl border border-border bg-surface-2 p-3">
+        <div className="font-display mb-1 text-[15px] font-semibold">
+          How to Earn Points
+        </div>
+        <ul className="space-y-1 text-sm text-muted-foreground">
           <li>
             📸 Place orders with us and earn points for every completed service
           </li>
@@ -117,6 +120,6 @@ export default function PointsCard({ points }: PointsCardProps) {
           <li>🤝 Refer our business → 5,000 points</li>
         </ul>
       </div>
-    </Card>
+    </div>
   );
 }

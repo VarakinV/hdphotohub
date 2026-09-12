@@ -1,15 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { AdminNavbar } from '@/components/admin/admin-navbar';
-import AdminTwoColumnShell from '@/components/admin/AdminTwoColumnShell';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { StatusPill } from '@/components/admin/ui/status-pill';
 
 export default function BookingDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -111,170 +109,186 @@ export default function BookingDetailsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AdminNavbar />
+    <div className="w-full">
       <Toaster position="bottom-right" />
-      <AdminTwoColumnShell>
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      {loading ? (
+        <div className="flex h-64 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-faint" />
+        </div>
+      ) : !data ? (
+        <div className="py-20 text-center text-[#c23434] dark:text-[#f09a9a]">
+          Booking not found
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          <div className="rounded-2xl border border-border bg-card p-4.5 sm:p-6">
+            <div className="mb-3 flex flex-wrap items-center gap-3">
+              <h2 className="font-display text-[18px] font-semibold">Booking</h2>
+              <StatusPill status={data.status} />
+            </div>
+            <div className="grid grid-cols-1 gap-x-8 gap-y-3 text-sm sm:grid-cols-2">
+              <div>
+                <span className="field-label">When</span>
+                {new Date(data.start).toLocaleString()} –{' '}
+                {new Date(data.end).toLocaleTimeString(undefined, {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                })}
+              </div>
+              <div>
+                <span className="field-label">Time Zone</span>
+                {data.timeZone}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="mt-5 flex flex-col gap-3 border-t border-border pt-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <Input
+                  type="datetime-local"
+                  value={newStartLocal}
+                  onChange={(e) => setNewStartLocal(e.target.value)}
+                  className="max-w-xs"
+                />
+                <Button
+                  onClick={handleReschedule}
+                  disabled={saving || !newStartLocal}
+                >
+                  {saving ? 'Rescheduling…' : 'Reschedule'}
+                </Button>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant="destructive"
+                  onClick={handleCancel}
+                  disabled={saving}
+                >
+                  {saving ? 'Cancelling…' : 'Cancel Booking'}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleSyncFromGoogle}
+                  disabled={syncing}
+                >
+                  {syncing ? 'Syncing…' : 'Sync from Google'}
+                </Button>
+              </div>
+            </div>
           </div>
-        ) : !data ? (
-          <div className="text-red-600">Not found</div>
-        ) : (
-          <div className="grid gap-4">
-            <Card className="p-4">
-              <h2 className="text-lg font-semibold mb-2">Booking</h2>
-              <div className="text-sm text-gray-700">Status: {data.status}</div>
-              <div className="text-sm text-gray-700">
-                When: {new Date(data.start).toLocaleString()} {' '}
-                {new Date(data.end).toLocaleString()}
-              </div>
-              <div className="text-sm text-gray-700">
-                Time Zone: {data.timeZone}
-              </div>
 
-              {/* Actions */}
-              <div className="mt-4 flex flex-col gap-3">
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="datetime-local"
-                    value={newStartLocal}
-                    onChange={(e) => setNewStartLocal(e.target.value)}
-                    className="max-w-xs"
-                  />
-                  <Button
-                    onClick={handleReschedule}
-                    disabled={saving || !newStartLocal}
-                  >
-                    {saving ? 'Rescheduling…' : 'Reschedule'}
-                  </Button>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="destructive"
-                    onClick={handleCancel}
-                    disabled={saving}
-                  >
-                    {saving ? 'Cancelling…' : 'Cancel Booking'}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={handleSyncFromGoogle}
-                    disabled={syncing}
-                  >
-                    {syncing ? 'Syncing…' : 'Sync from Google'}
-                  </Button>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-4">
-              <h2 className="text-lg font-semibold mb-2">Property</h2>
-              <div className="text-sm">
-                {data.propertyFormattedAddress || data.propertyAddress}
-              </div>
-              {data.unitNumber ? (
-                <div className="text-sm text-gray-700">
-                  Unit #: {data.unitNumber}
-                </div>
-              ) : null}
+          <div className="rounded-2xl border border-border bg-card p-4.5 sm:p-6">
+            <h2 className="font-display mb-3 text-[16px] font-semibold">Property</h2>
+            <div className="text-sm font-medium">
+              {data.propertyFormattedAddress || data.propertyAddress}
+            </div>
+            <div className="mt-2 space-y-1 text-sm text-muted-foreground">
+              {data.unitNumber ? <div>Unit #: {data.unitNumber}</div> : null}
               {data.propertySizeSqFt ? (
-                <div className="text-sm text-gray-700">
-                  Size: {data.propertySizeSqFt} sq ft
-                </div>
+                <div>Size: {data.propertySizeSqFt} sq ft</div>
               ) : null}
               {(data.basementMeasure || data.basementPhoto) ? (
-                <div className="text-sm text-gray-700">
-                  Basement: {[data.basementMeasure && 'Measure', data.basementPhoto && 'Photo'].filter(Boolean).join(', ')}
+                <div>
+                  Basement:{' '}
+                  {[data.basementMeasure && 'Measure', data.basementPhoto && 'Photo']
+                    .filter(Boolean)
+                    .join(', ')}
                 </div>
               ) : null}
               {(data.garageMeasure || data.garagePhoto) ? (
-                <div className="text-sm text-gray-700">
-                  Detached Garage: {[data.garageMeasure && 'Measure', data.garagePhoto && 'Photo'].filter(Boolean).join(', ')}
+                <div>
+                  Detached Garage:{' '}
+                  {[data.garageMeasure && 'Measure', data.garagePhoto && 'Photo']
+                    .filter(Boolean)
+                    .join(', ')}
                 </div>
               ) : null}
-            </Card>
+            </div>
+          </div>
 
-            <Card className="p-4">
-              <h2 className="text-lg font-semibold mb-2">Contact</h2>
-              <div className="text-sm">{data.contactName}</div>
-              <div className="text-sm text-gray-700">{data.contactEmail}</div>
-              {data.contactPhone ? (
-                <div className="text-sm text-gray-700">{data.contactPhone}</div>
-              ) : null}
-              {data.notes ? (
-                <div className="text-sm mt-2">Notes: {data.notes}</div>
-              ) : null}
-            </Card>
+          <div className="rounded-2xl border border-border bg-card p-4.5 sm:p-6">
+            <h2 className="font-display mb-3 text-[16px] font-semibold">Contact</h2>
+            <div className="text-sm font-medium">{data.contactName}</div>
+            <div className="text-sm text-muted-foreground">{data.contactEmail}</div>
+            {data.contactPhone ? (
+              <div className="text-sm text-muted-foreground">{data.contactPhone}</div>
+            ) : null}
+            {data.notes ? (
+              <div className="mt-2 text-sm">
+                <span className="field-label">Notes</span>
+                {data.notes}
+              </div>
+            ) : null}
+          </div>
 
-            <Card className="p-4">
-              <h2 className="text-lg font-semibold mb-2">Selected Services</h2>
-              <div className="text-sm">
-                {data.items?.map((it: any) => (
-                  <div key={it.id} className="border-b py-2">
-                    <div className="flex justify-between">
-                      <span className="font-medium">{it.serviceName}</span>
-                      <span>
-                        {money(it.unitPriceCents)}{' '}
-                        {it.taxCents ? (
-                          <span className="text-xs text-gray-600">
-                            (+{money(it.taxCents)} tax)
-                          </span>
-                        ) : null}
-                      </span>
+          <div className="rounded-2xl border border-border bg-card p-4.5 sm:p-6">
+            <h2 className="font-display mb-3 text-[16px] font-semibold">
+              Selected Services
+            </h2>
+            <div className="text-sm">
+              {data.items?.map((it: any) => (
+                <div key={it.id} className="border-b border-border py-2.5 last:border-b-0">
+                  <div className="flex flex-wrap justify-between gap-2">
+                    <span className="font-medium">{it.serviceName}</span>
+                    <span className="num">
+                      {money(it.unitPriceCents)}{' '}
+                      {it.taxCents ? (
+                        <span className="text-xs text-muted-foreground">
+                          (+{money(it.taxCents)} tax)
+                        </span>
+                      ) : null}
+                    </span>
+                  </div>
+                  {it.quantityLabel ? (
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      Quantity: {it.quantity}{' '}
+                      {it.quantity === 1 || String(it.quantityLabel).endsWith('s')
+                        ? it.quantityLabel
+                        : `${it.quantityLabel}s`}
                     </div>
-                    {it.quantityLabel ? (
-                      <div className="mt-1 text-xs text-gray-600">
-                        Quantity: {it.quantity} {it.quantity === 1 || String(it.quantityLabel).endsWith('s') ? it.quantityLabel : `${it.quantityLabel}s`}
+                  ) : null}
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {it.service?.category?.name ? (
+                      <div>
+                        <span className="text-faint">Service Category:</span>{' '}
+                        {it.service.category.name}
                       </div>
                     ) : null}
-                    <div className="mt-1 text-xs text-gray-600">
-                      {it.service?.category?.name ? (
-                        <div>
-                          <span className="text-gray-500">
-                            Service Category:
-                          </span>{' '}
-                          {it.service.category.name}
-                        </div>
-                      ) : null}
-                      {it.service?.category?.description ? (
-                        <div>
-                          <span className="text-gray-500">
-                            Service Category Description:
-                          </span>{' '}
-                          {it.service.category.description}
-                        </div>
-                      ) : null}
-                    </div>
+                    {it.service?.category?.description ? (
+                      <div>
+                        <span className="text-faint">
+                          Service Category Description:
+                        </span>{' '}
+                        {it.service.category.description}
+                      </div>
+                    ) : null}
                   </div>
-                ))}
-              </div>
-              <div className="mt-2 text-sm flex flex-col items-end gap-1">
-                <div className="flex gap-4">
-                  <span>Subtotal: {money(data.subtotalCents)}</span>
-                  <span>Tax: {money(data.taxCents)}</span>
                 </div>
-                {data.discountCents > 0 && (
-                  <div className="flex gap-4 text-red-600">
-                    <span>
-                      Discount
-                      {data.appliedPromoCode?.code
-                        ? ` (${data.appliedPromoCode.code})`
-                        : ''}
-                      :
-                    </span>
-                    <span>-{money(data.discountCents)}</span>
-                  </div>
-                )}
-                <div className="font-semibold">
-                  Total: {money(data.totalCents)}
-                </div>
+              ))}
+            </div>
+            <div className="mt-3 flex flex-col items-end gap-1 border-t border-border pt-3 text-sm">
+              <div className="flex gap-4">
+                <span>Subtotal: {money(data.subtotalCents)}</span>
+                <span>Tax: {money(data.taxCents)}</span>
               </div>
-            </Card>
+              {data.discountCents > 0 && (
+                <div className="flex gap-4 text-[#c23434] dark:text-[#f09a9a]">
+                  <span>
+                    Discount
+                    {data.appliedPromoCode?.code
+                      ? ` (${data.appliedPromoCode.code})`
+                      : ''}
+                    :
+                  </span>
+                  <span>-{money(data.discountCents)}</span>
+                </div>
+              )}
+              <div className="num text-base font-semibold">
+                Total: {money(data.totalCents)}
+              </div>
+            </div>
           </div>
-        )}
-      </AdminTwoColumnShell>
+        </div>
+      )}
     </div>
   );
 }

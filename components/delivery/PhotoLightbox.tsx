@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { DownloadLinkButton } from '@/components/delivery/DownloadLinkButton';
 
-// Optional: pass a list of items to enable nav across multiple images
-type Item = { src: string; alt: string };
+type Download = { label: string; url: string; fileName: string };
+type Item = { src: string; alt: string; downloads?: Download[] };
 
 export function PhotoLightbox({
   src,
@@ -14,6 +15,7 @@ export function PhotoLightbox({
   startIndex,
   overlayLabel,
   thumbClassName = 'w-full h-32 object-cover cursor-pointer',
+  downloads,
 }: {
   src: string;
   alt: string;
@@ -21,6 +23,7 @@ export function PhotoLightbox({
   startIndex?: number;
   overlayLabel?: string;
   thumbClassName?: string;
+  downloads?: Download[];
 }) {
   const [open, setOpen] = useState(false);
   const [index, setIndex] = useState(startIndex ?? 0);
@@ -30,6 +33,7 @@ export function PhotoLightbox({
     [items, src, alt]
   );
   const current = list[index] ?? { src, alt };
+  const currentDownloads = current.downloads ?? downloads;
   const hasNav = list.length > 1;
 
   useEffect(() => {
@@ -99,6 +103,20 @@ export function PhotoLightbox({
               </>
             )}
           </div>
+          {currentDownloads && currentDownloads.length > 0 ? (
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+              {currentDownloads.map((d) => (
+                <DownloadLinkButton
+                  key={d.fileName + d.label}
+                  url={d.url}
+                  label={d.label}
+                  fileName={d.fileName}
+                  fullWidth={false}
+                  className="bg-white"
+                />
+              ))}
+            </div>
+          ) : null}
         </DialogContent>
       </Dialog>
     </>

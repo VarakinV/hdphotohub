@@ -111,7 +111,7 @@ export function TemplatePreview({
   const entry = COMPOSITION_REGISTRY[compositionId];
   if (!entry) {
     return (
-      <div className="aspect-[9/16] w-full bg-gray-100 rounded-md flex items-center justify-center text-sm text-gray-500 p-4 text-center">
+      <div className="aspect-[9/16] w-full bg-surface-2 rounded-md flex items-center justify-center text-sm text-muted-foreground p-4 text-center">
         Composition {compositionId} not built yet — draft preview unavailable.
       </div>
     );

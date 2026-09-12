@@ -89,7 +89,7 @@ export function AiReelUploader({ orderId, onGenerated }: AiReelUploaderProps) {
 
   return (
     <div className="space-y-4">
-      <div className="text-sm text-gray-600 bg-blue-50 border border-blue-200 rounded-md p-3">
+      <div className="text-sm text-muted-foreground bg-[#eaf0fb] dark:bg-[#182852] border border-border rounded-md p-3">
         <strong>AI Twilight Reel:</strong> Upload a daytime exterior photo of the house.
         The AI will transform it into a twilight version and generate a cinematic
         day-to-twilight transition reel with property info and agent branding.
@@ -112,7 +112,7 @@ export function AiReelUploader({ orderId, onGenerated }: AiReelUploaderProps) {
             <Image src={preview} alt="Selected photo" fill className="object-cover" />
           </div>
           <div className="flex flex-col gap-2">
-            <p className="text-sm text-gray-700 truncate max-w-xs">{file?.name}</p>
+            <p className="text-sm text-foreground truncate max-w-xs">{file?.name}</p>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => { setFile(null); setPreview(null); }}>
                 Remove
@@ -133,7 +133,7 @@ export function AiReelUploader({ orderId, onGenerated }: AiReelUploaderProps) {
             dragging ? 'border-primary bg-primary/5' : 'border-muted hover:border-gray-400'
           }`}
         >
-          <div className="text-sm text-gray-600 flex items-center gap-2">
+          <div className="text-sm text-muted-foreground flex items-center gap-2">
             <Upload className="h-4 w-4" /> Drop a daytime house photo here or click to select
           </div>
         </div>

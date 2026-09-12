@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, Trash2, Download } from 'lucide-react';
+import { DeleteIconButton } from '@/components/admin/ui/icon-action';
 
 interface Item {
   id: string;
@@ -71,13 +72,13 @@ export function AttachmentsList({
 
   if (loading)
     return (
-      <div className="text-sm text-gray-500 flex items-center gap-2">
+      <div className="text-sm text-muted-foreground flex items-center gap-2">
         <Loader2 className="h-4 w-4 animate-spin" /> Loading attachments...
       </div>
     );
 
   if (!items.length)
-    return <div className="text-sm text-gray-500">No attachments yet</div>;
+    return <div className="text-sm text-muted-foreground">No attachments yet</div>;
 
   const allSelected = items.length > 0 && selectedIds.length === items.length;
 
@@ -95,7 +96,7 @@ export function AttachmentsList({
               else setSelected({});
             }}
           />
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-muted-foreground">
             {selectedIds.length} selected
           </span>
         </div>
@@ -149,7 +150,7 @@ export function AttachmentsList({
                 href={p.url}
                 target="_blank"
                 rel="noreferrer"
-                className="text-blue-600 hover:underline flex-1"
+                className="text-navy-700 dark:text-[#9db5f2] hover:underline flex-1"
               >
                 {p.filename}
               </a>
@@ -160,18 +161,11 @@ export function AttachmentsList({
                   <Download className="h-4 w-4" />
                 </a>
               </Button>
-              <Button
-                size="icon"
-                variant="outline"
+              <DeleteIconButton
+                label="Delete attachment"
                 onClick={() => remove(p.id)}
-                disabled={deleting === p.id}
-              >
-                {deleting === p.id ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Trash2 className="h-4 w-4" />
-                )}
-              </Button>
+                loading={deleting === p.id}
+              />
             </div>
           </div>
         ))}

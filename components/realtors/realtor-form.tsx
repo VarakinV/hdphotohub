@@ -409,7 +409,7 @@ export function RealtorForm({
         {/* Company Logo Upload */}
         <div className="flex flex-col items-center space-y-4">
           <div className="text-sm font-medium">Company Logo</div>
-          <div className="h-24 w-24 rounded-md border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden">
+          <div className="h-24 w-24 rounded-md border border-border bg-surface-2 flex items-center justify-center overflow-hidden">
             {companyLogoPreview ? (
               <img
                 src={companyLogoPreview}
@@ -417,7 +417,7 @@ export function RealtorForm({
                 className="max-h-full max-w-full object-contain"
               />
             ) : (
-              <span className="text-xs text-gray-400">CL</span>
+              <span className="text-xs text-faint">CL</span>
             )}
           </div>
 

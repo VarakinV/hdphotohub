@@ -150,6 +150,7 @@ model Order {
   reels         OrderReel[]
   reelSources   OrderReelSourceImage[]
   flyers        OrderFlyer[]
+  socialPosts   OrderSocialPost[]
   aiReels       OrderAiReel[]
   qrAssignments QRAssignment[]
 
@@ -292,6 +293,37 @@ model OrderFlyer {
   updatedAt  DateTime   @updatedAt
 
   @@index([orderId, status])
+}
+
+model SocialPostTemplate {
+  id          String   @id @default(cuid())
+  variantKey  String   @unique
+  status      String   @default("draft")
+  name        String
+  description String?
+  label       String? // headline shown on the post, e.g. "COMING SOON"
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status])
+}
+
+model OrderSocialPost {
+  id         String     @id @default(cuid())
+  orderId    String
+  order      Order      @relation(fields: [orderId], references: [id])
+  variantKey String
+  status     ReelStatus
+  url        String?
+  width      Int?
+  height     Int?
+  error      String?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@index([orderId, status])
+  @@index([orderId, variantKey])
 }
 
 model Invitation {

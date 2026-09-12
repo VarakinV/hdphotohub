@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, Trash2 } from 'lucide-react';
+import { DeleteIconButton } from '@/components/admin/ui/icon-action';
 
 interface Item {
   id: string;
@@ -71,13 +72,13 @@ export function FloorplansGrid({
 
   if (loading)
     return (
-      <div className="text-sm text-gray-500 flex items-center gap-2">
+      <div className="text-sm text-muted-foreground flex items-center gap-2">
         <Loader2 className="h-4 w-4 animate-spin" /> Loading floor plans...
       </div>
     );
 
   if (!items.length)
-    return <div className="text-sm text-gray-500">No floor plans yet</div>;
+    return <div className="text-sm text-muted-foreground">No floor plans yet</div>;
 
   const allSelected = items.length > 0 && selectedIds.length === items.length;
 
@@ -95,7 +96,7 @@ export function FloorplansGrid({
               else setSelected({});
             }}
           />
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-muted-foreground">
             {selectedIds.length} selected
           </span>
         </div>
@@ -128,7 +129,7 @@ export function FloorplansGrid({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {items.map((p) => (
           <div
             key={p.id}
@@ -140,7 +141,7 @@ export function FloorplansGrid({
             <img
               src={p.url}
               alt={p.filename}
-              className="w-full h-32 object-cover"
+              className="aspect-[4/3] w-full object-contain bg-surface-2"
               onClick={() => setSelected((s) => ({ ...s, [p.id]: !s[p.id] }))}
             />
             <input
@@ -152,18 +153,11 @@ export function FloorplansGrid({
               }
             />
             <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition">
-              <Button
-                size="icon"
-                variant="outline"
+              <DeleteIconButton
+                label="Delete floor plan"
                 onClick={() => remove(p.id)}
-                disabled={deleting === p.id}
-              >
-                {deleting === p.id ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Trash2 className="h-4 w-4" />
-                )}
-              </Button>
+                loading={deleting === p.id}
+              />
             </div>
           </div>
         ))}

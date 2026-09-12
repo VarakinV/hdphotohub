@@ -16,11 +16,11 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Loader2, ChevronDown } from 'lucide-react';
+import { Loader2, ChevronDown, ChevronLeft } from 'lucide-react';
 
-import { AdminNavbar } from '@/components/admin/admin-navbar';
 import PlacesAddressInput from '@/components/admin/PlacesAddressInput';
 import DescriptionEditor from '@/components/admin/DescriptionEditor';
+import { PageHead } from '@/components/admin/ui/page-head';
 
 const schema = z.object({
   realtorId: z.string().min(1, 'Realtor is required'),
@@ -85,7 +85,7 @@ function RealtorSearchSelect({
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background focus:outline-none focus:ring-1 focus:ring-ring"
+        className="flex h-9 w-full items-center justify-between rounded-[10px] border border-border bg-card px-3 py-2 text-sm outline-none focus:border-ring focus:ring-[3px] focus:ring-ring/50"
       >
         <span className={`truncate ${selectedName ? '' : 'text-muted-foreground'}`}>
           {selectedName || 'Select realtor'}
@@ -94,15 +94,15 @@ function RealtorSearchSelect({
       </button>
 
       {open && (
-        <div className="absolute z-50 mt-1 w-full rounded-md border bg-white shadow-lg">
-          <div className="p-2 border-b">
+        <div className="absolute z-50 mt-1 w-full rounded-xl border border-border bg-popover shadow-[var(--shadow-pop)]">
+          <div className="border-b border-border p-2">
             <input
               autoFocus
               type="text"
               placeholder="Search realtor..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-md border border-input px-2 py-1.5 text-sm outline-none focus:ring-1 focus:ring-ring"
+              className="field py-1.5"
             />
           </div>
           <div className="max-h-60 overflow-y-auto py-1">
@@ -111,13 +111,13 @@ function RealtorSearchSelect({
                 key={r.id}
                 type="button"
                 onClick={() => { onChange(r.id); setSearch(''); setOpen(false); }}
-                className={`w-full text-left px-3 py-1.5 text-sm hover:bg-gray-100 ${value === r.id ? 'bg-gray-50 font-medium' : ''}`}
+                className={`w-full text-left px-3 py-1.5 text-sm hover:bg-surface-2 ${value === r.id ? 'bg-surface-2 font-medium' : ''}`}
               >
                 {r.name}
               </button>
             ))}
             {filtered.length === 0 && (
-              <div className="px-3 py-2 text-sm text-gray-400">No results</div>
+              <div className="px-3 py-2 text-sm text-faint">No results</div>
             )}
           </div>
         </div>
@@ -198,19 +198,21 @@ export default function NewOrderPage() {
 
   return (
     <>
-      <AdminNavbar />
-      <div className="max-w-3xl mx-auto p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-semibold">New Order</h1>
-          <Button
-            variant="outline"
-            onClick={() => router.push('/admin/orders')}
-          >
-            Back to Orders
-          </Button>
-        </div>
+      <div className="mx-auto max-w-3xl">
+        <PageHead
+          title="New Order"
+          actions={
+            <button
+              type="button"
+              onClick={() => router.push('/admin/orders')}
+              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border px-4 text-[13.5px] font-semibold hover:border-navy-600 hover:bg-surface-2"
+            >
+              <ChevronLeft className="h-4 w-4" /> Back to orders
+            </button>
+          }
+        />
 
-        <div className="bg-white rounded-lg border shadow-sm p-6">
+        <div className="rounded-2xl border border-border bg-card p-6">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField

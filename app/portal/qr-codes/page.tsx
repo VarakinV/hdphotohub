@@ -1,25 +1,19 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { PortalNavbar } from '@/components/portal/portal-navbar';
-import PortalTwoColumnShell from '@/components/portal/PortalTwoColumnShell';
+import { PageHead } from '@/components/admin/ui/page-head';
+import { Pager } from '@/components/admin/ui/pager';
+import { SearchField } from '@/components/admin/ui/search-field';
+import { EmptyState } from '@/components/admin/ui/empty-state';
+import { TableShell } from '@/components/admin/ui/table-shell';
+import { Toolbar, IconAction, DeleteIconButton } from '@/components/admin/ui/icon-action';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 import { QRCodeStatsDialog } from '@/components/qr/QRCodeStatsDialog';
 import { QRCodeReassignDialog } from '@/components/qr/QRCodeReassignDialog';
-import { Loader2, TrendingUp, Edit, Trash2, X } from 'lucide-react';
+import { Loader2, TrendingUp, Edit } from 'lucide-react';
 
 interface QRCode {
   id: string;
@@ -53,7 +47,6 @@ interface QRCode {
 }
 
 export default function PortalQRCodesPage() {
-  const router = useRouter();
   const [qrCodes, setQrCodes] = useState<QRCode[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<{ query?: string }>({});
@@ -169,181 +162,139 @@ export default function PortalQRCodesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <PortalNavbar />
+    <div className="w-full space-y-6">
+      <PageHead title="My QR Codes" subtitle="Manage QR codes for your property listings" />
       <Toaster position="bottom-right" />
 
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">My QR Codes</h1>
-              <p className="text-sm text-gray-600 mt-1">
-                Manage QR codes for your property listings
-              </p>
-            </div>
-          </div>
+      {loading ? (
+        <div className="flex h-64 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-faint" />
         </div>
-      </header>
-
-      <PortalTwoColumnShell>
-        {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-4 flex flex-wrap gap-3 items-center">
-          <div className="ml-auto w-full sm:w-64">
-            <Input
-              placeholder="Search address or QR code..."
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, query: e.target.value }))
-              }
+      ) : (
+        <TableShell
+          toolbar={
+            <Toolbar className="justify-end">
+              <div className="w-full sm:w-64">
+                <SearchField
+                  value={filters.query || ''}
+                  onChange={(v) => setFilters((f) => ({ ...f, query: v }))}
+                  placeholder="Search address or QR code…"
+                  ariaLabel="Search QR codes"
+                />
+              </div>
+            </Toolbar>
+          }
+          footer={
+            filtered.length > 0 ? (
+              <Pager
+                page={page}
+                totalPages={totalPages}
+                totalItems={filtered.length}
+                perPage={perPage}
+                itemName="QR codes"
+                onPerPageChange={(n) => {
+                  setPerPage(n);
+                  setPage(1);
+                }}
+                onPrev={() => setPage((p) => Math.max(1, p - 1))}
+                onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+              />
+            ) : undefined
+          }
+        >
+          {pageItems.length === 0 ? (
+            <EmptyState
+              icon={TrendingUp}
+              title="No QR codes found"
+              description="QR codes linked to your property listings will appear here."
             />
-          </div>
-        </div>
-
-        {/* Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          {loading ? (
-            <div className="flex justify-center items-center h-64">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-            </div>
           ) : (
-            <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Display ID</TableHead>
-                    <TableHead>Property</TableHead>
-                    <TableHead>Weekly Stats</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pageItems.map((qr) => {
-                    const currentAssignment = qr.assignments[0];
-                    const propertyAddress = currentAssignment
-                      ? currentAssignment.order.propertyFormattedAddress || currentAssignment.order.propertyAddress
-                      : 'Unassigned';
+            <table className="w-full">
+              <thead>
+                <tr>
+                  <th>Display ID</th>
+                  <th>Property</th>
+                  <th>Weekly Stats</th>
+                  <th>Created</th>
+                  <th className="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pageItems.map((qr) => {
+                  const currentAssignment = qr.assignments[0];
+                  const propertyAddress = currentAssignment
+                    ? currentAssignment.order.propertyFormattedAddress || currentAssignment.order.propertyAddress
+                    : 'Unassigned';
 
-                    return (
-                      <TableRow key={qr.id}>
-                        <TableCell>
-                          <div className="font-medium">{qr.displayId}</div>
-                          <div className="text-xs text-gray-500">
-                            <a
-                              href={`/q/${qr.displayId}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="hover:text-blue-600"
-                            >
-                              /q/{qr.displayId}
-                            </a>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm text-gray-900 max-w-[180px] truncate">
-                            {propertyAddress}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {currentAssignment && (
-                            <div className="flex items-center gap-2">
-                              <Switch
-                                size="sm"
-                                checked={currentAssignment.sendWeeklyStats}
-                                srLabel="Toggle Weekly Stats"
-                                onCheckedChange={(checked) =>
-                                  handleToggleWeeklyStats(currentAssignment.id, checked)
-                                }
-                              />
-                              <span className="text-xs text-gray-600">
-                                {currentAssignment.sendWeeklyStats ? 'On' : 'Off'}
-                              </span>
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-sm text-gray-500">
-                          {new Date(qr.createdAt).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleShowStats(qr)}
-                              title="Show Stats"
-                            >
-                              <TrendingUp className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleReassign(qr)}
-                              title="Reassign"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleDelete(qr.id)}
-                              title="Delete"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-
-              {/* Pagination */}
-              {!loading && (
-                <div className="p-4 border-t flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="text-sm text-gray-500">
-                      Page {page} of {totalPages}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <label className="text-sm text-gray-500">Rows:</label>
-                      <select
-                        className="h-8 rounded-md border px-2 text-sm"
-                        value={perPage}
-                        onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}
-                      >
-                        {[10, 20, 30, 50].map((n) => (
-                          <option key={n} value={n}>{n}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage((p) => Math.max(1, p - 1))}
-                      disabled={page <= 1}
+                  return (
+                    <tr
+                      key={qr.id}
+                      className="border-b border-border last:border-b-0 hover:bg-surface-2"
                     >
-                      Previous
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        setPage((p) => Math.min(totalPages, p + 1))
-                      }
-                      disabled={page >= totalPages}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </>
+                      <td data-label="Display ID" className="td-primary">
+                        <div className="font-medium">{qr.displayId}</div>
+                        <div className="text-xs text-faint">
+                          <a
+                            href={`/q/${qr.displayId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:text-navy-700 hover:underline dark:text-[#9db5f2] dark:hover:text-[#9db5f2]"
+                          >
+                            /q/{qr.displayId}
+                          </a>
+                        </div>
+                      </td>
+                      <td data-label="Property">
+                        <div className="max-w-[220px] truncate" title={propertyAddress}>
+                          {propertyAddress}
+                        </div>
+                      </td>
+                      <td data-label="Weekly Stats">
+                        {currentAssignment && (
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              size="sm"
+                              checked={currentAssignment.sendWeeklyStats}
+                              srLabel="Toggle Weekly Stats"
+                              onCheckedChange={(checked) =>
+                                handleToggleWeeklyStats(currentAssignment.id, checked)
+                              }
+                            />
+                            <span className="text-xs text-muted-foreground">
+                              {currentAssignment.sendWeeklyStats ? 'On' : 'Off'}
+                            </span>
+                          </div>
+                        )}
+                      </td>
+                      <td data-label="Created">
+                        {new Date(qr.createdAt).toLocaleDateString()}
+                      </td>
+                      <td data-label="Actions">
+                        <div className="flex items-center justify-start gap-1.5 md:justify-end">
+                          <IconAction
+                            icon={TrendingUp}
+                            label="Show Stats"
+                            onClick={() => handleShowStats(qr)}
+                          />
+                          <IconAction
+                            icon={Edit}
+                            label="Reassign"
+                            onClick={() => handleReassign(qr)}
+                          />
+                          <DeleteIconButton
+                            label="Delete QR code"
+                            onClick={() => handleDelete(qr.id)}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           )}
-        </div>
-      </PortalTwoColumnShell>
+        </TableShell>
+      )}
 
       {selectedQR && showStats && (
         <QRCodeStatsDialog

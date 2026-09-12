@@ -1,8 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { AdminNavbar } from '@/components/admin/admin-navbar';
-import AdminTwoColumnShell from '@/components/admin/AdminTwoColumnShell';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -10,7 +8,8 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { TemplatePreview } from '@/components/admin/template-preview';
-import { Loader2, Music2, Pencil, Play, Trash2 } from 'lucide-react';
+import { Loader2, Music2, Pencil, Play } from 'lucide-react';
+import { DeleteIconButton } from '@/components/admin/ui/icon-action';
 
 interface TemplateRow {
   id: string;
@@ -162,13 +161,12 @@ export default function TemplatesPage() {
 
   return (
     <div className="min-h-screen">
-      <AdminNavbar />
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
+      <div className="mb-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Video Templates</h1>
-              <p className="text-sm text-gray-600 mt-1">
+              <h2 className="font-display text-[22px] font-semibold text-foreground">Video Templates</h2>
+              <p className="text-sm text-muted-foreground mt-1">
                 Remotion compositions — preview, then set DRAFT → ACTIVE to enable production renders.
               </p>
             </div>
@@ -177,27 +175,27 @@ export default function TemplatesPage() {
             </Button>
           </div>
         </div>
-      </header>
+      </div>
 
-      <AdminTwoColumnShell>
+      <div className="space-y-6">
         {loading ? (
           <div className="h-64 flex items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+            <Loader2 className="h-6 w-6 animate-spin text-faint" />
           </div>
         ) : templates.length === 0 ? (
-          <Card className="p-8 text-center text-gray-600">No templates yet. Run the seed script.</Card>
+          <Card className="p-8 text-center text-muted-foreground">No templates yet. Run the seed script.</Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
             {templates.map((t) => (
               <Card key={t.id} className="overflow-hidden">
-                <div className="p-3 bg-gray-50 border-b">
+                <div className="p-3 bg-surface-2 border-b">
                   <TemplatePreview compositionId={t.compositionId} />
                 </div>
                 <div className="p-4">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <h3 className="font-semibold text-gray-900">{t.name}</h3>
-                      <p className="text-xs text-gray-500 mt-0.5">
+                      <h3 className="font-semibold text-foreground">{t.name}</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         {t.variantKey} · {t.compositionId} · {t.width}×{t.height} · {t.fps}fps ·{' '}
                         {(t.durationInFrames / t.fps).toFixed(1)}s
                       </p>
@@ -205,17 +203,17 @@ export default function TemplatesPage() {
                     <span
                       className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
                         t.status === 'active'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : 'bg-amber-100 text-amber-800'
+                          ? 'bg-[#e4f4ea] dark:bg-[#123322] text-[#1c7a41] dark:text-[#7fe0a3]'
+                          : 'bg-[#fdf3e0] dark:bg-[#33270f] text-[#9a6a12] dark:text-[#f0c674]'
                       }`}
                     >
                       {t.status.toUpperCase()}
                     </span>
                   </div>
-                  {t.description && <p className="text-sm text-gray-600 mt-2">{t.description}</p>}
+                  {t.description && <p className="text-sm text-muted-foreground mt-2">{t.description}</p>}
                   <div className="mt-3 pt-3 border-t space-y-2">
                     <div className="flex items-center justify-between gap-2">
-                      <label className="text-xs text-gray-500 shrink-0">Default music</label>
+                      <label className="text-xs text-muted-foreground shrink-0">Default music</label>
                       <select
                         value={t.defaultMusicTrack?.id || ''}
                         onChange={(e) => setDefaultMusic(t, e.target.value)}
@@ -231,7 +229,7 @@ export default function TemplatesPage() {
                       </select>
                     </div>
                     <div className="flex items-center justify-between gap-2">
-                      <div className="text-xs text-gray-500">{t._count.reels} renders</div>
+                      <div className="text-xs text-muted-foreground">{t._count.reels} renders</div>
                       <Switch checked={t.status === 'active'} onCheckedChange={() => toggleStatus(t)} />
                     </div>
                   </div>
@@ -242,21 +240,21 @@ export default function TemplatesPage() {
         )}
 
         <Card className="p-5">
-          <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-            <Play className="h-4 w-4 text-gray-500" /> Music Library
+          <h3 className="font-semibold text-foreground flex items-center gap-2">
+            <Play className="h-4 w-4 text-muted-foreground" /> Music Library
           </h3>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             Royalty-free tracks (10–20s). Picked per reel in the order UI and baked in at render.
           </p>
           {tracks.length === 0 ? (
-            <p className="text-sm text-gray-500 mt-3">No tracks yet.</p>
+            <p className="text-sm text-muted-foreground mt-3">No tracks yet.</p>
           ) : (
             <ul className="mt-3 divide-y">
               {tracks.map((tr) => (
                 <li key={tr.id} className="py-2 flex items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <div className="text-sm font-medium text-gray-800 truncate">{tr.name}</div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-sm font-medium text-foreground truncate">{tr.name}</div>
+                    <div className="text-xs text-muted-foreground">
                       {tr.duration > 0 ? `${tr.duration.toFixed(1)}s` : 'duration unknown'}
                       {tr.mood ? ` · ${tr.mood}` : ''}
                       {tr.genre ? ` · ${tr.genre}` : ''}
@@ -274,49 +272,44 @@ export default function TemplatesPage() {
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                    <DeleteIconButton
+                      label={`Delete ${tr.name}`}
                       onClick={() => deleteMusic(tr)}
-                      aria-label={`Delete ${tr.name}`}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                    />
                   </div>
                 </li>
               ))}
             </ul>
           )}
         </Card>
-      </AdminTwoColumnShell>
+      </div>
 
       {musicOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-md p-6">
-            <h3 className="font-semibold text-gray-900">
+            <h3 className="font-semibold text-foreground">
               {editingTrackId ? 'Edit Music Track' : 'Add Music Track'}
             </h3>
             <div className="space-y-3 mt-4">
               <div>
-                <label className="text-xs text-gray-500">Name</label>
+                <label className="text-xs text-muted-foreground">Name</label>
                 <Input value={musicForm.name} onChange={(e) => setMusicForm({ ...musicForm, name: e.target.value })} placeholder="Upbeat house walkthrough" />
               </div>
               <div>
-                <label className="text-xs text-gray-500">File URL (mp3/wav, hosted)</label>
+                <label className="text-xs text-muted-foreground">File URL (mp3/wav, hosted)</label>
                 <Input value={musicForm.fileUrl} onChange={(e) => setMusicForm({ ...musicForm, fileUrl: e.target.value })} placeholder="https://..." />
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="text-xs text-gray-500">Duration (s)</label>
+                  <label className="text-xs text-muted-foreground">Duration (s)</label>
                   <Input type="number" value={musicForm.duration} onChange={(e) => setMusicForm({ ...musicForm, duration: e.target.value })} placeholder="15" />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500">Genre</label>
+                  <label className="text-xs text-muted-foreground">Genre</label>
                   <Input value={musicForm.genre} onChange={(e) => setMusicForm({ ...musicForm, genre: e.target.value })} placeholder="pop" />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500">Mood</label>
+                  <label className="text-xs text-muted-foreground">Mood</label>
                   <Input value={musicForm.mood} onChange={(e) => setMusicForm({ ...musicForm, mood: e.target.value })} placeholder="upbeat" />
                 </div>
               </div>

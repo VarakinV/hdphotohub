@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, Trash2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import { DeleteIconButton } from '@/components/admin/ui/icon-action';
 
 interface Item { id: string; title: string; embedUrl: string }
 
@@ -36,9 +37,9 @@ export function EmbedsList({ orderId, refreshToken = 0 }: { orderId: string; ref
     }
   }
 
-  if (loading) return <div className="text-sm text-gray-500 flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin"/> Loading embeds...</div>;
+  if (loading) return <div className="text-sm text-muted-foreground flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin"/> Loading embeds...</div>;
 
-  if (!items.length) return <div className="text-sm text-gray-500">No embeds yet</div>;
+  if (!items.length) return <div className="text-sm text-muted-foreground">No embeds yet</div>;
 
   return (
     <div className="grid grid-cols-1 gap-3">
@@ -46,9 +47,11 @@ export function EmbedsList({ orderId, refreshToken = 0 }: { orderId: string; ref
         <div key={p.id} className="border rounded-md p-3">
           <div className="flex items-center justify-between">
             <div className="font-medium">{p.title}</div>
-            <Button size="icon" variant="outline" onClick={()=> remove(p.id)} disabled={deleting===p.id}>
-              {deleting===p.id ? <Loader2 className="h-4 w-4 animate-spin"/> : <Trash2 className="h-4 w-4"/>}
-            </Button>
+            <DeleteIconButton
+              label="Delete embed"
+              onClick={() => remove(p.id)}
+              loading={deleting === p.id}
+            />
           </div>
           <div className="mt-2">
             <iframe src={p.embedUrl} className="w-full h-64 border rounded" allowFullScreen/>

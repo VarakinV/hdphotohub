@@ -2,8 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { AdminNavbar } from '@/components/admin/admin-navbar';
-import AdminTwoColumnShell from '@/components/admin/AdminTwoColumnShell';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -42,7 +40,8 @@ import {
 } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
 import { GripVertical } from 'lucide-react';
-import { Loader2, Pencil, Trash2, Save, X, Plus } from 'lucide-react';
+import { Loader2, Pencil, Save, X, Plus } from 'lucide-react';
+import { DeleteIconButton } from '@/components/admin/ui/icon-action';
 import { normalizeTieredPricing } from '@/lib/booking/pricing';
 
 type TieredPricingForm = {
@@ -117,11 +116,11 @@ function TieredPricingEditor({
           {value.tiers.map((tier, index) => (
             <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
               <div>
-                <label className="text-xs text-gray-600">Quantity</label>
+                <label className="text-xs text-muted-foreground">Quantity</label>
                 <Input type="number" min={1} value={tier.quantity} onChange={(e) => setTier(index, 'quantity', e.target.value)} />
               </div>
               <div>
-                <label className="text-xs text-gray-600">Price ($)</label>
+                <label className="text-xs text-muted-foreground">Price ($)</label>
                 <Input type="number" min={0} step="0.01" value={tier.priceDollars} onChange={(e) => setTier(index, 'priceDollars', e.target.value)} />
               </div>
               <Button
@@ -432,14 +431,13 @@ export default function ServicesPage() {
 
   return (
     <div className="min-h-screen">
-      <AdminNavbar />
 
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
+      <div className="mb-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Services</h1>
-              <p className="text-sm text-gray-600 mt-1">Manage your services</p>
+              <h2 className="font-display text-[22px] font-semibold text-foreground">Services</h2>
+              <p className="text-sm text-muted-foreground mt-1">Manage your services</p>
             </div>
             <div className="flex gap-4">
               <Button onClick={() => setCreateOpen(true)}>
@@ -448,9 +446,9 @@ export default function ServicesPage() {
             </div>
           </div>
         </div>
-      </header>
+      </div>
 
-      <AdminTwoColumnShell>
+      <div className="space-y-6">
         {/* Create New Service Dialog */}
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogContent className="max-h-[90vh] overflow-y-auto">
@@ -470,7 +468,7 @@ export default function ServicesPage() {
                   }
                 />
                 {createErrors.name && (
-                  <p className="text-xs text-red-600 mt-1">
+                  <p className="text-xs text-[#c23434] dark:text-[#f09a9a] mt-1">
                     {createErrors.name}
                   </p>
                 )}
@@ -492,7 +490,7 @@ export default function ServicesPage() {
                   ))}
                 </select>
                 {createErrors.categoryId && (
-                  <p className="text-xs text-red-600 mt-1">
+                  <p className="text-xs text-[#c23434] dark:text-[#f09a9a] mt-1">
                     {createErrors.categoryId}
                   </p>
                 )}
@@ -552,7 +550,7 @@ export default function ServicesPage() {
                     }
                   />
                   {createErrors.priceDollars && (
-                    <p className="text-xs text-red-600 mt-1">
+                    <p className="text-xs text-[#c23434] dark:text-[#f09a9a] mt-1">
                       {createErrors.priceDollars}
                     </p>
                   )}
@@ -567,7 +565,7 @@ export default function ServicesPage() {
                     }
                   />
                   {createErrors.durationMin && (
-                    <p className="text-xs text-red-600 mt-1">
+                    <p className="text-xs text-[#c23434] dark:text-[#f09a9a] mt-1">
                       {createErrors.durationMin}
                     </p>
                   )}
@@ -661,7 +659,7 @@ export default function ServicesPage() {
                 </div>
               </div>
               {createErrors.form && (
-                <p className="text-xs text-red-600">{createErrors.form}</p>
+                <p className="text-xs text-[#c23434] dark:text-[#f09a9a]">{createErrors.form}</p>
               )}
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" onClick={() => setCreateOpen(false)}>
@@ -967,9 +965,9 @@ export default function ServicesPage() {
         </Dialog>
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-4 flex flex-wrap gap-3 items-center">
+        <div className="rounded-2xl border border-border bg-card p-4 flex flex-wrap gap-3 items-center">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">Category:</span>
+            <span className="text-sm text-muted-foreground">Category:</span>
             <Select
               defaultValue="ALL"
               onValueChange={(v) =>
@@ -993,7 +991,7 @@ export default function ServicesPage() {
             </Select>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">Active:</span>
+            <span className="text-sm text-muted-foreground">Active:</span>
             <Select
               defaultValue="ALL"
               onValueChange={(v) =>
@@ -1032,10 +1030,10 @@ export default function ServicesPage() {
         )}
 
         {/* Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="rounded-2xl border border-border bg-card overflow-hidden">
           {loading ? (
             <div className="flex justify-center items-center h-64">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              <Loader2 className="h-8 w-8 animate-spin text-faint" />
             </div>
           ) : (
             <>
@@ -1063,7 +1061,7 @@ export default function ServicesPage() {
                         onDragOver={handleDragOver}
                         onDrop={() => handleDrop(s.id)}
                       >
-                        <TableCell className="w-8 align-middle text-gray-400">
+                        <TableCell className="w-8 align-middle text-faint">
                           <GripVertical className="h-4 w-4" />
                         </TableCell>
                         <TableCell className="font-medium">
@@ -1218,16 +1216,12 @@ export default function ServicesPage() {
                                 >
                                   <Pencil className="h-4 w-4" />
                                 </Button>
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
+                                <DeleteIconButton
                                   onClick={() => {
                                     setDeleteTarget(s);
                                     setDeleteOpen(true);
                                   }}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                />
                               </>
                             )}
                           </div>
@@ -1241,11 +1235,11 @@ export default function ServicesPage() {
               {/* Pagination */}
               <div className="p-4 border-t flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-muted-foreground">
                     Page {page} of {totalPages}
                   </div>
                   <div className="flex items-center gap-1">
-                    <label className="text-sm text-gray-500">Rows:</label>
+                    <label className="text-sm text-muted-foreground">Rows:</label>
                     <select
                       className="h-8 rounded-md border px-2 text-sm"
                       value={perPage}
@@ -1279,7 +1273,7 @@ export default function ServicesPage() {
             </>
           )}
         </div>
-      </AdminTwoColumnShell>
+      </div>
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

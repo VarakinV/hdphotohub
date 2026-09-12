@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,8 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
-import { User as UserIcon, UploadCloud } from 'lucide-react';
-import { AdminNavbar } from '@/components/admin/admin-navbar';
+import { User as UserIcon, UploadCloud, ArrowLeft } from 'lucide-react';
 import { PortalNavbar } from '@/components/portal/portal-navbar';
 
 export default function MyProfilePage() {
@@ -187,15 +187,24 @@ export default function MyProfilePage() {
   const displayAvatar = avatarPreview || avatarUrl || null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="theme-light min-h-screen bg-gray-50">
       {(session?.user as any)?.role === 'ADMIN' ||
       (session?.user as any)?.role === 'SUPERADMIN' ? (
-        <AdminNavbar />
+        <header className="border-b border-border bg-white">
+          <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3 sm:px-6">
+            <Link
+              href="/admin/dashboard"
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-brick-600"
+            >
+              <ArrowLeft className="h-4 w-4" /> Back to admin
+            </Link>
+          </div>
+        </header>
       ) : (
         <PortalNavbar />
       )}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-2xl font-bold mb-6">My Profile</h1>
+        <h1 className="font-display text-2xl font-bold mb-6">My Profile</h1>
 
         <div className="grid gap-6">
           <Card>

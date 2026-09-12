@@ -91,7 +91,13 @@ export async function GET(req: NextRequest) {
       where: { realtor: { userId: session.user.id } },
       orderBy: { createdAt: "desc" },
       take: 5,
-      select: { id: true, propertyAddress: true, createdAt: true },
+      select: {
+        id: true,
+        propertyAddress: true,
+        createdAt: true,
+        status: true,
+        realtor: { select: { firstName: true, lastName: true } },
+      },
     });
 
     return NextResponse.json({

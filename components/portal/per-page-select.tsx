@@ -18,7 +18,7 @@ export function PerPageSelect({ current, q }: PerPageSelectProps) {
   const router = useRouter();
 
   return (
-    <div className="flex items-center gap-2 text-sm text-gray-600">
+    <div className="flex items-center gap-2 text-sm text-muted-foreground">
       <span className="whitespace-nowrap">Show</span>
       <Select
         value={String(current)}

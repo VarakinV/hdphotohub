@@ -33,7 +33,7 @@ export function CopyDeliveryLinkIcon({
       className={
         disabled
           ? 'opacity-50 pointer-events-none'
-          : 'text-green-600 border-green-200'
+          : 'text-[#1c7a41] dark:text-[#7fe0a3] border-green-200'
       }
       onClick={onClick}
     >

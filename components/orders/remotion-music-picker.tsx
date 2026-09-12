@@ -34,12 +34,12 @@ export function RemotionMusicPicker({
 
   return (
     <div className="flex items-center gap-2">
-      <Music2 className="h-4 w-4 text-gray-400 shrink-0" />
+      <Music2 className="h-4 w-4 text-faint shrink-0" />
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={loading}
-        className="border rounded-md px-2 py-1.5 text-sm bg-white max-w-[220px]"
+        className="border rounded-md px-2 py-1.5 text-sm bg-card max-w-[220px]"
       >
         <option value="">No music</option>
         {tracks.map((t) => (

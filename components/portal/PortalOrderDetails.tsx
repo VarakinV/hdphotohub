@@ -28,7 +28,9 @@ import {
   Paperclip,
   Link2,
   QrCode,
+  ChevronLeft,
 } from 'lucide-react';
+import { StatusPill } from '@/components/admin/ui/status-pill';
 import { OrderQRCodes } from '@/components/orders/OrderQRCodes';
 
 interface Order {
@@ -112,109 +114,118 @@ export function PortalOrderDetails({ orderId }: { orderId: string }) {
   }, [order]);
 
   return (
-    <div className="max-w-5xl mx-auto p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold">Order Details</h1>
-          <p className="text-sm text-gray-600">
-            {order
-              ? `${order.realtor.firstName} ${order.realtor.lastName} — ${order.propertyAddress}`
-              : ''}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" asChild>
-            <Link href="/portal/orders">Back to Orders</Link>
-          </Button>
+    <div className="w-full">
+      <Link
+        href="/portal/orders"
+        className="mb-3 inline-flex items-center gap-1 text-[13px] font-semibold text-muted-foreground hover:text-brick-600"
+      >
+        <ChevronLeft className="h-4 w-4" /> All orders
+      </Link>
+
+      {/* Title row */}
+      <div className="mb-5">
+        {order && <StatusPill status={order.status} />}
+        <h2 className="font-display mt-1.5 text-[22px] font-semibold leading-tight sm:text-[23px]">
+          {order
+            ? order.propertyFormattedAddress || order.propertyAddress
+            : 'Order'}
+        </h2>
+        <div className="mt-1 flex flex-wrap items-center gap-2 text-[13px] text-muted-foreground">
+          {order && (
+            <span>
+              {order.realtor.firstName} {order.realtor.lastName}
+            </span>
+          )}
+          {order?.mlsNumber && (
+            <>
+              <span className="h-[3px] w-[3px] rounded-full bg-faint" />
+              <span>MLS# {order.mlsNumber}</span>
+            </>
+          )}
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200 mb-4">
-        <ul className="flex flex-wrap justify-center -mb-px text-sm font-medium text-gray-500 text-center gap-x-2 gap-y-2 sm:flex-nowrap">
+      <div className="sticky top-[68px] z-20 -mx-1 mb-1 bg-background pb-3">
+        <div className="flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {tabsList.map((t) => {
             const active = tab === t.key;
             const Icon = t.icon;
             return (
-              <li key={t.key} className="mr-2 mb-2">
-                <button
-                  onClick={() => setTab(t.key as any)}
-                  className={`inline-flex items-center justify-center px-3 py-2 border-b-2 rounded-t-lg group whitespace-nowrap ${
-                    active
-                      ? 'text-primary border-primary'
-                      : 'text-gray-500 border-transparent hover:text-gray-600 hover:border-gray-300'
-                  }`}
-                  aria-current={active ? 'page' : undefined}
-                >
-                  <Icon
-                    className={`w-4 h-4 mr-2 ${
-                      active
-                        ? 'text-primary'
-                        : 'text-gray-400 group-hover:text-gray-500'
-                    }`}
-                  />
-                  {t.label}
-                </button>
-              </li>
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key as any)}
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-[13.3px] font-semibold whitespace-nowrap transition-colors ${
+                  active
+                    ? 'bg-brick-500 text-white'
+                    : 'text-muted-foreground hover:bg-surface-2 hover:text-foreground'
+                }`}
+                aria-current={active ? 'page' : undefined}
+              >
+                <Icon className="h-4 w-4" />
+                {t.label}
+              </button>
             );
           })}
-        </ul>
+        </div>
       </div>
+      <div className="mb-5 border-t border-border" aria-hidden />
 
       {/* Loading indicator */}
       {loading && (
-        <div className="bg-white rounded-lg border p-6 mb-4 flex justify-center items-center">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <div className="mb-4 flex items-center justify-center rounded-2xl border border-border bg-card p-6">
+          <Loader2 className="h-8 w-8 animate-spin text-faint" />
         </div>
       )}
 
       {/* Tab content */}
-      <div className="bg-white rounded-lg border p-6">
-        {tab === 'property' && order && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <div className="text-xs text-gray-500">Realtor</div>
-                <div className="font-medium">
-                  {order.realtor.firstName} {order.realtor.lastName}
+      <div className="rounded-2xl border border-border bg-card p-4.5 sm:p-6">
+          {tab === 'property' && order && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
+                <div>
+                  <label className="field-label">Realtor</label>
+                  <div className="text-[15px] font-semibold">
+                    {order.realtor.firstName} {order.realtor.lastName}
+                  </div>
                 </div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-500">Property Address</div>
-                <div className="font-medium">
-                  {order.propertyFormattedAddress || order.propertyAddress}
+                <div>
+                  <label className="field-label">Property Address</label>
+                  <div className="text-[15px] font-semibold">
+                    {order.propertyFormattedAddress || order.propertyAddress}
+                  </div>
                 </div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-500">MLS #</div>
-                <div className="font-medium">{order.mlsNumber || '—'}</div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-500">Size (sqft)</div>
-                <div className="font-medium">{order.propertySize ?? '—'}</div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-500">Year Built</div>
-                <div className="font-medium">{order.yearBuilt ?? '—'}</div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-500">List Price</div>
-                <div className="font-medium">{order.listPrice ?? '—'}</div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-500">Bedrooms</div>
-                <div className="font-medium">{order.bedrooms ?? '—'}</div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-500">Bathrooms</div>
-                <div className="font-medium">{order.bathrooms ?? '—'}</div>
-              </div>
-              <div className="sm:col-span-2">
-                <div className="text-xs text-gray-500">Description</div>
-                <div className="font-medium">
+                <div>
+                  <label className="field-label">MLS #</label>
+                  <div className="text-[15px] font-semibold">{order.mlsNumber || '—'}</div>
+                </div>
+                <div>
+                  <label className="field-label">Size (sqft)</label>
+                  <div className="text-[15px] font-semibold">{order.propertySize ?? '—'}</div>
+                </div>
+                <div>
+                  <label className="field-label">Year Built</label>
+                  <div className="text-[15px] font-semibold">{order.yearBuilt ?? '—'}</div>
+                </div>
+                <div>
+                  <label className="field-label">List Price</label>
+                  <div className="text-[15px] font-semibold">
+                    {order.listPrice != null ? '$' + Number(order.listPrice).toLocaleString() : '—'}
+                  </div>
+                </div>
+                <div>
+                  <label className="field-label">Bedrooms</label>
+                  <div className="text-[15px] font-semibold">{order.bedrooms ?? '—'}</div>
+                </div>
+                <div>
+                  <label className="field-label">Bathrooms</label>
+                  <div className="text-[15px] font-semibold">{order.bathrooms ?? '—'}</div>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="field-label">Description</label>
                   {order.description ? (
                     <div
-                      className="text-gray-800 leading-7 [&_*+_*]:mt-3 [&_h1]:text-2xl [&_h1]:font-semibold [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:text-lg [&_h3]:font-semibold [&_p]:text-base [&_ul]:list-disc [&_ol]:list-decimal [&_ul]:pl-5 [&_ol]:pl-5"
+                      className="leading-7 text-foreground [&_*+_*]:mt-3 [&_h1]:font-display [&_h1]:text-2xl [&_h1]:font-semibold [&_h2]:font-display [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:font-display [&_h3]:text-lg [&_h3]:font-semibold [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:text-[13.8px] [&_ul]:list-disc [&_ul]:pl-5"
                       dangerouslySetInnerHTML={{
                         __html: sanitizeDescription(
                           String(order.description).replace(
@@ -225,11 +236,10 @@ export function PortalOrderDetails({ orderId }: { orderId: string }) {
                       }}
                     />
                   ) : (
-                    '—'
+                    <div className="text-[13.8px] text-faint">—</div>
                   )}
                 </div>
               </div>
-            </div>
 
             {editing ? (
               <div className="border rounded-md p-4">
@@ -298,7 +308,7 @@ export function PortalOrderDetails({ orderId }: { orderId: string }) {
                   }}
                 >
                   <div>
-                    <label className="text-xs text-gray-500">
+                    <label className="field-label">
                       Property Address
                     </label>
                     <PlacesAddressInput
@@ -331,35 +341,35 @@ export function PortalOrderDetails({ orderId }: { orderId: string }) {
                   </div>
                   {/* Public display override fields */}
                   <div className="sm:col-span-2 mt-4">
-                    <div className="text-xs font-medium text-gray-600 mb-2">
+                    <div className="field-label">
                       Public display overrides (optional)
                     </div>
                     <div className="grid grid-cols-1 gap-3">
                       <div>
-                        <label className="text-xs text-gray-500">
+                        <label className="field-label">
                           Override Street Address
                         </label>
                         <input
                           name="propertyAddressOverride"
                           defaultValue={order.propertyAddressOverride ?? ''}
-                          className="border rounded-md w-full p-2"
+                          className="field"
                           placeholder="e.g., 123A Main St, Unit 402"
                         />
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                          <label className="text-xs text-gray-500">
+                          <label className="field-label">
                             Override City
                           </label>
                           <input
                             name="propertyCityOverride"
                             defaultValue={order.propertyCityOverride ?? ''}
-                            className="border rounded-md w-full p-2"
+                            className="field"
                             placeholder="e.g., Springfield"
                           />
                         </div>
                         <div>
-                          <label className="text-xs text-gray-500">
+                          <label className="field-label">
                             Override Postal Code
                           </label>
                           <input
@@ -367,12 +377,12 @@ export function PortalOrderDetails({ orderId }: { orderId: string }) {
                             defaultValue={
                               order.propertyPostalCodeOverride ?? ''
                             }
-                            className="border rounded-md w-full p-2"
+                            className="field"
                             placeholder="e.g., 12345"
                           />
                         </div>
                       </div>
-                      <p className="text-[11px] text-gray-500">
+                      <p className="mt-1 text-[11px] text-muted-foreground">
                         These override only the address text shown on the public
                         property page hero. Map/coordinates remain unchanged.
                       </p>
@@ -380,87 +390,87 @@ export function PortalOrderDetails({ orderId }: { orderId: string }) {
                   </div>
 
                   <div>
-                    <label className="text-xs text-gray-500">MLS #</label>
+                    <label className="field-label">MLS #</label>
                     <input
                       name="mlsNumber"
                       defaultValue={order.mlsNumber ?? ''}
-                      className="border rounded-md w-full p-2"
+                      className="field"
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500">Year Built</label>
+                    <label className="field-label">Year Built</label>
                     <input
                       type="number"
                       name="yearBuilt"
                       defaultValue={order.yearBuilt ?? ''}
-                      className="border rounded-md w-full p-2"
+                      className="field"
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500">Size (sqft)</label>
+                    <label className="field-label">Size (sqft)</label>
                     <input
                       type="number"
                       name="propertySize"
                       defaultValue={order.propertySize ?? ''}
-                      className="border rounded-md w-full p-2"
+                      className="field"
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500">List Price</label>
+                    <label className="field-label">List Price</label>
                     <input
                       type="number"
                       name="listPrice"
                       defaultValue={order.listPrice ?? ''}
-                      className="border rounded-md w-full p-2"
+                      className="field"
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500">Bedrooms</label>
+                    <label className="field-label">Bedrooms</label>
 
                     <input
                       type="text"
                       name="bedrooms"
                       defaultValue={order.bedrooms ?? ''}
-                      className="border rounded-md w-full p-2"
+                      className="field"
                       placeholder="e.g., 2+1"
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500">Bathrooms</label>
+                    <label className="field-label">Bathrooms</label>
                     <input
                       type="text"
                       name="bathrooms"
                       defaultValue={order.bathrooms ?? ''}
-                      className="border rounded-md w-full p-2"
+                      className="field"
                       placeholder="e.g., 2.5 or 2+2"
                     />
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="text-xs text-gray-500">Description</label>
+                    <label className="field-label">Description</label>
                     <DescriptionEditor
                       name="description"
                       defaultValue={order.description ?? ''}
                     />
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="text-xs text-gray-500">
+                    <label className="field-label">
                       Features (one per line)
                     </label>
                     <textarea
                       name="featuresText"
                       defaultValue={order.featuresText ?? ''}
-                      className="border rounded-md w-full p-2"
+                      className="field"
                       placeholder={
                         'E.g.\nQuartz countertops\nHardwood floors\nSouth-facing backyard'
                       }
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500">Status</label>
+                    <label className="field-label">Status</label>
                     <select
                       name="status"
                       defaultValue={order.status}
-                      className="border rounded-md w-full p-2"
+                      className="field"
                     >
                       <option value="DRAFT">Draft</option>
                       <option value="PUBLISHED">Published</option>
@@ -475,15 +485,21 @@ export function PortalOrderDetails({ orderId }: { orderId: string }) {
                     >
                       Cancel
                     </Button>
-                    <Button type="submit">Save</Button>
+                    <Button type="submit" className="btn-navy">
+                      Save
+                    </Button>
                   </div>
                 </form>
               </div>
             ) : (
-              <div className="flex justify-end">
-                <Button variant="outline" onClick={() => setEditing(true)}>
+              <div className="flex justify-end border-t border-border pt-4">
+                <button
+                  type="button"
+                  onClick={() => setEditing(true)}
+                  className="inline-flex h-8 items-center gap-2 rounded-full border border-border px-4 text-[13px] font-semibold hover:border-navy-600 hover:bg-surface-2"
+                >
                   Edit
-                </Button>
+                </button>
               </div>
             )}
           </div>

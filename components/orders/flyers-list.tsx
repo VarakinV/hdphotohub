@@ -2,21 +2,22 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, RefreshCw, Trash2, RotateCcw } from 'lucide-react';
+import { Loader2, RefreshCw, RotateCcw } from 'lucide-react';
+import { DeleteIconButton } from '@/components/admin/ui/icon-action';
 import { toast } from 'sonner';
 
 function statusColor(s: string) {
   switch (s) {
     case 'COMPLETE':
-      return 'bg-green-100 text-green-800';
+      return 'bg-[#e4f4ea] dark:bg-[#123322] text-[#1c7a41] dark:text-[#7fe0a3]';
     case 'RENDERING':
       return 'bg-blue-100 text-blue-800';
     case 'QUEUED':
-      return 'bg-yellow-100 text-yellow-800';
+      return 'bg-yellow-100 text-[#9a6a12] dark:text-[#f0c674]';
     case 'FAILED':
       return 'bg-red-100 text-red-800';
     default:
-      return 'bg-gray-100 text-gray-800';
+      return 'bg-surface-2 text-foreground';
   }
 }
 
@@ -111,7 +112,7 @@ export default function FlyersList({
 
       <div className="space-y-2">
         {flyers.length === 0 && (
-          <div className="text-sm text-gray-500">No flyers yet.</div>
+          <div className="text-sm text-muted-foreground">No flyers yet.</div>
         )}
         {flyers.map((f) => (
           <div
@@ -130,7 +131,7 @@ export default function FlyersList({
                 {f.status}
               </span>
               {f.pageWidth && f.pageHeight && (
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-muted-foreground">
                   {f.pageWidth}×{f.pageHeight}
                 </div>
               )}
@@ -153,20 +154,11 @@ export default function FlyersList({
                   <RotateCcw className="h-4 w-4 mr-1" /> Regenerate
                 </Button>
               )}
-              <Button
-                size="icon"
-                variant="outline"
+              <DeleteIconButton
+                label="Delete"
                 onClick={() => onDelete(f.id)}
-                title="Delete"
-                disabled={deletingId === f.id}
-                aria-busy={deletingId === f.id}
-              >
-                {deletingId === f.id ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Trash2 className="h-4 w-4" />
-                )}
-              </Button>
+                loading={deletingId === f.id}
+              />
             </div>
           </div>
         ))}

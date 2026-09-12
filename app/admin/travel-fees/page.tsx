@@ -1,15 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { AdminNavbar } from '@/components/admin/admin-navbar';
-import AdminTwoColumnShell from '@/components/admin/AdminTwoColumnShell';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
+import { DeleteIconButton } from '@/components/admin/ui/icon-action';
 
 type Town = { id: string; cityName: string; feeCents: number; active: boolean };
 const dollars = (cents: number) => (Number(cents || 0) / 100).toFixed(2);
@@ -95,15 +94,14 @@ export default function TravelFeesPage() {
 
   return (
     <div className="min-h-screen">
-      <AdminNavbar />
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <h1 className="text-2xl font-bold text-gray-900">Travel Fees</h1>
-          <p className="text-sm text-gray-600 mt-1">Configure free radius, per-km rate, and flat-fee towns.</p>
+      <div className="mb-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <h2 className="font-display text-[22px] font-semibold text-foreground">Travel Fees</h2>
+          <p className="text-sm text-muted-foreground mt-1">Configure free radius, per-km rate, and flat-fee towns.</p>
         </div>
-      </header>
-      <AdminTwoColumnShell>
-        {error && <div className="text-sm text-red-600">{error}</div>}
+      </div>
+      <div className="space-y-6">
+        {error && <div className="text-sm text-[#c23434] dark:text-[#f09a9a]">{error}</div>}
         <Card className="p-4 space-y-4">
           <h2 className="text-lg font-semibold">General Rules</h2>
           <div className="grid sm:grid-cols-2 gap-3">
@@ -125,13 +123,13 @@ export default function TravelFeesPage() {
                 <Input value={t.cityName} onChange={(e) => setTowns((xs) => xs.map((x, n) => n === i ? { ...x, cityName: e.target.value } : x))} />
                 <Input type="number" step="0.01" value={dollars(t.feeCents)} onChange={(e) => setTowns((xs) => xs.map((x, n) => n === i ? { ...x, feeCents: Math.round(Number(e.target.value || 0) * 100) } : x))} />
                 <label className="text-sm flex gap-2"><input type="checkbox" checked={t.active} onChange={(e) => setTowns((xs) => xs.map((x, n) => n === i ? { ...x, active: e.target.checked } : x))} />Active</label>
-                <div className="flex gap-2 justify-end"><Button size="sm" onClick={() => updateTown(t)}>Save</Button><Button size="sm" variant="outline" onClick={() => deleteTown(t.id)}><Trash2 className="h-4 w-4" /></Button></div>
+                <div className="flex gap-2 justify-end"><Button size="sm" onClick={() => updateTown(t)}>Save</Button><DeleteIconButton onClick={() => { void deleteTown(t.id); }} /></div>
               </div>
             ))}
             {!loading && towns.length === 0 && <div className="text-sm text-muted-foreground">No towns yet.</div>}
           </div>
         </Card>
-      </AdminTwoColumnShell>
+      </div>
       <Toaster />
     </div>
   );

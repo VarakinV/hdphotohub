@@ -2,15 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import {
   Select,
   SelectContent,
@@ -19,9 +10,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { AdminNavbar } from '@/components/admin/admin-navbar';
-import AdminTwoColumnShell from '@/components/admin/AdminTwoColumnShell';
-import { Loader2, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { PageHead } from '@/components/admin/ui/page-head';
+import { Pager } from '@/components/admin/ui/pager';
+import { SearchField } from '@/components/admin/ui/search-field';
+import { EmptyState } from '@/components/admin/ui/empty-state';
+import { TableShell } from '@/components/admin/ui/table-shell';
+import { Toolbar } from '@/components/admin/ui/icon-action';
+import { StatusPill } from '@/components/admin/ui/status-pill';
+import { Loader2, CalendarX } from 'lucide-react';
 
 interface BookingRow {
   id: string;
@@ -89,220 +85,173 @@ export default function BookingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AdminNavbar />
+    <div className="w-full">
+      <PageHead title="Bookings" subtitle="View incoming booking requests" />
 
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Bookings</h1>
-              <p className="text-sm text-gray-600 mt-1">
-                View incoming booking requests
-              </p>
-            </div>
-          </div>
+      {loading ? (
+        <div className="flex h-64 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-faint" />
         </div>
-      </header>
-
-      <AdminTwoColumnShell>
-        {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-4 flex flex-wrap gap-3 items-center">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">Status:</span>
-            <Select
-              defaultValue="ALL"
-              onValueChange={(v) =>
-                setFilters((f) => ({
-                  ...f,
-                  status: v === 'ALL' ? undefined : v,
-                }))
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All</SelectItem>
-                <SelectItem value="PENDING">Pending</SelectItem>
-                <SelectItem value="CONFIRMED">Confirmed</SelectItem>
-                <SelectItem value="CANCELLED">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">From:</span>
-            <Input
-              type="date"
-              onChange={(e) =>
-                setFilters((f) => ({
-                  ...f,
-                  start: e.target.value || undefined,
-                }))
-              }
+      ) : (
+        <TableShell
+          toolbar={
+            <Toolbar>
+              <div className="flex items-center gap-2">
+                <span className="hidden text-[13px] text-muted-foreground sm:inline">
+                  Status:
+                </span>
+                <Select
+                  defaultValue="ALL"
+                  onValueChange={(v) =>
+                    setFilters((f) => ({
+                      ...f,
+                      status: v === 'ALL' ? undefined : v,
+                    }))
+                  }
+                >
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">All</SelectItem>
+                    <SelectItem value="PENDING">Pending</SelectItem>
+                    <SelectItem value="CONFIRMED">Confirmed</SelectItem>
+                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="hidden text-[13px] text-muted-foreground sm:inline">
+                  From:
+                </span>
+                <Input
+                  type="date"
+                  className="w-[150px]"
+                  onChange={(e) =>
+                    setFilters((f) => ({
+                      ...f,
+                      start: e.target.value || undefined,
+                    }))
+                  }
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="hidden text-[13px] text-muted-foreground sm:inline">
+                  To:
+                </span>
+                <Input
+                  type="date"
+                  className="w-[150px]"
+                  onChange={(e) =>
+                    setFilters((f) => ({ ...f, end: e.target.value || undefined }))
+                  }
+                />
+              </div>
+              <div className="ml-auto w-full sm:w-64">
+                <SearchField
+                  value={filters.q || ''}
+                  onChange={(v) => setFilters((f) => ({ ...f, q: v }))}
+                  placeholder="Search address…"
+                  ariaLabel="Search address"
+                />
+              </div>
+            </Toolbar>
+          }
+          footer={
+            filtered.length > 0 ? (
+              <Pager
+                page={page}
+                totalPages={totalPages}
+                totalItems={filtered.length}
+                perPage={perPage}
+                itemName="bookings"
+                onPerPageChange={(n) => {
+                  setPerPage(n);
+                  setPage(1);
+                }}
+                onPrev={() => setPage((p) => Math.max(1, p - 1))}
+                onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+              />
+            ) : undefined
+          }
+        >
+          {pageItems.length === 0 ? (
+            <EmptyState
+              icon={CalendarX}
+              title="No bookings found"
+              description="No bookings match the current filters."
             />
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">To:</span>
-            <Input
-              type="date"
-              onChange={(e) =>
-                setFilters((f) => ({ ...f, end: e.target.value || undefined }))
-              }
-            />
-          </div>
-          <div className="ml-auto w-full sm:w-64">
-            <Input
-              placeholder="Search address..."
-              onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
-            />
-          </div>
-        </div>
-
-        {/* Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          {loading ? (
-            <div className="flex justify-center items-center h-64">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-            </div>
           ) : (
-            <>
-              <Table className="table-fixed">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[72px]">Status</TableHead>
-
-                    <TableHead className="w-[180px]">When</TableHead>
-                    <TableHead className="w-[200px]">Property</TableHead>
-                    <TableHead className="w-[160px]">Contact</TableHead>
-                    <TableHead className="text-right w-[100px]">
-                      Total
-                    </TableHead>
-                    <TableHead className="text-right w-[100px]">
-                      Actions
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pageItems.map((r) => (
-                    <TableRow key={r.id}>
-                      <TableCell className="w-[72px]">
-                        {r.status === 'CONFIRMED' ? (
-                          <span
-                            title="Confirmed"
-                            className="inline-flex items-center text-green-600"
-                          >
-                            <CheckCircle className="h-5 w-5" />
-                          </span>
-                        ) : r.status === 'CANCELLED' ? (
-                          <span
-                            title="Cancelled"
-                            className="inline-flex items-center text-red-600"
-                          >
-                            <XCircle className="h-5 w-5" />
-                          </span>
-                        ) : (
-                          <span
-                            title="Pending"
-                            className="inline-flex items-center text-amber-600"
-                          >
-                            <Clock className="h-5 w-5" />
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="w-[180px] max-w-[180px] truncate">
-                        {new Date(r.start).toLocaleString(undefined, {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                          hour: 'numeric',
-                          minute: '2-digit',
-                          hour12: true,
-                        })}
-                      </TableCell>
-                      <TableCell className="w-[200px] max-w-[200px]">
-                        <div
-                          className="truncate whitespace-nowrap"
-                          title={
-                            (r.propertyFormattedAddress || r.propertyAddress) ??
-                            ''
-                          }
-                        >
-                          {r.propertyFormattedAddress || r.propertyAddress}
-                        </div>
-                      </TableCell>
-                      <TableCell className="w-[160px] max-w-[160px]">
-                        <div
-                          className="truncate text-sm font-medium"
-                          title={r.contactName}
-                        >
-                          {r.contactName}
-                        </div>
-                        <div
-                          className="truncate text-xs text-gray-600"
-                          title={r.contactEmail}
-                        >
-                          {r.contactEmail}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {money(r.totalCents)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="outline" size="sm" asChild>
-                          <Link href={`/admin/bookings/${r.id}`}>View</Link>
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              {/* Pagination */}
-              {!loading && (
-                <div className="p-4 border-t flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="text-sm text-gray-500">
-                      Page {page} of {totalPages}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <label className="text-sm text-gray-500">Rows:</label>
-                      <select
-                        className="h-8 rounded-md border px-2 text-sm"
-                        value={perPage}
-                        onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}
+            <table className="w-full">
+              <thead>
+                <tr>
+                  <th>Status</th>
+                  <th>When</th>
+                  <th>Property</th>
+                  <th>Contact</th>
+                  <th className="text-right">Total</th>
+                  <th className="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pageItems.map((r) => (
+                  <tr
+                    key={r.id}
+                    className="border-b border-border last:border-b-0 hover:bg-surface-2"
+                  >
+                    <td data-label="Status" className="td-primary">
+                      <StatusPill status={r.status} />
+                    </td>
+                    <td data-label="When" className="whitespace-nowrap">
+                      {new Date(r.start).toLocaleString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true,
+                      })}
+                    </td>
+                    <td data-label="Property">
+                      <div
+                        className="max-w-[260px] truncate"
+                        title={
+                          (r.propertyFormattedAddress || r.propertyAddress) ??
+                          ''
+                        }
                       >
-                        {[10, 20, 30, 50].map((n) => (
-                          <option key={n} value={n}>{n}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage((p) => Math.max(1, p - 1))}
-                      disabled={page <= 1}
-                    >
-                      Previous
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        setPage((p) => Math.min(totalPages, p + 1))
-                      }
-                      disabled={page >= totalPages}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </>
+                        {r.propertyFormattedAddress || r.propertyAddress}
+                      </div>
+                    </td>
+                    <td data-label="Contact">
+                      <div className="max-w-[180px] truncate text-[13px] font-medium" title={r.contactName}>
+                        {r.contactName}
+                      </div>
+                      <div
+                        className="max-w-[180px] truncate text-xs text-muted-foreground"
+                        title={r.contactEmail}
+                      >
+                        {r.contactEmail}
+                      </div>
+                    </td>
+                    <td data-label="Total" className="num text-right">
+                      {money(r.totalCents)}
+                    </td>
+                    <td data-label="Actions" className="text-right">
+                      <Link
+                        href={`/admin/bookings/${r.id}`}
+                        className="inline-flex h-8 items-center rounded-full border border-border px-3 text-[12.5px] font-semibold text-muted-foreground hover:border-navy-600 hover:text-foreground"
+                      >
+                        View
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
-        </div>
-      </AdminTwoColumnShell>
+        </TableShell>
+      )}
     </div>
   );
 }

@@ -3,20 +3,13 @@ import { prisma } from '@/lib/db/prisma';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ExternalLink } from 'lucide-react';
-import { PortalNavbar } from '@/components/portal/portal-navbar';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { PageHead } from '@/components/admin/ui/page-head';
+import { StatusPill } from '@/components/admin/ui/status-pill';
 import { OrdersSearchInput } from '@/components/portal/orders-search';
-
-import PortalTwoColumnShell from '@/components/portal/PortalTwoColumnShell';
-
 import { PerPageSelect } from '@/components/portal/per-page-select';
+import { EmptyState } from '@/components/admin/ui/empty-state';
+import { TableShell } from '@/components/admin/ui/table-shell';
+import { PackageOpen } from 'lucide-react';
 
 export default async function PortalOrdersPage({
   searchParams,
@@ -59,114 +52,117 @@ export default async function PortalOrdersPage({
 
   const totalPages = Math.max(1, Math.ceil(total / perPage));
 
+  const qs = (p: number) =>
+    `/portal/orders?page=${p}&perPage=${perPage}${q ? `&q=${encodeURIComponent(q)}` : ''}`;
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <PortalNavbar />
+    <div className="w-full space-y-6">
+      <PageHead
+        title="My Orders"
+        subtitle="View and manage your orders"
+        actions={
+          <Button asChild className="gap-2">
+            <Link href="https://photos4realestate.ca/book-online/" target="_blank">
+              + Book Online
+            </Link>
+          </Button>
+        }
+      />
 
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">My Orders</h1>
-              <p className="text-sm text-gray-600 mt-1">
-                View and manage your orders
-              </p>
-            </div>
-            <div>
-              <Button asChild className="gap-2">
-                <Link href="https://photos4realestate.ca/book-online/">
-                  + Book Online
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <PortalTwoColumnShell>
-        <div className="bg-white rounded-lg shadow">
-          <div className="p-4 border-b flex items-center gap-3">
+      <TableShell
+        toolbar={
+          <div className="mb-3.5 flex flex-wrap items-center gap-3">
             <PerPageSelect current={perPage} q={q} />
             <div className="ml-auto w-full sm:w-64">
               <OrdersSearchInput initialQ={q} />
             </div>
           </div>
+        }
+      >
+        {orders.length === 0 ? (
+          <EmptyState
+            icon={PackageOpen}
+            title="No orders found"
+            description={
+              q
+                ? 'No orders match your search.'
+                : 'Your orders will appear here after you book your first shoot.'
+            }
+          />
+        ) : (
+          <table className="w-full">
+            <thead>
+              <tr>
+                <th>Property</th>
+                <th>Status</th>
+                <th className="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orders.map((o) => (
+                <tr
+                  key={o.id}
+                  className="border-b border-border last:border-b-0 hover:bg-surface-2"
+                >
+                  <td data-label="Property" className="td-primary">
+                    <Link
+                      href={`/portal/orders/${o.id}`}
+                      className="font-medium text-navy-700 hover:underline dark:text-[#9db5f2]"
+                    >
+                      {o.propertyAddress}
+                    </Link>
+                  </td>
+                  <td data-label="Status">
+                    <StatusPill status={o.status} />
+                  </td>
+                  <td data-label="Actions">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+                      <Button variant="outline" asChild size="sm">
+                        <Link href={`/portal/orders/${o.id}`}>
+                          Order Details
+                        </Link>
+                      </Button>
+                      <Button asChild size="sm">
+                        <Link href={`/delivery/${o.id}`} target="_blank">
+                          <ExternalLink className="mr-2 h-4 w-4" /> Delivery
+                          Page
+                        </Link>
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </TableShell>
 
-          <div className="w-full overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Property</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {orders.map((o) => (
-                  <TableRow key={o.id}>
-                    <TableCell>{o.propertyAddress}</TableCell>
-                    <TableCell>{o.status}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex flex-col sm:flex-row gap-2 sm:justify-end sm:items-center">
-                        <Button variant="outline" asChild size="sm">
-                          <Link href={`/portal/orders/${o.id}`}>
-                            Order Details
-                          </Link>
-                        </Button>
-                        <Button asChild size="sm">
-                          <Link href={`/delivery/${o.id}`} target="_blank">
-                            <ExternalLink className="h-4 w-4 mr-2" /> Delivery
-                            Page
-                          </Link>
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Pagination */}
-          <div className="p-4 border-t flex items-center justify-between">
-            <div className="text-sm text-gray-500">
-              Page {page} of {totalPages}
-            </div>
-            <div className="flex gap-2">
-              {page > 1 ? (
-                <Button variant="outline" asChild size="sm">
-                  <Link
-                    href={`/portal/orders?page=${page - 1}&perPage=${perPage}${
-                      q ? `&q=${encodeURIComponent(q)}` : ''
-                    }`}
-                  >
-                    Previous
-                  </Link>
-                </Button>
-              ) : (
-                <Button variant="outline" size="sm" disabled>
-                  Previous
-                </Button>
-              )}
-              {page < totalPages ? (
-                <Button variant="outline" asChild size="sm">
-                  <Link
-                    href={`/portal/orders?page=${page + 1}&perPage=${perPage}${
-                      q ? `&q=${encodeURIComponent(q)}` : ''
-                    }`}
-                  >
-                    Next
-                  </Link>
-                </Button>
-              ) : (
-                <Button variant="outline" size="sm" disabled>
-                  Next
-                </Button>
-              )}
-            </div>
-          </div>
+      {/* Pagination links */}
+      <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
+        <span>
+          Page {page} of {totalPages}
+        </span>
+        <div className="flex gap-2">
+          {page > 1 ? (
+            <Button variant="outline" asChild size="sm">
+              <Link href={qs(page - 1)}>Previous</Link>
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" disabled>
+              Previous
+            </Button>
+          )}
+          {page < totalPages ? (
+            <Button variant="outline" asChild size="sm">
+              <Link href={qs(page + 1)}>Next</Link>
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" disabled>
+              Next
+            </Button>
+          )}
         </div>
-      </PortalTwoColumnShell>
+      </div>
     </div>
   );
 }

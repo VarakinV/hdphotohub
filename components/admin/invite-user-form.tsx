@@ -22,7 +22,7 @@ export function InviteUserForm({
   const [role, setRole] = useState<"REALTOR" | "ADMIN">(defaultRole);
 
   return (
-    <form action={action} className="bg-white rounded-lg shadow p-4 space-y-3">
+    <form action={action} className="bg-card rounded-lg shadow p-4 space-y-3">
       <h2 className="font-medium">Invite a User</h2>
       <div className="flex flex-col md:flex-row gap-3 items-start md:items-end">
         <div className="flex-1 w-full">

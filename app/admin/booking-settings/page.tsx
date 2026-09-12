@@ -1,8 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { AdminNavbar } from '@/components/admin/admin-navbar';
-import AdminTwoColumnShell from '@/components/admin/AdminTwoColumnShell';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -169,25 +167,24 @@ export default function BookingSettingsPage() {
 
   return (
     <div className="min-h-screen">
-      <AdminNavbar />
 
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
+      <div className="mb-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h2 className="font-display text-[22px] font-semibold text-foreground">
                 Booking Settings
-              </h1>
-              <p className="text-sm text-gray-600 mt-1">
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">
                 Configure booking preferences and scheduling constraints.
               </p>
             </div>
           </div>
         </div>
-      </header>
+      </div>
 
-      <AdminTwoColumnShell>
-        {error && <div className="text-sm text-red-600">{error}</div>}
+      <div className="space-y-6">
+        {error && <div className="text-sm text-[#c23434] dark:text-[#f09a9a]">{error}</div>}
         <Card className="p-4 grid gap-4">
           <div>
             <Label>Time Zone</Label>
@@ -249,7 +246,7 @@ export default function BookingSettingsPage() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="font-semibold">Google Calendar</h2>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 Connect your Google Calendar to avoid conflicts and auto-create
                 events.
               </p>
@@ -303,7 +300,7 @@ export default function BookingSettingsPage() {
             </div>
           )}
         </Card>
-      </AdminTwoColumnShell>
+      </div>
 
       <Toaster />
     </div>

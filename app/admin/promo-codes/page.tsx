@@ -1,8 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { AdminNavbar } from '@/components/admin/admin-navbar';
-import AdminTwoColumnShell from '@/components/admin/AdminTwoColumnShell';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -34,7 +32,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Pencil, Plus } from 'lucide-react';
+import { DeleteIconButton, IconAction } from '@/components/admin/ui/icon-action';
 
 interface Service {
   id: string;
@@ -231,14 +230,13 @@ export default function PromoCodesPage() {
 
   return (
     <div className="min-h-screen">
-      <AdminNavbar />
 
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
+      <div className="mb-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Promo Codes</h1>
-              <p className="text-sm text-gray-600 mt-1">
+              <h2 className="font-display text-[22px] font-semibold text-foreground">Promo Codes</h2>
+              <p className="text-sm text-muted-foreground mt-1">
                 Create and manage discount codes
               </p>
             </div>
@@ -249,16 +247,16 @@ export default function PromoCodesPage() {
             </div>
           </div>
         </div>
-      </header>
+      </div>
 
-      <AdminTwoColumnShell>
+      <div className="space-y-6">
         <Card className="p-0 overflow-hidden">
           {loading ? (
             <div className="h-64 flex items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+              <Loader2 className="h-6 w-6 animate-spin text-faint" />
             </div>
           ) : rows.length === 0 ? (
-            <div className="p-8 text-center text-gray-600">
+            <div className="p-8 text-center text-muted-foreground">
               No promo codes yet.
             </div>
           ) : (
@@ -296,21 +294,14 @@ export default function PromoCodesPage() {
                       />
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => startEdit(r)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="ml-2"
-                        onClick={() => remove(r)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="inline-flex items-center justify-end gap-1.5">
+                        <IconAction
+                          icon={Pencil}
+                          label="Edit"
+                          onClick={() => startEdit(r)}
+                        />
+                        <DeleteIconButton onClick={() => remove(r)} />
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -328,7 +319,7 @@ export default function PromoCodesPage() {
             </DialogHeader>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs text-gray-500">Display Name</label>
+                <label className="text-xs text-muted-foreground">Display Name</label>
                 <Input
                   value={create.displayName}
                   onChange={(e) =>
@@ -336,13 +327,13 @@ export default function PromoCodesPage() {
                   }
                 />
                 {createErrors.displayName && (
-                  <div className="text-xs text-red-600 mt-1">
+                  <div className="text-xs text-[#c23434] dark:text-[#f09a9a] mt-1">
                     {createErrors.displayName}
                   </div>
                 )}
               </div>
               <div>
-                <label className="text-xs text-gray-500">Promo Code</label>
+                <label className="text-xs text-muted-foreground">Promo Code</label>
                 <Input
                   value={create.code}
                   onChange={(e) =>
@@ -350,13 +341,13 @@ export default function PromoCodesPage() {
                   }
                 />
                 {createErrors.code && (
-                  <div className="text-xs text-red-600 mt-1">
+                  <div className="text-xs text-[#c23434] dark:text-[#f09a9a] mt-1">
                     {createErrors.code}
                   </div>
                 )}
               </div>
               <div>
-                <label className="text-xs text-gray-500">Start Date</label>
+                <label className="text-xs text-muted-foreground">Start Date</label>
                 <Input
                   type="date"
                   value={create.startDate}
@@ -366,7 +357,7 @@ export default function PromoCodesPage() {
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-500">End Date</label>
+                <label className="text-xs text-muted-foreground">End Date</label>
                 <Input
                   type="date"
                   value={create.endDate}
@@ -376,7 +367,7 @@ export default function PromoCodesPage() {
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-500">
+                <label className="text-xs text-muted-foreground">
                   Max Uses per Realtor
                 </label>
                 <Input
@@ -388,7 +379,7 @@ export default function PromoCodesPage() {
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-500">
+                <label className="text-xs text-muted-foreground">
                   Max Uses (Total)
                 </label>
                 <Input
@@ -400,7 +391,7 @@ export default function PromoCodesPage() {
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-500">Discount Type</label>
+                <label className="text-xs text-muted-foreground">Discount Type</label>
                 <select
                   className="border rounded-md w-full p-2"
                   value={create.discountType}
@@ -413,7 +404,7 @@ export default function PromoCodesPage() {
                 </select>
                 {create.discountType === 'AMOUNT' ? (
                   <div className="mt-2">
-                    <label className="text-xs text-gray-500">Amount ($)</label>
+                    <label className="text-xs text-muted-foreground">Amount ($)</label>
                     <Input
                       value={create.discountValueDollars}
                       onChange={(e) =>
@@ -424,14 +415,14 @@ export default function PromoCodesPage() {
                       }
                     />
                     {createErrors.discountValueDollars && (
-                      <div className="text-xs text-red-600 mt-1">
+                      <div className="text-xs text-[#c23434] dark:text-[#f09a9a] mt-1">
                         {createErrors.discountValueDollars}
                       </div>
                     )}
                   </div>
                 ) : (
                   <div className="mt-2">
-                    <label className="text-xs text-gray-500">Percent (%)</label>
+                    <label className="text-xs text-muted-foreground">Percent (%)</label>
                     <Input
                       value={create.discountPercent}
                       onChange={(e) =>
@@ -442,7 +433,7 @@ export default function PromoCodesPage() {
                       }
                     />
                     {createErrors.discountPercent && (
-                      <div className="text-xs text-red-600 mt-1">
+                      <div className="text-xs text-[#c23434] dark:text-[#f09a9a] mt-1">
                         {createErrors.discountPercent}
                       </div>
                     )}
@@ -450,7 +441,7 @@ export default function PromoCodesPage() {
                 )}
               </div>
               <div>
-                <label className="text-xs text-gray-500">Active</label>
+                <label className="text-xs text-muted-foreground">Active</label>
                 <div className="mt-2">
                   <Switch
                     checked={create.active}
@@ -460,7 +451,7 @@ export default function PromoCodesPage() {
               </div>
               <div className="sm:col-span-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs text-gray-500">
+                  <label className="text-xs text-muted-foreground">
                     Applies to Services
                   </label>
                   <div className="space-x-2">
@@ -507,7 +498,7 @@ export default function PromoCodesPage() {
               </div>
             </div>
             {createErrors.form && (
-              <div className="text-xs text-red-600 mt-2">
+              <div className="text-xs text-[#c23434] dark:text-[#f09a9a] mt-2">
                 {createErrors.form}
               </div>
             )}
@@ -529,7 +520,7 @@ export default function PromoCodesPage() {
             </DialogHeader>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs text-gray-500">Display Name</label>
+                <label className="text-xs text-muted-foreground">Display Name</label>
                 <Input
                   value={edit.displayName || ''}
                   onChange={(e) =>
@@ -537,25 +528,25 @@ export default function PromoCodesPage() {
                   }
                 />
                 {editErrors.displayName && (
-                  <div className="text-xs text-red-600 mt-1">
+                  <div className="text-xs text-[#c23434] dark:text-[#f09a9a] mt-1">
                     {editErrors.displayName}
                   </div>
                 )}
               </div>
               <div>
-                <label className="text-xs text-gray-500">Promo Code</label>
+                <label className="text-xs text-muted-foreground">Promo Code</label>
                 <Input
                   value={edit.code || ''}
                   onChange={(e) => setEdit({ ...edit, code: e.target.value })}
                 />
                 {editErrors.code && (
-                  <div className="text-xs text-red-600 mt-1">
+                  <div className="text-xs text-[#c23434] dark:text-[#f09a9a] mt-1">
                     {editErrors.code}
                   </div>
                 )}
               </div>
               <div>
-                <label className="text-xs text-gray-500">Start Date</label>
+                <label className="text-xs text-muted-foreground">Start Date</label>
                 <Input
                   type="date"
                   value={edit.startDate || ''}
@@ -565,7 +556,7 @@ export default function PromoCodesPage() {
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-500">End Date</label>
+                <label className="text-xs text-muted-foreground">End Date</label>
                 <Input
                   type="date"
                   value={edit.endDate || ''}
@@ -575,7 +566,7 @@ export default function PromoCodesPage() {
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-500">
+                <label className="text-xs text-muted-foreground">
                   Max Uses per Realtor
                 </label>
                 <Input
@@ -587,7 +578,7 @@ export default function PromoCodesPage() {
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-500">
+                <label className="text-xs text-muted-foreground">
                   Max Uses (Total)
                 </label>
                 <Input
@@ -599,7 +590,7 @@ export default function PromoCodesPage() {
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-500">Discount Type</label>
+                <label className="text-xs text-muted-foreground">Discount Type</label>
                 <select
                   className="border rounded-md w-full p-2"
                   value={edit.discountType || 'AMOUNT'}
@@ -612,7 +603,7 @@ export default function PromoCodesPage() {
                 </select>
                 {edit.discountType === 'AMOUNT' ? (
                   <div className="mt-2">
-                    <label className="text-xs text-gray-500">Amount ($)</label>
+                    <label className="text-xs text-muted-foreground">Amount ($)</label>
                     <Input
                       value={edit.discountValueDollars || ''}
                       onChange={(e) =>
@@ -623,14 +614,14 @@ export default function PromoCodesPage() {
                       }
                     />
                     {editErrors.discountValueDollars && (
-                      <div className="text-xs text-red-600 mt-1">
+                      <div className="text-xs text-[#c23434] dark:text-[#f09a9a] mt-1">
                         {editErrors.discountValueDollars}
                       </div>
                     )}
                   </div>
                 ) : (
                   <div className="mt-2">
-                    <label className="text-xs text-gray-500">Percent (%)</label>
+                    <label className="text-xs text-muted-foreground">Percent (%)</label>
                     <Input
                       value={edit.discountPercent || ''}
                       onChange={(e) =>
@@ -638,7 +629,7 @@ export default function PromoCodesPage() {
                       }
                     />
                     {editErrors.discountPercent && (
-                      <div className="text-xs text-red-600 mt-1">
+                      <div className="text-xs text-[#c23434] dark:text-[#f09a9a] mt-1">
                         {editErrors.discountPercent}
                       </div>
                     )}
@@ -646,7 +637,7 @@ export default function PromoCodesPage() {
                 )}
               </div>
               <div>
-                <label className="text-xs text-gray-500">Active</label>
+                <label className="text-xs text-muted-foreground">Active</label>
                 <div className="mt-2">
                   <Switch
                     checked={!!edit.active}
@@ -655,7 +646,7 @@ export default function PromoCodesPage() {
                 </div>
               </div>
               <div className="sm:col-span-2">
-                <label className="text-xs text-gray-500">
+                <label className="text-xs text-muted-foreground">
                   Applies to Services
                 </label>
                 <div className="mt-2 max-h-48 overflow-y-auto border rounded-md p-2">
@@ -683,7 +674,7 @@ export default function PromoCodesPage() {
               </div>
             </div>
             {editErrors.form && (
-              <div className="text-xs text-red-600 mt-2">{editErrors.form}</div>
+              <div className="text-xs text-[#c23434] dark:text-[#f09a9a] mt-2">{editErrors.form}</div>
             )}
             <div className="mt-4 flex justify-end gap-2">
               <Button variant="outline" onClick={() => setEditOpen(false)}>
@@ -716,7 +707,7 @@ export default function PromoCodesPage() {
         </AlertDialog>
 
         <Toaster />
-      </AdminTwoColumnShell>
+      </div>
     </div>
   );
 }

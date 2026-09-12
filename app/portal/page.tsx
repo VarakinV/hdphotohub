@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { ExternalLink } from 'lucide-react';
 import PointsCard from '@/components/portal/PointsCard';
 import { OrdersSearchInput } from '@/components/portal/orders-search';
-import { PortalNavbar } from '@/components/portal/portal-navbar';
-import PortalTwoColumnShell from '@/components/portal/PortalTwoColumnShell';
+import { PageHead } from '@/components/admin/ui/page-head';
+import { StatusPill } from '@/components/admin/ui/status-pill';
 import LoginSuccessToaster from '@/components/portal/LoginSuccessToaster';
 
 export default async function PortalHomePage({
@@ -74,66 +74,57 @@ export default async function PortalHomePage({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <PortalNavbar />
+    <div className="w-full space-y-6">
       <LoginSuccessToaster />
 
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Customer Portal
-              </h1>
-              <p className="text-sm text-gray-600 mt-1">
-                Access your recent orders and tools
-              </p>
-            </div>
-            <div>
-              <Button asChild className="gap-2">
-                <Link href="https://photos4realestate.ca/book-online/">
-                  + Book Online
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <PageHead
+        title="Customer Portal"
+        subtitle="Access your recent orders and tools"
+        actions={
+          <Button asChild className="gap-2">
+            <Link href="https://photos4realestate.ca/book-online/" target="_blank">
+              + Book Online
+            </Link>
+          </Button>
+        }
+      />
 
-      <PortalTwoColumnShell>
+      <div className="space-y-6">
         {/* Your Points card */}
         {user.realtorId && <PointsCard points={points} />}
 
         {/* Recent Orders card */}
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <h2 className="text-lg font-medium">Recent Orders</h2>
+        <div className="rounded-2xl border border-border bg-card p-4.5 sm:p-6">
+          <div className="mb-3 flex items-center gap-3">
+            <h2 className="font-display text-[16px] font-semibold">
+              Recent Orders
+            </h2>
             <div className="ml-auto w-full sm:w-64">
               <OrdersSearchInput initialQ={q} />
             </div>
           </div>
           {orders.length === 0 ? (
-            <p className="text-sm text-gray-500">No orders yet.</p>
+            <p className="text-sm text-muted-foreground">No orders yet.</p>
           ) : (
-            <ul className="divide-y divide-gray-200 border-t border-gray-200">
+            <ul className="divide-y divide-border border-t border-border">
               {orders.map((o) => (
                 <li
                   key={o.id}
-                  className="flex items-center justify-between py-3"
+                  className="flex flex-col gap-2.5 py-3 sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <div>
-                    <div className="font-medium">{o.propertyAddress}</div>
-                    <div className="text-xs text-gray-500">
-                      Status: {o.status}
+                  <div className="min-w-0">
+                    <div className="truncate font-medium">
+                      {o.propertyAddress}
                     </div>
+                    <StatusPill status={o.status} className="mt-0.5" />
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                     <Button variant="outline" asChild size="sm">
                       <Link href={`/portal/orders/${o.id}`}>Order Details</Link>
                     </Button>
                     <Button asChild size="sm">
                       <Link href={`/delivery/${o.id}`} target="_blank">
-                        <ExternalLink className="h-4 w-4 mr-2" /> Delivery Page
+                        <ExternalLink className="mr-2 h-4 w-4" /> Delivery Page
                       </Link>
                     </Button>
                   </div>
@@ -149,7 +140,7 @@ export default async function PortalHomePage({
             </Button>
           </div>
         </div>
-      </PortalTwoColumnShell>
+      </div>
     </div>
   );
 }

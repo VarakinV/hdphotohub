@@ -1,8 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { AdminNavbar } from '@/components/admin/admin-navbar';
-import AdminTwoColumnShell from '@/components/admin/AdminTwoColumnShell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -13,7 +11,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Loader2, Copy as CopyIcon, Trash2 } from 'lucide-react';
+import { Loader2, Copy as CopyIcon } from 'lucide-react';
+import { DeleteIconButton } from '@/components/admin/ui/icon-action';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 import {
@@ -117,29 +116,28 @@ export default function FreeReelsOrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AdminNavbar />
+    <div className="min-h-screen bg-surface-2">
 
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
+      <div className="mb-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h2 className="font-display text-[22px] font-semibold text-foreground">
                 Free Reels Orders
-              </h1>
-              <p className="text-sm text-gray-600 mt-1">
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">
                 View and manage free reels submissions
               </p>
             </div>
           </div>
         </div>
-      </header>
+      </div>
 
-      <AdminTwoColumnShell>
+      <div className="space-y-6">
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-4 flex flex-wrap gap-3 items-center">
+        <div className="rounded-2xl border border-border bg-card p-4 flex flex-wrap gap-3 items-center">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">From:</span>
+            <span className="text-sm text-muted-foreground">From:</span>
             <Input
               type="date"
               onChange={(e) =>
@@ -151,7 +149,7 @@ export default function FreeReelsOrdersPage() {
             />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">To:</span>
+            <span className="text-sm text-muted-foreground">To:</span>
             <Input
               type="date"
               onChange={(e) =>
@@ -168,10 +166,10 @@ export default function FreeReelsOrdersPage() {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="rounded-2xl border border-border bg-card overflow-hidden">
           {loading ? (
             <div className="flex justify-center items-center h-64">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              <Loader2 className="h-8 w-8 animate-spin text-faint" />
             </div>
           ) : (
             <>
@@ -215,7 +213,7 @@ export default function FreeReelsOrdersPage() {
                           {r.firstName} {r.lastName}
                         </div>
                         <div
-                          className="truncate text-xs text-gray-600"
+                          className="truncate text-xs text-muted-foreground"
                           title={r.email}
                         >
                           {r.email}
@@ -231,15 +229,7 @@ export default function FreeReelsOrdersPage() {
                           >
                             <CopyIcon className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-red-600 hover:text-red-700"
-                            onClick={() => setDeleteId(r.id)}
-                            aria-label="Delete"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <DeleteIconButton onClick={() => setDeleteId(r.id)} />
                         </div>
                       </TableCell>
                     </TableRow>
@@ -248,7 +238,7 @@ export default function FreeReelsOrdersPage() {
               </Table>
               {/* Pagination */}
               <div className="p-4 border-t flex items-center justify-between">
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-muted-foreground">
                   Page {page} of {totalPages}
                 </div>
                 <div className="flex gap-2">
@@ -273,7 +263,7 @@ export default function FreeReelsOrdersPage() {
             </>
           )}
         </div>
-      </AdminTwoColumnShell>
+      </div>
 
       {/* Delete Confirmation */}
       <AlertDialog

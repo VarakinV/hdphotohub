@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["satori", "@resvg/resvg-js", "harfbuzzjs"],
+  outputFileTracingIncludes: {
+    "/api/orders/**": ["./lib/social/fonts/**"],
+    "/api/admin/social-templates/**": ["./lib/social/fonts/**"],
+  },
   images: {
     // Allow S3-hosted assets (e.g., realtor headshots)
     remotePatterns: [

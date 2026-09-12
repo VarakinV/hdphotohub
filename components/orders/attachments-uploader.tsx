@@ -145,7 +145,7 @@ export function AttachmentsUploader({ orderId, onUploaded }: Props) {
     <div className="space-y-3">
       <div
         className={`rounded-md p-4 text-sm ${
-          isConfigured ? 'bg-gray-50 border' : 'bg-red-50 border border-red-200'
+          isConfigured ? 'bg-surface-2 border' : 'bg-[#fbe9e9] dark:bg-[#351a1c] border border-[#f3d3d3] dark:border-[#4a2530]'
         }`}
       >
         {isConfigured
@@ -174,7 +174,7 @@ export function AttachmentsUploader({ orderId, onUploaded }: Props) {
         }`}
         onClick={() => inputRef.current?.click()}
       >
-        <div className="text-sm text-gray-600 flex items-center gap-2">
+        <div className="text-sm text-muted-foreground flex items-center gap-2">
           <Upload className="h-4 w-4" /> Drop PDFs here or click to select
         </div>
       </div>
@@ -185,12 +185,12 @@ export function AttachmentsUploader({ orderId, onUploaded }: Props) {
             <div key={idx} className="border rounded-md p-2">
               <div className="flex items-center justify-between text-sm">
                 <div className="truncate mr-3">{it.file.name}</div>
-                <div className="text-xs text-gray-500">{it.progress}%</div>
+                <div className="text-xs text-muted-foreground">{it.progress}%</div>
               </div>
-              <div className="h-2 w-full bg-gray-200 rounded mt-2 overflow-hidden">
+              <div className="h-2 w-full bg-border rounded mt-2 overflow-hidden">
                 <div
                   className={`h-full ${
-                    it.status === 'error' ? 'bg-red-500' : 'bg-blue-500'
+                    it.status === 'error' ? 'bg-[#fbe9e9] dark:bg-[#351a1c]0' : 'bg-navy-600'
                   }`}
                   style={{ width: `${it.progress}%` }}
                 />

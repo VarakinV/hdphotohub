@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, Trash2, GripVertical } from "lucide-react";
+import { DeleteIconButton } from "@/components/admin/ui/icon-action";
 import { toast } from "sonner";
 
 interface Item {
@@ -114,13 +115,13 @@ export function ReelImagesGrid({
 
   if (loading)
     return (
-      <div className="text-sm text-gray-500 flex items-center gap-2">
+      <div className="text-sm text-muted-foreground flex items-center gap-2">
         <Loader2 className="h-4 w-4 animate-spin" /> Loading images...
       </div>
     );
 
   if (!items.length)
-    return <div className="text-sm text-gray-500">No images yet</div>;
+    return <div className="text-sm text-muted-foreground">No images yet</div>;
 
   const allSelected = items.length > 0 && selectedIds.length === items.length;
 
@@ -138,7 +139,7 @@ export function ReelImagesGrid({
               else setSelected({});
             }}
           />
-          <span className="text-sm text-gray-600">{selectedIds.length} selected</span>
+          <span className="text-sm text-muted-foreground">{selectedIds.length} selected</span>
         </div>
         <div className="flex gap-2">
           <Button type="button" variant="outline" onClick={() => setSelected({})} disabled={!selectedIds.length}>
@@ -163,7 +164,7 @@ export function ReelImagesGrid({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {items.map((p) => (
           <div
             key={p.id}
@@ -174,7 +175,7 @@ export function ReelImagesGrid({
             onDrop={() => handleDrop(p.id)}
           >
             <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-              <span className="inline-flex items-center justify-center rounded bg-white/80 border px-1.5 py-1 text-[10px] text-gray-700 select-none">
+              <span className="inline-flex items-center justify-center rounded bg-white/80 border px-1.5 py-1 text-[10px] text-foreground select-none">
                 <GripVertical className="h-3 w-3 mr-1" /> Drag
               </span>
             </div>
@@ -182,7 +183,7 @@ export function ReelImagesGrid({
             <img
               src={p.url}
               alt={p.filename}
-              className="w-full h-32 object-cover"
+              className="aspect-[4/3] w-full object-cover"
               onClick={() => setSelected((s) => ({ ...s, [p.id]: !s[p.id] }))}
             />
             <input
@@ -192,16 +193,18 @@ export function ReelImagesGrid({
               onChange={(e) => setSelected((s) => ({ ...s, [p.id]: e.target.checked }))}
             />
             <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition flex gap-1">
-              <Button size="icon" variant="outline" onClick={() => remove(p.id)} disabled={deleting === p.id} title="Delete image">
-                {deleting === p.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-              </Button>
+              <DeleteIconButton
+                label="Delete image"
+                onClick={() => remove(p.id)}
+                loading={deleting === p.id}
+              />
             </div>
           </div>
         ))}
       </div>
 
       {savingOrder && (
-        <div className="text-xs text-gray-500 flex items-center gap-2">
+        <div className="text-xs text-muted-foreground flex items-center gap-2">
           <Loader2 className="h-4 w-4 animate-spin" /> Saving order...
         </div>
       )}

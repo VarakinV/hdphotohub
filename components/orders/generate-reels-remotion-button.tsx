@@ -94,7 +94,7 @@ export function GenerateReelsRemotionButton({
 
   if (loading) {
     return (
-      <div className="text-sm text-gray-500 flex items-center gap-2">
+      <div className="text-sm text-muted-foreground flex items-center gap-2">
         <Loader2 className="h-4 w-4 animate-spin" /> Checking requirements...
       </div>
     );
@@ -107,7 +107,7 @@ export function GenerateReelsRemotionButton({
 
   return (
     <div className="pt-2 space-y-2">
-      <div className="text-xs text-gray-500">
+      <div className="text-xs text-muted-foreground">
         Music override (optional): leave as &quot;No music&quot; to use each template&apos;s
         default track.
       </div>
@@ -126,8 +126,8 @@ export function GenerateReelsRemotionButton({
       {missing.length > 0 && (
         <div className="text-xs text-amber-600">Missing to generate: {missing.join(', ')}.</div>
       )}
-      {message && <div className="text-sm text-green-600">{message}</div>}
-      {error && <div className="text-sm text-red-600">{error}</div>}
+      {message && <div className="text-sm text-[#1c7a41] dark:text-[#7fe0a3]">{message}</div>}
+      {error && <div className="text-sm text-[#c23434] dark:text-[#f09a9a]">{error}</div>}
     </div>
   );
 }

@@ -2,16 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import AdminTwoColumnShell from '@/components/admin/AdminTwoColumnShell';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { useRouter } from 'next/navigation';
 import {
   Dialog,
   DialogContent,
@@ -29,22 +20,28 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { RealtorForm } from '@/components/realtors/realtor-form';
 import { toast } from 'sonner';
 import { Toaster } from '@/components/ui/sonner';
 import {
   Plus,
   Pencil,
-  Trash2,
   Loader2,
   Mail,
   Phone,
   AlertCircle,
+  UsersRound,
 } from 'lucide-react';
-import { AdminNavbar } from '@/components/admin/admin-navbar';
-import { Input } from '@/components/ui/input';
 import { useSession } from 'next-auth/react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  PageHead,
+} from '@/components/admin/ui/page-head';
+import { SearchField } from '@/components/admin/ui/search-field';
+import { Pager } from '@/components/admin/ui/pager';
+import { EmptyState } from '@/components/admin/ui/empty-state';
+import { TableShell } from '@/components/admin/ui/table-shell';
+import { Toolbar, DeleteIconButton } from '@/components/admin/ui/icon-action';
 
 interface Realtor {
   id: string;
@@ -57,7 +54,10 @@ interface Realtor {
   points?: number | null;
 }
 
+const AVATAR_COLORS = ['#cb4154', '#22305c', '#a8323f', '#334577', '#8a2735'];
+
 export default function ClientsPage() {
+  const router = useRouter();
   const [realtors, setRealtors] = useState<Realtor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -136,6 +136,16 @@ export default function ClientsPage() {
     setIsDialogOpen(true);
   };
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('new') === '1') {
+      handleOpenDialog();
+      router.replace('/admin/clients', { scroll: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleCloseDialog = () => {
     setSelectedRealtor(null);
     setIsDialogOpen(false);
@@ -183,210 +193,171 @@ export default function ClientsPage() {
   const canEditPoints = userRole === 'ADMIN' || userRole === 'SUPERADMIN';
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AdminNavbar />
+    <div className="w-full">
+      <PageHead
+        title="Clients"
+        subtitle="Manage your realtor clients"
+        actions={
+          <button
+            type="button"
+            onClick={() => handleOpenDialog()}
+                className="inline-flex h-9 items-center gap-2 rounded-full bg-navy-700 px-4 text-[13.5px] font-semibold text-white hover:bg-navy-600 dark:bg-navy-600 dark:hover:bg-[#3a4d85]"
+          >
+            <Plus className="h-4 w-4" /> Add realtor
+          </button>
+        }
+      />
 
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Clients</h1>
-              <p className="text-sm text-gray-600 mt-1">
-                Manage your realtor clients
-              </p>
-            </div>
-            <div className="flex gap-4">
-              <Button onClick={() => handleOpenDialog()}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Realtor
-              </Button>
-            </div>
+      {/* S3 Configuration Notice */}
+      {!s3Status.isConfigured && (
+        <div className="mb-5 flex items-start gap-2.5 rounded-xl border border-border bg-surface-2 p-3.5 text-[12.8px] text-muted-foreground">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#9a6a12] dark:text-[#f0c674]" />
+          <div>
+            <p className="font-semibold text-foreground">
+              File uploads are currently disabled
+            </p>
+            <p className="mt-0.5">
+              Configure AWS S3 credentials to enable headshot uploads. You can
+              still create and manage realtors without headshots.
+            </p>
           </div>
         </div>
-      </header>
+      )}
 
-      <AdminTwoColumnShell>
-        {/* S3 Configuration Notice */}
-        {!s3Status.isConfigured && (
-          <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <div className="flex">
-              <AlertCircle className="h-5 w-5 text-yellow-400 mr-2 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-yellow-800">
-                <p className="font-medium">
-                  Note: File uploads are currently disabled
-                </p>
-                <p className="mt-1">
-                  To enable headshot uploads, configure AWS S3 credentials in
-                  your environment variables. You can still create and manage
-                  realtors without headshots.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {isLoading ? (
-          <div className="flex justify-center items-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-          </div>
-        ) : realtors.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-12 text-center">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No realtors yet
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Get started by adding your first realtor client
-            </p>
-            <Button onClick={() => handleOpenDialog()}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Your First Realtor
-            </Button>
-          </div>
-        ) : (
-          <>
-            {/* Search bar */}
-            <div className="bg-white rounded-lg shadow p-4 mb-4 flex items-center gap-3">
-              <div className="ml-auto w-full sm:w-80">
-                <Input
-                  placeholder="Search name, email, or phone..."
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Headshot</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pageItems.map((realtor) => (
-                    <TableRow key={realtor.id}>
-                      <TableCell>
-                        <Avatar className="h-10 w-10">
+      {isLoading ? (
+        <div className="flex h-64 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-faint" />
+        </div>
+      ) : realtors.length === 0 ? (
+        <div className="rounded-2xl border border-border bg-card">
+          <EmptyState
+            icon={UsersRound}
+            title="No realtors yet"
+            description="Get started by adding your first realtor client"
+            action={
+              <button
+                type="button"
+                onClick={() => handleOpenDialog()}
+            className="inline-flex h-9 items-center gap-2 rounded-full bg-navy-700 px-4 text-[13.5px] font-semibold text-white hover:bg-navy-600 dark:bg-navy-600 dark:hover:bg-[#3a4d85]"
+              >
+                <Plus className="h-4 w-4" /> Add your first realtor
+              </button>
+            }
+          />
+        </div>
+      ) : (
+        <TableShell
+          toolbar={
+            <Toolbar>
+              <SearchField
+                value={query}
+                onChange={setQuery}
+                placeholder="Search name, email, or phone…"
+              />
+            </Toolbar>
+          }
+          footer={
+            <Pager
+              page={page}
+              totalPages={totalPages}
+              totalItems={filtered.length}
+              perPage={perPage}
+              itemName="realtors"
+              onPerPageChange={(n) => {
+                setPerPage(n);
+                setPage(1);
+              }}
+              onPrev={() => setPage((p) => Math.max(1, p - 1))}
+              onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+            />
+          }
+        >
+          <table>
+            <thead>
+              <tr>
+                <th>Client</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th className="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pageItems.map((realtor, idx) => {
+                const color = AVATAR_COLORS[idx % AVATAR_COLORS.length];
+                return (
+                  <tr key={realtor.id} className="border-b border-border last:border-b-0 hover:bg-surface-2">
+                    <td data-label="Client" className="td-primary">
+                      <div className="flex items-center gap-2.5">
+                        <Avatar className="h-[34px] w-[34px]">
                           <AvatarImage src={realtor.headshot || undefined} />
-                          <AvatarFallback>
+                          <AvatarFallback
+                            className="font-display text-[12px] font-semibold text-white"
+                            style={{ backgroundColor: color }}
+                          >
                             {realtor.firstName[0]}
                             {realtor.lastName[0]}
                           </AvatarFallback>
                         </Avatar>
-                      </TableCell>
-                      <TableCell className="font-medium">
                         <Link
                           href={`/admin/clients/${realtor.id}`}
-                          className="text-primary hover:underline"
+                          className="font-semibold text-navy-700 hover:underline dark:text-[#9db5f2]"
                         >
                           {realtor.firstName} {realtor.lastName}
                         </Link>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-4 w-4 text-gray-400" />
-                          <a
-                            href={`mailto:${realtor.email}`}
-                            className="text-blue-600 hover:underline"
-                          >
-                            {realtor.email}
-                          </a>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {realtor.phone ? (
-                          <div className="flex items-center gap-2">
-                            <Phone className="h-4 w-4 text-gray-400" />
-                            <a
-                              href={`tel:${realtor.phone}`}
-                              className="text-blue-600 hover:underline"
-                            >
-                              {realtor.phone}
-                            </a>
-                          </div>
-                        ) : (
-                          <span className="text-gray-400">—</span>
-                        )}
-                      </TableCell>
-
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleOpenDialog(realtor)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button variant="default" size="sm" asChild>
-                            <Link href={`/admin/clients/${realtor.id}/users`}>
-                              Send Invite
-                            </Link>
-                          </Button>
-
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setDeleteRealtor(realtor)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              {/* Pagination */}
-              {!isLoading && (
-                <div className="p-4 border-t flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="text-sm text-gray-500">
-                      Page {page} of {totalPages}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <label className="text-sm text-gray-500">Rows:</label>
-                      <select
-                        className="h-8 rounded-md border px-2 text-sm"
-                        value={perPage}
-                        onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}
+                      </div>
+                    </td>
+                    <td data-label="Email">
+                      <a
+                        href={`mailto:${realtor.email}`}
+                        className="flex items-center gap-2 text-navy-700 hover:underline dark:text-[#9db5f2]"
                       >
-                        {[10, 20, 30, 50].map((n) => (
-                          <option key={n} value={n}>{n}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage((p) => Math.max(1, p - 1))}
-                      disabled={page <= 1}
-                    >
-                      Previous
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        setPage((p) => Math.min(totalPages, p + 1))
-                      }
-                      disabled={page >= totalPages}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </>
-        )}
-      </AdminTwoColumnShell>
+                        <Mail className="h-4 w-4 shrink-0 text-faint" />
+                        <span className="truncate">{realtor.email}</span>
+                      </a>
+                    </td>
+                    <td data-label="Phone">
+                      {realtor.phone ? (
+                        <a
+                          href={`tel:${realtor.phone}`}
+                          className="flex items-center gap-2 hover:underline"
+                        >
+                          <Phone className="h-4 w-4 shrink-0 text-faint" />
+                          {realtor.phone}
+                        </a>
+                      ) : (
+                        <span className="text-faint">—</span>
+                      )}
+                    </td>
+                    <td data-label="Actions">
+                      <div className="flex items-center justify-start gap-1.5 md:justify-end">
+                        <Link
+                          href={`/admin/clients/${realtor.id}/users`}
+                          className="inline-flex h-8 items-center rounded-full border border-border px-3 text-[12.5px] font-semibold text-muted-foreground hover:border-navy-600 hover:text-foreground"
+                        >
+                          Send invite
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenDialog(realtor)}
+                          aria-label={`Edit ${realtor.firstName} ${realtor.lastName}`}
+                          title="Edit"
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground hover:border-brick-tint-strong hover:text-brick-600"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <DeleteIconButton
+                          label={`Delete ${realtor.firstName} ${realtor.lastName}`}
+                          onClick={() => setDeleteRealtor(realtor)}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </TableShell>
+      )}
 
       {/* Add/Edit Modal */}
       <Dialog
@@ -396,7 +367,7 @@ export default function ClientsPage() {
           if (!open) setSelectedRealtor(null);
         }}
       >
-        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>
               {selectedRealtor ? 'Edit Realtor' : 'Add New Realtor'}
@@ -408,7 +379,7 @@ export default function ClientsPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="pt-2 pb-4">
+          <div className="pb-4 pt-2">
             <RealtorForm
               realtor={selectedRealtor || undefined}
               canEditPoints={canEditPoints}

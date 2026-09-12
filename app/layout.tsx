@@ -1,10 +1,20 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Inter, Space_Grotesk } from 'next/font/google';
 import './globals.css';
 import { AuthSessionProvider } from '@/components/providers/session-provider';
+import { AdminThemeProvider } from '@/components/providers/theme-provider';
 import Script from 'next/script';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  weight: ['500', '600', '700'],
+  variable: '--font-space-grotesk',
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://app.photos4realestate.ca'),
@@ -23,11 +33,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`} suppressHydrationWarning>
       {/* suppressHydrationWarning: browser extensions (e.g. Grammarly) inject
           attributes into <body> before React hydrates, which otherwise logs a
-          spurious hydration mismatch in dev. */}
-      <body className={inter.className} suppressHydrationWarning>
+          spurious hydration mismatch in dev. next-themes also needs it to
+          patch the class attribute before hydration. */}
+      <body
+        className="font-[family-name:var(--font-inter)]"
+        suppressHydrationWarning
+      >
         {/* Google Tag Manager (script) */}
         <Script id="gtm-base" strategy="afterInteractive">
           {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -47,7 +61,9 @@ export default function RootLayout({
           />
         </noscript>
         {/* End Google Tag Manager (noscript) */}
-        <AuthSessionProvider>{children}</AuthSessionProvider>
+        <AdminThemeProvider>
+          <AuthSessionProvider>{children}</AuthSessionProvider>
+        </AdminThemeProvider>
       </body>
     </html>
   );

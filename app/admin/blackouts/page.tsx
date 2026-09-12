@@ -1,15 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { AdminNavbar } from '@/components/admin/admin-navbar';
-import AdminTwoColumnShell from '@/components/admin/AdminTwoColumnShell';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil } from 'lucide-react';
+import { DeleteIconButton } from '@/components/admin/ui/icon-action';
 import {
   Dialog,
   DialogContent,
@@ -96,14 +95,13 @@ export default function BlackoutsPage() {
 
   return (
     <div className="min-h-screen">
-      <AdminNavbar />
 
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
+      <div className="mb-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Blackouts</h1>
-              <p className="text-sm text-gray-600 mt-1">
+              <h2 className="font-display text-[22px] font-semibold text-foreground">Blackouts</h2>
+              <p className="text-sm text-muted-foreground mt-1">
                 Block out dates or times when bookings are not allowed.
               </p>
             </div>
@@ -114,10 +112,10 @@ export default function BlackoutsPage() {
             </div>
           </div>
         </div>
-      </header>
+      </div>
 
-      <AdminTwoColumnShell>
-        {error && <div className="text-sm text-red-600">{error}</div>}
+      <div className="space-y-6">
+        {error && <div className="text-sm text-[#c23434] dark:text-[#f09a9a]">{error}</div>}
 
         {/* Create Dialog */}
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
@@ -263,13 +261,7 @@ export default function BlackoutsPage() {
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => deleteItem(b.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <DeleteIconButton onClick={() => deleteItem(b.id)} />
                   </div>
                 </div>
               ))}
@@ -277,7 +269,7 @@ export default function BlackoutsPage() {
           )}
         </Card>
         <Toaster />
-      </AdminTwoColumnShell>
+      </div>
     </div>
   );
 }

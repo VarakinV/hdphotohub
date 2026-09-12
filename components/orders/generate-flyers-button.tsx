@@ -84,7 +84,7 @@ export function GenerateFlyersButton({
 
   if (loading) {
     return (
-      <div className="text-sm text-gray-500 flex items-center gap-2">
+      <div className="text-sm text-muted-foreground flex items-center gap-2">
         <Loader2 className="h-4 w-4 animate-spin" /> Checking requirements...
       </div>
     );

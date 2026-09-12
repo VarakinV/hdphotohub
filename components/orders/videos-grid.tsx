@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, Trash2 } from 'lucide-react';
+import { DeleteIconButton } from '@/components/admin/ui/icon-action';
 
 interface Video {
   id: string;
@@ -71,13 +72,13 @@ export function VideosGrid({
 
   if (loading)
     return (
-      <div className="text-sm text-gray-500 flex items-center gap-2">
+      <div className="text-sm text-muted-foreground flex items-center gap-2">
         <Loader2 className="h-4 w-4 animate-spin" /> Loading videos...
       </div>
     );
 
   if (!videos.length)
-    return <div className="text-sm text-gray-500">No videos yet</div>;
+    return <div className="text-sm text-muted-foreground">No videos yet</div>;
 
   const allSelected = videos.length > 0 && selectedIds.length === videos.length;
 
@@ -97,7 +98,7 @@ export function VideosGrid({
               else setSelected({});
             }}
           />
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-muted-foreground">
             {selectedIds.length} selected
           </span>
         </div>
@@ -130,7 +131,7 @@ export function VideosGrid({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {videos.map((v) => (
           <div
             key={v.id}
@@ -140,7 +141,7 @@ export function VideosGrid({
           >
             <video
               controls
-              className="w-full h-48 object-cover"
+              className="aspect-video w-full object-cover"
               onClick={() => setSelected((s) => ({ ...s, [v.id]: !s[v.id] }))}
             >
               <source src={v.url} type="video/mp4" />
@@ -154,18 +155,11 @@ export function VideosGrid({
               }
             />
             <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition">
-              <Button
-                size="icon"
-                variant="outline"
+              <DeleteIconButton
+                label="Delete video"
                 onClick={() => remove(v.id)}
-                disabled={deleting === v.id}
-              >
-                {deleting === v.id ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Trash2 className="h-4 w-4" />
-                )}
-              </Button>
+                loading={deleting === v.id}
+              />
             </div>
           </div>
         ))}

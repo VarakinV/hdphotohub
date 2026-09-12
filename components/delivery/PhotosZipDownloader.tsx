@@ -13,13 +13,14 @@ export interface PhotoForZip {
 }
 
 export function PhotosZipDownloader({
-  orderId,
   photos,
   size = 'default',
+  appearance = 'hero',
 }: {
   orderId: string;
   photos: PhotoForZip[];
   size?: 'sm' | 'default' | 'lg' | 'icon';
+  appearance?: 'hero' | 'section';
 }) {
   const [loading, setLoading] = useState<null | 'original' | 'mls'>(null);
   const [progress, setProgress] = useState<number | null>(null);
@@ -86,42 +87,55 @@ export function PhotosZipDownloader({
   }
 
   const busy = loading !== null;
+  const isSection = appearance === 'section';
+  const btnSize = isSection ? 'sm' : 'lg';
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-3">
         <Button
           type="button"
+          variant={isSection ? 'outline' : 'default'}
           onClick={() => download('original')}
           disabled={busy}
-          size={size}
-          className="border-2 border-white/90"
+          size={btnSize}
+          className={
+            isSection
+              ? undefined
+              : 'bg-brick-500 hover:bg-brick-600 text-white px-7 text-[15px] h-12'
+          }
         >
           {loading === 'original' ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin" /> Preparing
-              Originals...
+              <Loader2 className="h-4 w-4 animate-spin" /> Preparing...
             </>
           ) : (
             <>
-              <Download className="h-4 w-4" /> Download Originals (ZIP)
+              {!isSection && <Download className="h-4 w-4" />}
+              {isSection ? 'Download originals' : 'Download all photos'}
             </>
           )}
         </Button>
         <Button
           type="button"
-          variant="outline"
+          variant={isSection ? 'outline' : 'default'}
           onClick={() => download('mls')}
           disabled={busy}
-          size={size}
+          size={btnSize}
+          className={
+            isSection
+              ? undefined
+              : 'bg-navy-700 hover:bg-navy-600 text-white px-7 text-[15px] h-12'
+          }
         >
           {loading === 'mls' ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin" /> Preparing MLS...
+              <Loader2 className="h-4 w-4 animate-spin" /> Preparing...
             </>
           ) : (
             <>
-              <Download className="h-4 w-4" /> Download MLS 1280px (ZIP)
+              {!isSection && <Download className="h-4 w-4" />}
+              {isSection ? 'Download MLS size' : 'Download MLS set'}
             </>
           )}
         </Button>
@@ -131,11 +145,11 @@ export function PhotosZipDownloader({
           <div className="h-2 w-full bg-gray-200 rounded overflow-hidden">
             {progress != null ? (
               <div
-                className="h-full bg-blue-500 transition-all"
+                className="h-full bg-navy-700 transition-all"
                 style={{ width: `${progress}%` }}
               />
             ) : (
-              <div className="h-full bg-blue-500 animate-pulse w-1/3" />
+              <div className="h-full bg-navy-700 animate-pulse w-1/3" />
             )}
           </div>
           {statusText && (

@@ -1,17 +1,8 @@
 import { prisma } from '@/lib/db/prisma';
 import { notFound } from 'next/navigation';
-import { Download, ExternalLink, Copy } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import Image from 'next/image';
-import Link from 'next/link';
-import { CopyButton } from '@/components/common/CopyButton';
 import { headers } from 'next/headers';
-
-import { PhotosZipDownloader } from '@/components/delivery/PhotosZipDownloader';
-import { DownloadLinkButton } from '@/components/delivery/DownloadLinkButton';
-import { PhotoLightbox } from '@/components/delivery/PhotoLightbox';
-import { VideoWithPoster } from '@/components/delivery/VideoWithPoster';
-import { SitePreview } from '@/components/delivery/SitePreview';
+import { DeliveryPageClient } from '@/components/delivery/DeliveryPageClient';
+import type { DeliveryPageData } from '@/components/delivery/types';
 
 async function getOrder(id: string) {
   const order = await prisma.order.findFirst({
@@ -23,6 +14,7 @@ async function getOrder(id: string) {
       },
       videos: true,
       reels: true,
+      socialPosts: true,
       floorPlans: true,
       attachments: true,
       embeds: true,
@@ -31,8 +23,12 @@ async function getOrder(id: string) {
       aiReels: {
         where: { j2vStatus: 'COMPLETE' },
         select: {
-          id: true, finalUrl: true, thumbnail: true,
-          sourceImageUrl: true, width: true, height: true,
+          id: true,
+          finalUrl: true,
+          thumbnail: true,
+          sourceImageUrl: true,
+          width: true,
+          height: true,
         },
         orderBy: { createdAt: 'desc' },
       },
@@ -54,6 +50,76 @@ async function getOrder(id: string) {
   return order;
 }
 
+const REEL_ORDER_KEYS = [
+  'v1-9x16',
+  'v2-9x16',
+  'v3-9x16',
+  'v4-9x16',
+  'v5-9x16',
+  'v6-9x16',
+  'v7-9x16',
+  'v8-9x16',
+  'v9-9x16',
+  'v10-9x16',
+  'v11-9x16',
+  'v12-9x16',
+  'v13-9x16',
+  'v14-9x16',
+];
+
+const REEL_LABELS: Record<string, string> = {
+  'v1-9x16': 'Coming Soon',
+  'v2-9x16': 'For Sale',
+  'v3-9x16': 'For Sale',
+  'v4-9x16': 'Just Listed',
+  'v5-9x16': 'For Sale',
+  'v6-9x16': 'Coming Soon',
+  'v7-9x16': 'For Sale',
+  'v8-9x16': 'New Listing',
+  'v9-9x16': 'For Sale',
+  'v10-9x16': 'Just Listed',
+  'v11-9x16': 'For Sale',
+  'v12-9x16': 'For Sale',
+  'v13-9x16': 'For Sale',
+  'v14-9x16': 'For Sale',
+  'v15-9x16': 'New Listing',
+  'v16-9x16': 'For Sale',
+  'v17-9x16': 'New Listing',
+};
+
+const SLIDESHOW_ORDER_KEYS = ['h1-16x9', 'h2-16x9', 'h3-16x9', 'h4-16x9'];
+
+const SLIDESHOW_LABELS: Record<string, string> = {
+  'h1-16x9': 'Property Showcase',
+  'h2-16x9': 'Property Showcase',
+  'h3-16x9': 'Property Showcase',
+  'h4-16x9': 'Just Listed',
+};
+
+const QR_LABELS: Record<string, string> = {
+  'bare-qr': 'Bare QR Code',
+  'rider-scan-info': 'Sign Rider - Scan for Info',
+  'rider-scan-tour-price': 'Sign Rider - Tour & Price',
+  'rider-scan-see-inside': 'Sign Rider - See Inside',
+  'decal-scan-info': 'Decal - Scan for Info',
+  'decal-scan-tour-price': 'Decal - Tour & Price',
+  'decal-scan-see-inside': 'Decal - See Inside',
+};
+
+const WEBSITE_NAMES: Record<number, string> = {
+  6: 'Nivo',
+  5: 'Lin',
+  4: 'Juno',
+  3: 'Axis',
+  2: 'Nox',
+  1: 'Sera',
+};
+
+function sortKeyIndex(keys: string[], key: string) {
+  const i = keys.indexOf((key || '').toLowerCase());
+  return i >= 0 ? i : 999;
+}
+
 export default async function DeliveryPage({
   params,
 }: {
@@ -63,703 +129,178 @@ export default async function DeliveryPage({
   const order = await getOrder(id);
   if (!order) notFound();
 
-  const realtorName = `${order.realtor.firstName} ${order.realtor.lastName}`;
+  const socialTemplates = await prisma.socialPostTemplate.findMany({
+    select: { variantKey: true, name: true, label: true, sortOrder: true },
+  });
+  const socialTemplateMeta = new Map(socialTemplates.map((t) => [t.variantKey, t]));
+  const SOCIAL_CATEGORY_ORDER = [
+    'coming-soon',
+    'just-listed',
+    'new-listing',
+    'for-sale',
+    'sold',
+  ];
+  const socialCategoryRank = (variantKey: string) => {
+    const idx = SOCIAL_CATEGORY_ORDER.findIndex(
+      (prefix) => variantKey === prefix || variantKey.startsWith(`${prefix}-`)
+    );
+    return idx === -1 ? SOCIAL_CATEGORY_ORDER.length : idx;
+  };
+  const socialCollator = new Intl.Collator('en', { numeric: true, sensitivity: 'base' });
+  const socialPostsSorted = (order.socialPosts || [])
+    .filter((p) => p.status === 'COMPLETE' && p.url)
+    .sort((a, b) => {
+      const catCmp = socialCategoryRank(a.variantKey) - socialCategoryRank(b.variantKey);
+      if (catCmp !== 0) return catCmp;
+      const metaA = socialTemplateMeta.get(a.variantKey);
+      const metaB = socialTemplateMeta.get(b.variantKey);
+      const labelCmp = socialCollator.compare(metaA?.label ?? '', metaB?.label ?? '');
+      if (labelCmp !== 0) return labelCmp;
+      const sortCmp =
+        (metaA?.sortOrder ?? Number.MAX_SAFE_INTEGER) -
+        (metaB?.sortOrder ?? Number.MAX_SAFE_INTEGER);
+      if (sortCmp !== 0) return sortCmp;
+      return a.variantKey < b.variantKey ? -1 : a.variantKey > b.variantKey ? 1 : 0;
+    });
+
   const hdrs = await headers();
   const host = hdrs.get('x-forwarded-host') ?? hdrs.get('host');
   const proto =
     hdrs.get('x-forwarded-proto') ??
     (process.env.NODE_ENV === 'development' ? 'http' : 'https');
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL || (host ? `${proto}://${host}` : '');
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (host ? `${proto}://${host}` : '');
   const publicUrl = `${baseUrl}/delivery/${order.id}`;
-  const photoItems = order.photos.map((pp) => ({
-    src: pp.urlMls || pp.url,
-    alt: pp.filename,
-  }));
+  const heroUrl: string | null = order.photos[0]?.url ?? order.photos[0]?.urlMls ?? null;
 
-  const floorPlanItems = order.floorPlans.map((fp) => ({
-    src: fp.url,
-    alt: fp.filename,
-  }));
+  const addressLine = (
+    order.propertyAddressOverride ||
+    order.propertyAddress ||
+    order.propertyFormattedAddress ||
+    ''
+  ).split(',')[0];
 
-  const heroUrl: string | null =
-    order.photos[0]?.url ?? order.photos[0]?.urlMls ?? null;
+  const cityLine = [
+    order.propertyCityOverride || order.propertyCity,
+    order.propertyProvince,
+  ]
+    .filter(Boolean)
+    .join(', ');
 
-  return (
-    <div className="min-h-screen bg-white">
-      {/* Hero */}
-      <section className="relative isolate min-h-[46vh]">
-        {/* Background image */}
-        {heroUrl ? (
-          <Image
-            src={heroUrl}
-            alt="Property hero"
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover"
-          />
-        ) : null}
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-black/60" />
-        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/30 to-transparent pointer-events-none" />
+  const completeReels = (order.reels || []).filter((r) => r.status === 'COMPLETE' && r.url);
 
-        <div className="relative z-10 mx-auto max-w-6xl px-4 py-10 md:py-16">
-          {/* Top-right copy link */}
-          <div className="absolute right-4 top-4">
-            <CopyButton text={publicUrl} label="Copy Link" size="lg" />
-          </div>
+  const data: DeliveryPageData = {
+    orderId: order.id,
+    publicUrl,
+    addressLine,
+    cityLine,
+    shootDate: null,
+    heroUrl,
+    realtor: {
+      firstName: order.realtor.firstName,
+      lastName: order.realtor.lastName,
+      email: order.realtor.email,
+      phone: order.realtor.phone,
+      headshot: order.realtor.headshot,
+    },
+    photos: order.photos.map((p) => ({
+      id: p.id,
+      url: p.url,
+      urlMls: p.urlMls,
+      filename: p.filename,
+    })),
+    videos: order.videos.map((v) => ({
+      id: v.id,
+      url: v.url,
+      filename: v.filename,
+    })),
+    reels: completeReels
+      .filter((r) => (r.variantKey || '').toLowerCase().startsWith('v'))
+      .slice()
+      .sort((a, b) => sortKeyIndex(REEL_ORDER_KEYS, a.variantKey) - sortKeyIndex(REEL_ORDER_KEYS, b.variantKey))
+      .map((r) => ({
+        id: r.id,
+        url: r.url as string,
+        thumbnail: r.thumbnail,
+        variantKey: r.variantKey,
+        width: r.width,
+        height: r.height,
+        label: REEL_LABELS[(r.variantKey || '').toLowerCase()] || (r.variantKey || '').toUpperCase(),
+      })),
+    aiReels: (order.aiReels || [])
+      .filter((r) => r.finalUrl)
+      .map((r, i, arr) => ({
+        id: r.id,
+        finalUrl: r.finalUrl as string,
+        thumbnail: r.thumbnail,
+        width: r.width,
+        height: r.height,
+        label: arr.length > 1 ? `AI Twilight Reel ${i + 1}` : 'AI Twilight Reel',
+      })),
+    slideshows: completeReels
+      .filter((r) => (r.variantKey || '').toLowerCase().startsWith('h'))
+      .slice()
+      .sort(
+        (a, b) =>
+          sortKeyIndex(SLIDESHOW_ORDER_KEYS, a.variantKey) -
+          sortKeyIndex(SLIDESHOW_ORDER_KEYS, b.variantKey)
+      )
+      .map((r) => ({
+        id: r.id,
+        url: r.url as string,
+        thumbnail: r.thumbnail,
+        variantKey: r.variantKey,
+        width: r.width,
+        height: r.height,
+        label:
+          SLIDESHOW_LABELS[(r.variantKey || '').toLowerCase()] ||
+          (r.variantKey || '').toUpperCase(),
+      })),
+    socialPosts: socialPostsSorted.map((p) => ({
+      id: p.id,
+      url: p.url as string,
+      variantKey: p.variantKey,
+      caption: socialTemplateMeta.get(p.variantKey)?.name || p.variantKey.replace(/-/g, ' '),
+    })),
+    floorPlans: order.floorPlans.map((f) => ({
+      id: f.id,
+      url: f.url,
+      filename: f.filename,
+    })),
+    attachments: order.attachments.map((a) => ({
+      id: a.id,
+      url: a.url,
+      filename: a.filename,
+    })),
+    embeds: order.embeds.map((e) => ({
+      id: e.id,
+      title: e.title,
+      embedUrl: e.embedUrl,
+    })),
+    flyers: (order.flyers || [])
+      .filter((f) => f.status === 'COMPLETE' && f.url)
+      .map((f) => ({
+        id: f.id,
+        url: f.url as string,
+        previewUrl: f.previewUrl,
+        variantKey: f.variantKey,
+      })),
+    websites: [6, 5, 4, 3, 2, 1].map((v) => ({
+      variant: v,
+      name: WEBSITE_NAMES[v],
+      url: `${baseUrl}/property/${order.id}/v${v}`,
+      previewSrc: `/property/${order.id}/v${v}`,
+    })),
+    qrPrintables: order.qrAssignments.flatMap((a) =>
+      a.qrCode.printables.map((p) => ({
+        id: p.id,
+        variantKey: p.variantKey,
+        label: QR_LABELS[p.variantKey] || p.variantKey,
+        displayId: a.qrCode.displayId,
+        pngUrl: p.pngUrl,
+        pdfUrl: p.pdfUrl,
+      }))
+    ),
+  };
 
-          <div className="grid gap-6 md:grid-cols-2 items-center">
-            {/* Left: Realtor info */}
-            <div className="flex items-center gap-4 text-white">
-              {order.realtor.headshot && (
-                <Image
-                  src={order.realtor.headshot}
-                  alt={realtorName}
-                  width={64}
-                  height={64}
-                  className="rounded-full object-cover"
-                />
-              )}
-              <div>
-                <div className="text-lg md:text-xl font-semibold">
-                  {realtorName}
-                </div>
-                <div className="text-sm text-gray-200/90">
-                  {order.realtor.email}
-                </div>
-                {order.realtor.phone && (
-                  <div className="text-sm text-gray-200/90">
-                    <a
-                      href={`tel:${order.realtor.phone}`}
-                      className="underline decoration-white/30 hover:decoration-white"
-                    >
-                      {order.realtor.phone}
-                    </a>
-                  </div>
-                )}
-              </div>
-            </div>
-            {/* Right: Address */}
-            <div className="text-right">
-              <h1 className="text-white text-4xl md:text-6xl font-semibold leading-tight">
-                {
-                  (
-                    order.propertyAddressOverride ||
-                    order.propertyAddress ||
-                    order.propertyFormattedAddress ||
-                    ''
-                  ).split(',')[0]
-                }
-              </h1>
-            </div>
-          </div>
-
-          {/* Primary actions */}
-          <div className="mt-6 flex flex-wrap items-center gap-6">
-            <div className="flex flex-col gap-2">
-              <div className="text-white/95 text-2xl md:text-3xl font-semibold">
-                Download All Photos
-              </div>
-              <PhotosZipDownloader orderId={order.id} photos={order.photos.map(p => ({ id: p.id, url: p.url, urlMls: p.urlMls, filename: p.filename }))} size="lg" />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <main className="mx-auto max-w-6xl p-4 space-y-12 mt-8 md:mt-12">
-        {/* Individual Photos */}
-        {!!order.photos.length && (
-          <section id="photos" className="space-y-3 scroll-mt-24">
-            <div className="space-y-2">
-              <h2 className="text-2xl md:text-3xl font-semibold">Photos</h2>
-              <div className="h-px bg-gray-200/80" />
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {order.photos.map((p, index) => (
-                <div key={p.id} className="border rounded-md overflow-hidden">
-                  <PhotoLightbox
-                    src={p.urlMls || p.url}
-                    alt={p.filename}
-                    items={photoItems}
-                    startIndex={index}
-                    overlayLabel={String(index + 1).padStart(2, '0')}
-                  />
-                  <div className="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x">
-                    <div className="sm:flex-1 p-2 text-center">
-                      <DownloadLinkButton
-                        url={`/api/delivery/photo/${
-                          p.id
-                        }?variant=original&filename=${encodeURIComponent(
-                          p.filename
-                        )}`}
-                        label="Original Size"
-                        fileName={p.filename}
-                      />
-                    </div>
-                    <div className="sm:flex-1 p-2 text-center">
-                      <DownloadLinkButton
-                        url={`/api/delivery/photo/${
-                          p.id
-                        }?variant=mls&filename=${encodeURIComponent(
-                          p.filename.replace(/\.[^.]+$/, '') + '-mls.jpg'
-                        )}`}
-                        label="MLS"
-                        fileName={
-                          p.filename.replace(/\.[^.]+$/, '') + '-mls.jpg'
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Videos */}
-        {!!order.videos.length && (
-          <section id="videos" className="space-y-3 scroll-mt-24">
-            <div className="space-y-2">
-              <h2 className="text-2xl md:text-3xl font-semibold">Videos</h2>
-              <div className="h-px bg-gray-200/80" />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-4">
-              {order.videos.map((v) => (
-                <div key={v.id} className="border rounded-md overflow-hidden">
-                  <div className="aspect-video bg-black">
-                    <video controls className="w-full h-full object-contain">
-                      <source src={v.url} type="video/mp4" />
-                    </video>
-                  </div>
-                  <div className="p-2 flex gap-2">
-                    <DownloadLinkButton
-                      url={v.url}
-                      label="Download"
-                      fileName={
-                        (v as any).filename ??
-                        (v.url.split('/').pop() || 'video.mp4')
-                      }
-                      className="flex-1"
-                    />
-                    <CopyButton
-                      text={v.url}
-                      label="Copy Public Link"
-                      copiedLabel="Copied!"
-                      size="sm"
-                      icon={<Copy className="w-4 h-4" />}
-                      className="flex-1"
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Reels (vertical only) */}
-        {!!order.reels?.filter((r: any) => r.status === 'COMPLETE' && (r.variantKey || '').toLowerCase().startsWith('v')).length && (
-          <section id="reels" className="space-y-3 scroll-mt-24">
-            <div className="space-y-2">
-              <h2 className="text-2xl md:text-3xl font-semibold">
-                Social Media Reels
-              </h2>
-              <div className="h-px bg-gray-200/80" />
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-3">
-              {(() => {
-                const orderKeys = [
-                  'v1-9x16',
-                  'v2-9x16',
-                  'v3-9x16',
-                  'v4-9x16',
-                  'v5-9x16',
-                  'v6-9x16',
-                  'v7-9x16',
-                  'v8-9x16',
-                  'v9-9x16',
-                  'v10-9x16',
-                  'v11-9x16',
-                  'v12-9x16',
-                  'v13-9x16',
-                  'v14-9x16',
-                ];
-                const labelMap: Record<string, string> = {
-                  'v1-9x16': 'Vertical Reel 1 - Coming Soon',
-                  'v2-9x16': 'Vertical Reel 2 - For Sale',
-                  'v3-9x16': 'Vertical Reel 3 - For Sale',
-                  'v4-9x16': 'Vertical Reel 4 - Just Listed',
-                  'v5-9x16': 'Vertical Reel 5 - For Sale',
-                  'v6-9x16': 'Vertical Reel 6 - Coming Soon',
-                  'v7-9x16': 'Seasonal 1 - For Sale',
-                  'v8-9x16': 'Seasonal 2 - New Listing',
-                  'v9-9x16': 'Seasonal 3 - For Sale',
-                  'v10-9x16': 'Vertical Reel 10 - Just Listed',
-                  'v11-9x16': 'Vertical Reel 11 - For Sale',
-                  'v12-9x16': 'Vertical Reel 12 - For Sale',
-                  'v13-9x16': 'Vertical Reel 13 - For Sale',
-                  'v14-9x16': 'Vertical Reel 14 - For Sale',
-                  'v15-9x16': 'Vertical Reel 15 - New Listing',
-                  'v16-9x16': 'Vertical Reel 16 - For Sale',
-                  'v17-9x16': 'Vertical Reel 17 - New Listing',
-                };
-                const idx = (k: string) => {
-                  const i = orderKeys.indexOf((k || '').toLowerCase());
-                  return i >= 0 ? i : 999;
-                };
-                const reelsSorted = order.reels
-                  .filter((r: any) => r.status === 'COMPLETE' && (r.variantKey || '').toLowerCase().startsWith('v'))
-                  .slice()
-                  .sort(
-                    (a: any, b: any) => idx(a.variantKey) - idx(b.variantKey)
-                  );
-                return reelsSorted.map((r: any) => (
-                  <div key={r.id} className="border rounded-md overflow-hidden">
-                    <VideoWithPoster
-                      src={r.url}
-                      poster={r.thumbnail}
-                      fallbackImage={heroUrl}
-                      aspectRatio="9/16"
-                    />
-                    <div className="px-2 pt-2 text-xs text-gray-600 flex items-center justify-between">
-                      <span className="truncate">
-                        {labelMap[(r.variantKey || '').toLowerCase()] ||
-                          (r.variantKey || '').toUpperCase()}
-                      </span>
-                      {r.width && r.height && (
-                        <span className="ml-2 whitespace-nowrap">
-                          {r.width}×{r.height}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x">
-                      <div className="sm:flex-1 p-2 text-center">
-                        <DownloadLinkButton
-                          url={r.url}
-                          label="Download"
-                          fileName={`reel-${r.variantKey}.mp4`}
-                        />
-                      </div>
-                      <div className="sm:flex-1 p-2 text-center">
-                        <CopyButton
-                          text={r.url}
-                          label="Copy Link"
-                          copiedLabel="Copied!"
-                          size="sm"
-                          icon={<Copy className="w-4 h-4" />}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ));
-              })()}
-            </div>
-          </section>
-        )}
-
-        {/* AI Reels */}
-        {!!(order as any).aiReels?.filter((r: any) => r.finalUrl).length && (
-          <section id="ai-reels" className="space-y-3 scroll-mt-24">
-            <div className="space-y-2">
-              <h2 className="text-2xl md:text-3xl font-semibold">
-                Bonus AI Reel
-              </h2>
-              <div className="h-px bg-gray-200/80" />
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-3">
-              {(order as any).aiReels
-                .filter((r: any) => r.finalUrl)
-                .map((r: any, i: number) => (
-                  <div key={r.id} className="border rounded-md overflow-hidden">
-                    <VideoWithPoster
-                      src={r.finalUrl}
-                      poster={r.thumbnail}
-                      fallbackImage={heroUrl}
-                      aspectRatio="9/16"
-                    />
-                    <div className="px-2 pt-2 text-xs text-gray-600 flex items-center justify-between">
-                      <span className="truncate">AI Twilight Reel{(order as any).aiReels.filter((r: any) => r.finalUrl).length > 1 ? ` ${i + 1}` : ''}</span>
-                      {r.width && r.height && (
-                        <span className="ml-2 whitespace-nowrap">
-                          {r.width}×{r.height}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x">
-                      <div className="sm:flex-1 p-2 text-center">
-                        <DownloadLinkButton
-                          url={r.finalUrl}
-                          label="Download"
-                          fileName={`ai-twilight-reel${i > 0 ? `-${i + 1}` : ''}.mp4`}
-                        />
-                      </div>
-                      <div className="sm:flex-1 p-2 text-center">
-                        <CopyButton
-                        text={r.finalUrl}
-                        label="Copy Public Link"
-                          copiedLabel="Copied!"
-                          size="sm"
-                          icon={<Copy className="w-4 h-4" />}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          </section>
-        )}
-
-        {/* Slideshows (horizontal) */}
-        {!!order.reels?.filter((r: any) => r.status === 'COMPLETE' && (r.variantKey || '').toLowerCase().startsWith('h')).length && (
-          <section id="slideshows" className="space-y-3 scroll-mt-24">
-            <div className="space-y-2">
-              <h2 className="text-2xl md:text-3xl font-semibold">
-                Slideshows
-              </h2>
-              <div className="h-px bg-gray-200/80" />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {(() => {
-                const orderKeys = ['h1-16x9', 'h2-16x9', 'h3-16x9', 'h4-16x9'];
-                const labelMap: Record<string, string> = {
-                  'h1-16x9': 'Slideshow 1 - Property Showcase',
-                  'h2-16x9': 'Slideshow 2 - Property Showcase',
-                  'h3-16x9': 'Slideshow 3 - Property Showcase',
-                  'h4-16x9': 'Slideshow 4 - Just Listed',
-                };
-                const idx = (k: string) => {
-                  const i = orderKeys.indexOf((k || '').toLowerCase());
-                  return i >= 0 ? i : 999;
-                };
-                const slideshowsSorted = order.reels
-                  .filter((r: any) => r.status === 'COMPLETE' && (r.variantKey || '').toLowerCase().startsWith('h'))
-                  .slice()
-                  .sort(
-                    (a: any, b: any) => idx(a.variantKey) - idx(b.variantKey)
-                  );
-                return slideshowsSorted.map((r: any) => (
-                  <div key={r.id} className="border rounded-md overflow-hidden">
-                    <VideoWithPoster
-                      src={r.url}
-                      poster={r.thumbnail}
-                      fallbackImage={heroUrl}
-                      aspectRatio="16/9"
-                    />
-                    <div className="px-2 pt-2 text-xs text-gray-600 flex items-center justify-between">
-                      <span className="truncate">
-                        {labelMap[(r.variantKey || '').toLowerCase()] ||
-                          (r.variantKey || '').toUpperCase()}
-                      </span>
-                      {r.width && r.height && (
-                        <span className="ml-2 whitespace-nowrap">
-                          {r.width}×{r.height}
-                        </span>
-                      )}
-                    </div>
-                    <div className="p-2 flex gap-2">
-                      <DownloadLinkButton
-                        url={r.url}
-                        label="Download"
-                        fileName={`slideshow-${r.variantKey}.mp4`}
-                        className="flex-1"
-                      />
-                      <CopyButton
-                        text={r.url}
-                        label="Copy Public Link"
-                        copiedLabel="Copied!"
-                        size="sm"
-                        icon={<Copy className="w-4 h-4" />}
-                        className="flex-1"
-                      />
-                    </div>
-                  </div>
-                ));
-              })()}
-            </div>
-          </section>
-        )}
-
-        {/* Floor Plans */}
-        {!!order.floorPlans.length && (
-          <section id="floor-plans" className="space-y-3 scroll-mt-24">
-            <div className="space-y-2">
-              <h2 className="text-2xl md:text-3xl font-semibold">
-                Floor Plans
-              </h2>
-              <div className="h-px bg-gray-200/80" />
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {order.floorPlans.map((f) => (
-                <div key={f.id} className="border rounded-md overflow-hidden">
-                  <PhotoLightbox
-                    src={f.url}
-                    alt={f.filename}
-                    items={floorPlanItems}
-                    startIndex={order.floorPlans.findIndex(
-                      (x) => x.id === f.id
-                    )}
-                  />
-                  <div className="p-2 text-center">
-                    <DownloadLinkButton
-                      url={f.url}
-                      label="Download"
-                      fileName={f.filename}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Attachments */}
-        {!!order.attachments.length && (
-          <section id="attachments" className="space-y-3 scroll-mt-24">
-            <div className="space-y-2">
-              <h2 className="text-2xl md:text-3xl font-semibold">
-                Attachments
-              </h2>
-              <div className="h-px bg-gray-200/80" />
-            </div>
-            <div className="space-y-2">
-              {order.attachments.map((a) => (
-                <div
-                  key={a.id}
-                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border rounded-md p-2"
-                >
-                  <div className="truncate sm:mr-4">{a.filename}</div>
-                  <div className="sm:flex-shrink-0">
-                    <DownloadLinkButton
-                      url={a.url}
-                      label="Download"
-                      fileName={a.filename}
-                      fullWidth={false}
-                      className="w-full sm:w-auto"
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Embeds */}
-        {!!order.embeds.length && (
-          <section className="space-y-3">
-            <div className="space-y-2">
-              <h2 className="text-2xl md:text-3xl font-semibold">
-                Tours & Embeds
-              </h2>
-              <div className="h-px bg-gray-200/80" />
-            </div>
-            <div className="space-y-3">
-              {order.embeds.map((e) => (
-                <div key={e.id} className="border rounded-md p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="font-medium truncate mr-4">{e.title}</div>
-                    <CopyButton text={e.embedUrl} label="Copy Link" />
-                  </div>
-                  <div className="aspect-video bg-black/5 rounded overflow-hidden">
-                    <iframe
-                      src={e.embedUrl}
-                      className="w-full h-full"
-                      allowFullScreen
-                      loading="lazy"
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Property Flyers */}
-        {!!order.flyers?.filter((f: any) => f.status === 'COMPLETE' && f.url)
-          .length && (
-          <section id="property-flyers" className="space-y-3 scroll-mt-24">
-            <div className="space-y-2">
-              <h2 className="text-2xl md:text-3xl font-semibold">
-                Property Flyers
-              </h2>
-              <div className="h-px bg-gray-200/80" />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {order.flyers
-                .filter((f: any) => f.status === 'COMPLETE' && f.url)
-                .map((f: any) => (
-                  <div key={f.id} className="border rounded-md overflow-hidden">
-                    <div className="relative aspect-[8.5/11] bg-black/5">
-                      {f.previewUrl ? (
-                        <Image
-                          src={f.previewUrl}
-                          alt="Flyer preview"
-                          fill
-                          className="object-cover"
-                        />
-                      ) : heroUrl ? (
-                        <Image
-                          src={heroUrl}
-                          alt="Flyer preview"
-                          fill
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-400">
-                          No preview
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-2 text-center">
-                      <DownloadLinkButton
-                        url={f.url}
-                        label="Download PDF"
-                        fileName={`flyer-${f.variantKey}.pdf`}
-                      />
-                    </div>
-                  </div>
-                ))}
-            </div>
-          </section>
-        )}
-
-        {/* Property Websites */}
-        <section id="property-sites" className="space-y-3 scroll-mt-24">
-          <div className="space-y-2">
-            <h2 className="text-2xl md:text-3xl font-semibold">
-              Property Websites
-            </h2>
-            <div className="h-px bg-gray-200/80" />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {[6, 5, 4, 3, 2, 1].map((v) => {
-              const names: Record<number, string> = {
-                6: 'Nivo',
-                5: 'Lin',
-                4: 'Juno',
-                3: 'Axis',
-                2: 'Nox',
-                1: 'Sera',
-              };
-              const name = names[v];
-              const url = `${baseUrl}/property/${order.id}/v${v}`;
-              return (
-                <div key={v} className="border rounded-md overflow-hidden">
-                  <div className="px-3 py-2 text-sm font-medium bg-gray-50 border-b">
-                    {name}
-                  </div>
-
-                  <SitePreview
-                    src={`/property/${order.id}/v${v}`}
-                    title={`Property Website ${name}`}
-                  />
-                  <div className="p-3 flex items-center justify-between">
-                    <Button
-                      asChild
-                      variant="secondary"
-                      className="bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      <Link href={url} target="_blank">
-                        <ExternalLink className="w-4 h-4 mr-2" />
-                        Open
-                      </Link>
-                    </Button>
-                    <CopyButton
-                      text={url}
-                      label="Copy Link"
-                      icon={<Copy className="w-4 h-4 mr-2" />}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* Lead Capture QR Codes */}
-        {(() => {
-          const allPrintables = order.qrAssignments.flatMap((a) =>
-            a.qrCode.printables.map((p) => ({
-              ...p,
-              displayId: a.qrCode.displayId,
-            }))
-          );
-
-          if (allPrintables.length === 0) return null;
-
-          const variantLabels: Record<string, string> = {
-            'bare-qr': 'Bare QR Code',
-            'rider-scan-info': 'Sign Rider - Scan for Info',
-            'rider-scan-tour-price': 'Sign Rider - Tour & Price',
-            'rider-scan-see-inside': 'Sign Rider - See Inside',
-            'decal-scan-info': 'Decal - Scan for Info',
-            'decal-scan-tour-price': 'Decal - Tour & Price',
-            'decal-scan-see-inside': 'Decal - See Inside',
-          };
-
-          return (
-            <section id="qr-codes" className="space-y-3 scroll-mt-24">
-              <div className="space-y-2">
-                <h2 className="text-2xl md:text-3xl font-semibold">
-                  Lead Capture QR Codes
-                </h2>
-                <p className="text-sm text-gray-600">
-                  Download and print these as a sign rider or decal for your yard sign. When a buyer scans it, they can view the property instantly or leave their contact info — so every scan and lead gets tracked automatically in your portal.
-                </p>
-                <div className="h-px bg-gray-200/80" />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {allPrintables.map((p) => {
-                  const label = variantLabels[p.variantKey] || p.variantKey;
-                  return (
-                    <div key={p.id} className="border rounded-md overflow-hidden">
-                      <div className="px-3 py-2 text-sm font-medium bg-gray-50 border-b">
-                        {label}
-                      </div>
-                      <div className="relative aspect-square bg-white flex items-center justify-center p-4">
-                        {p.pngUrl ? (
-                          <Image
-                            src={p.pngUrl}
-                            alt={label}
-                            fill
-                            className="object-contain"
-                          />
-                        ) : (
-                          <div className="text-gray-400 text-sm">No preview</div>
-                        )}
-                      </div>
-                      <div className="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x">
-                        {p.pngUrl && (
-                          <div className="sm:flex-1 p-2 text-center">
-                            <DownloadLinkButton
-                              url={p.pngUrl}
-                              label="Download PNG"
-                              fileName={`qr-${p.displayId}-${p.variantKey}.png`}
-                            />
-                          </div>
-                        )}
-                        {p.pdfUrl && (
-                          <div className="sm:flex-1 p-2 text-center">
-                            <DownloadLinkButton
-                              url={p.pdfUrl}
-                              label="Download PDF"
-                              fileName={`qr-${p.displayId}-${p.variantKey}.pdf`}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          );
-        })()}
-
-        <div className="text-xs text-gray-500 text-center py-6">
-          Powered by Photos 4 Real Estate
-        </div>
-      </main>
-    </div>
-  );
+  return <DeliveryPageClient data={data} />;
 }

@@ -1,8 +1,8 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Search } from "lucide-react";
 
 export function OrdersSearchInput({
   placeholder = "Search address...",
@@ -50,15 +50,23 @@ export function OrdersSearchInput({
   }, [searchParams]);
 
   return (
-    <Input
-      value={value}
-      onChange={(e) => {
-        isUserTyping.current = true;
-        setValue(e.target.value);
-      }}
-      placeholder={placeholder}
-      className={className}
-    />
+    <div
+      className={`flex items-center gap-2 rounded-[10px] border border-border bg-card px-3 py-2 text-faint ${
+        className || ''
+      }`}
+    >
+      <Search className="h-4 w-4 shrink-0" />
+      <input
+        value={value}
+        onChange={(e) => {
+          isUserTyping.current = true;
+          setValue(e.target.value);
+        }}
+        placeholder={placeholder}
+        aria-label="Search orders"
+        className="w-full border-none bg-transparent text-[13.5px] text-foreground outline-none placeholder:text-faint"
+      />
+    </div>
   );
 }
 

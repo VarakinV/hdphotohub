@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { headers, cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
+import { ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { InviteUserForm } from '@/components/admin/invite-user-form';
 
@@ -64,48 +65,47 @@ export default async function RealtorUsersPage({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                {realtor.firstName} {realtor.lastName} · Users
-              </h1>
-              <p className="text-sm text-gray-600 mt-1">
-                Manage users attached to this realtor account
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" asChild>
-                <Link href="/admin/clients">Back to Clients</Link>
-              </Button>
-              <Button variant="outline" asChild>
-                <Link href="/admin/dashboard">Back to Dashboard</Link>
-              </Button>
-            </div>
-          </div>
+    <div className="w-full">
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
+          <Link
+            href="/admin/clients"
+            className="mb-2 inline-flex items-center gap-1 text-[13px] font-semibold text-muted-foreground hover:text-brick-600"
+          >
+            <ChevronLeft className="h-4 w-4" /> All clients
+          </Link>
+          <h2 className="font-display text-[22px] font-semibold leading-tight">
+            {realtor.firstName} {realtor.lastName} · Users
+          </h2>
+          <p className="mt-0.5 text-[13.5px] text-muted-foreground">
+            Manage users attached to this realtor account
+          </p>
         </div>
-      </header>
+        <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/admin/clients">Back to Clients</Link>
+          </Button>
+        </div>
+      </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <div className="space-y-6">
         <InviteUserForm action={action} />
 
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-lg shadow p-4">
-            <h2 className="font-medium mb-3">Pending Invitations</h2>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="rounded-2xl border border-border bg-card p-4.5">
+            <h3 className="font-display mb-3 text-[15px] font-semibold">Pending invitations</h3>
             {invites.length === 0 ? (
-              <p className="text-sm text-gray-500">No pending invitations.</p>
+              <p className="text-sm text-muted-foreground">No pending invitations.</p>
             ) : (
-              <ul className="text-sm space-y-2">
+              <ul className="space-y-2 text-sm">
                 {invites.map((inv) => (
                   <li
                     key={inv.id}
-                    className="flex items-center justify-between"
+                    className="flex items-center justify-between border-b border-border pb-2 last:border-b-0 last:pb-0"
                   >
                     <div>
                       <div>{inv.email}</div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-faint">
                         Expires {new Date(inv.expiresAt).toLocaleString()}
                       </div>
                     </div>
@@ -114,20 +114,22 @@ export default async function RealtorUsersPage({
               </ul>
             )}
           </div>
-          <div className="bg-white rounded-lg shadow p-4">
-            <h2 className="font-medium mb-3">Active Users</h2>
+          <div className="rounded-2xl border border-border bg-card p-4.5">
+            <h3 className="font-display mb-3 text-[15px] font-semibold">Active users</h3>
             {realtor.users.length === 0 ? (
-              <p className="text-sm text-gray-500">No users yet.</p>
+              <p className="text-sm text-muted-foreground">No users yet.</p>
             ) : (
-              <ul className="text-sm space-y-2">
+              <ul className="space-y-2 text-sm">
                 {realtor.users.map((u) => (
-                  <li key={u.id}>{u.email}</li>
+                  <li key={u.id} className="border-b border-border pb-2 last:border-b-0 last:pb-0">
+                    {u.email}
+                  </li>
                 ))}
               </ul>
             )}
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

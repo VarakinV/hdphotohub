@@ -1,8 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { AdminNavbar } from '@/components/admin/admin-navbar';
-import AdminTwoColumnShell from '@/components/admin/AdminTwoColumnShell';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -23,7 +21,8 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Loader2, Pencil, Trash2, Save, X, Plus } from 'lucide-react';
+import { Loader2, Pencil, Save, X, Plus } from 'lucide-react';
+import { DeleteIconButton } from '@/components/admin/ui/icon-action';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -166,14 +165,13 @@ export default function TaxesPage() {
 
   return (
     <div className="min-h-screen">
-      <AdminNavbar />
 
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
+      <div className="mb-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Taxes</h1>
-              <p className="text-sm text-gray-600 mt-1">
+              <h2 className="font-display text-[22px] font-semibold text-foreground">Taxes</h2>
+              <p className="text-sm text-muted-foreground mt-1">
                 Manage taxes and rates
               </p>
             </div>
@@ -184,9 +182,9 @@ export default function TaxesPage() {
             </div>
           </div>
         </div>
-      </header>
+      </div>
 
-      <AdminTwoColumnShell>
+      <div className="space-y-6">
         {/* Create New Tax Dialog */}
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogContent>
@@ -206,7 +204,7 @@ export default function TaxesPage() {
                   }
                 />
                 {createErr.name && (
-                  <p className="text-xs text-red-600 mt-1">{createErr.name}</p>
+                  <p className="text-xs text-[#c23434] dark:text-[#f09a9a] mt-1">{createErr.name}</p>
                 )}
               </div>
               <div>
@@ -220,13 +218,13 @@ export default function TaxesPage() {
                   }
                 />
                 {createErr.ratePercent && (
-                  <p className="text-xs text-red-600 mt-1">
+                  <p className="text-xs text-[#c23434] dark:text-[#f09a9a] mt-1">
                     {createErr.ratePercent}
                   </p>
                 )}
               </div>
               {createErr.form && (
-                <p className="text-xs text-red-600">{createErr.form}</p>
+                <p className="text-xs text-[#c23434] dark:text-[#f09a9a]">{createErr.form}</p>
               )}
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" onClick={() => setCreateOpen(false)}>
@@ -279,9 +277,9 @@ export default function TaxesPage() {
           </DialogContent>
         </Dialog>
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-4 flex flex-wrap gap-3 items-center">
+        <div className="rounded-2xl border border-border bg-card p-4 flex flex-wrap gap-3 items-center">
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">Active:</span>
+            <span className="text-sm text-muted-foreground">Active:</span>
             <select
               className="h-10 rounded-md border px-3"
               defaultValue="ALL"
@@ -308,10 +306,10 @@ export default function TaxesPage() {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="rounded-2xl border border-border bg-card overflow-hidden">
           {loading ? (
             <div className="flex justify-center items-center h-64">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              <Loader2 className="h-8 w-8 animate-spin text-faint" />
             </div>
           ) : (
             <>
@@ -401,16 +399,12 @@ export default function TaxesPage() {
                                 >
                                   <Pencil className="h-4 w-4" />
                                 </Button>
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
+                                <DeleteIconButton
                                   onClick={() => {
                                     setDeleteTarget(t);
                                     setDeleteOpen(true);
                                   }}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                />
                               </>
                             )}
                           </div>
@@ -422,7 +416,7 @@ export default function TaxesPage() {
               </Table>
 
               <div className="p-4 border-t flex items-center justify-between">
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-muted-foreground">
                   Page {page} of {totalPages}
                 </div>
                 <div className="flex gap-2">
@@ -447,7 +441,7 @@ export default function TaxesPage() {
             </>
           )}
         </div>
-      </AdminTwoColumnShell>
+      </div>
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

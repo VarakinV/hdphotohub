@@ -1,8 +1,6 @@
 import { auth } from '@/lib/auth/auth';
 import { redirect } from 'next/navigation';
-import { PortalNavbar } from '@/components/portal/portal-navbar';
-import PortalTwoColumnShell from '@/components/portal/PortalTwoColumnShell';
-import { Card } from '@/components/ui/card';
+import { PageHead } from '@/components/admin/ui/page-head';
 import { Button } from '@/components/ui/button';
 
 import Link from 'next/link';
@@ -16,11 +14,10 @@ import {
   type InvoiceStatus,
 } from '@/lib/wave/client';
 
-function statusColor(status: InvoiceStatus): string {
-  if (status === 'PAID') return 'bg-green-100 text-green-700 border-green-200';
-  if (status === 'UNPAID' || status === 'OVERDUE')
-    return 'bg-red-100 text-red-700 border-red-200';
-  return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+function statusPillClass(status: InvoiceStatus): string {
+  if (status === 'PAID') return 'pill pill-success';
+  if (status === 'UNPAID' || status === 'OVERDUE') return 'pill pill-danger';
+  return 'pill pill-warn';
 }
 
 function formatMoney(v: WaveInvoice['total']): string {
@@ -92,90 +89,82 @@ export default async function InvoicesPage({
   const start = (uiPage - 1) * UI_PAGE_SIZE;
   const pageInvoices = filtered.slice(start, start + UI_PAGE_SIZE);
 
+  const qs = (p: number) =>
+    `/portal/invoices${activeTab === 'ALL' ? '' : `?status=${activeTab}`}${
+      activeTab === 'ALL' ? `?page=${p}` : `&page=${p}`
+    }`;
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <PortalNavbar />
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Your Invoices
-              </h1>
-              <p className="text-sm text-gray-600 mt-1">
-                View and open your invoices from Wave
-              </p>
-            </div>
-          </div>
+    <div className="w-full space-y-6">
+      <PageHead title="Your Invoices" subtitle="View and open your invoices from Wave" />
+
+      <div className="rounded-2xl border border-border bg-card p-4.5 sm:p-6">
+        {/* Tabs */}
+        <div className="mb-4 flex flex-wrap items-center gap-1.5 border-b border-border pb-3">
+          {[
+            { key: 'ALL', label: 'All invoices' },
+            { key: 'PAID', label: 'Paid' },
+            { key: 'UNPAID', label: 'Unpaid' },
+          ].map((t) => (
+            <Link
+              key={t.key}
+              href={`/portal/invoices${
+                t.key === 'ALL' ? '' : `?status=${t.key}`
+              }`}
+              className={`inline-flex items-center rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition-colors ${
+                activeTab === t.key
+                  ? 'bg-brick-500 text-white'
+                  : 'text-muted-foreground hover:bg-surface-2 hover:text-foreground'
+              }`}
+            >
+              {t.label}
+            </Link>
+          ))}
         </div>
-      </header>
 
-      <PortalTwoColumnShell>
-        <Card className="bg-white rounded-lg shadow p-4">
-          {/* Tabs */}
-          <div className="flex flex-wrap items-center gap-2 border-b border-gray-200 pb-2 mb-3">
-            {[
-              { key: 'ALL', label: 'All invoices' },
-              { key: 'PAID', label: 'Paid' },
-              { key: 'UNPAID', label: 'Unpaid' },
-            ].map((t) => (
-              <Link
-                key={t.key}
-                href={`/portal/invoices${
-                  t.key === 'ALL' ? '' : `?status=${t.key}`
-                }`}
-                className={`px-3 py-1.5 rounded-md text-sm border transition-colors ${
-                  activeTab === t.key
-                    ? 'bg-gray-900 text-white border-gray-900'
-                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                {t.label}
-              </Link>
-            ))}
+        {/* Table */}
+        {!customerId ? (
+          <div className="text-sm text-muted-foreground">
+            No customer found in Wave for {lookupEmail ?? 'your email'}.
           </div>
-
-          {/* Table */}
-          {!customerId ? (
-            <div className="text-sm text-gray-600">
-              No customer found in Wave for {lookupEmail ?? 'your email'}.
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="text-sm text-gray-600">No invoices to display.</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
+        ) : filtered.length === 0 ? (
+          <div className="text-sm text-muted-foreground">
+            No invoices to display.
+          </div>
+        ) : (
+          <div className="w-full">
+            <div className="table-responsive overflow-hidden rounded-xl border border-border">
+              <table>
                 <thead>
-                  <tr className="text-left text-gray-500">
-                    <th className="py-2 pr-4">Invoice #</th>
-                    <th className="py-2 pr-4">Date</th>
-                    <th className="py-2 pr-4">Amount</th>
-                    <th className="py-2 pr-4">Status</th>
-                    <th className="py-2 pr-4">Action</th>
+                  <tr>
+                    <th>Invoice #</th>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th className="text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {pageInvoices.map((inv) => (
-                    <tr key={inv.id} className="border-t border-gray-100">
-                      <td className="py-2 pr-4 font-medium text-gray-900">
+                    <tr
+                      key={inv.id}
+                      className="border-b border-border last:border-b-0 hover:bg-surface-2"
+                    >
+                      <td data-label="Invoice #" className="td-primary font-medium">
                         {inv.invoiceNumber}
                       </td>
-                      <td className="py-2 pr-4 text-gray-700">
+                      <td data-label="Date">
                         {new Date(inv.invoiceDate).toLocaleDateString()}
                       </td>
-                      <td className="py-2 pr-4 text-gray-700">
+                      <td data-label="Amount" className="num">
                         {formatMoney(inv.total)}
                       </td>
-                      <td className="py-2 pr-4">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-md border text-xs font-medium ${statusColor(
-                            inv.status
-                          )}`}
-                        >
+                      <td data-label="Status">
+                        <span className={statusPillClass(inv.status)}>
                           {inv.status}
                         </span>
                       </td>
-                      <td className="py-2 pr-4">
+                      <td data-label="Action" className="text-right">
                         <Button asChild size="sm" variant="outline">
                           <Link href={inv.viewUrl} target="_blank">
                             View
@@ -186,55 +175,30 @@ export default async function InvoicesPage({
                   ))}
                 </tbody>
               </table>
+            </div>
 
-              {/* Pagination (bottom) */}
-              <div className="flex items-center justify-between py-2">
-                <div className="text-xs text-gray-500">
-                  Page {uiPage} of {totalPagesUI}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    disabled={uiPage <= 1}
-                  >
-                    <Link
-                      href={`/portal/invoices${
-                        activeTab === 'ALL' ? '' : `?status=${activeTab}`
-                      }${
-                        activeTab === 'ALL'
-                          ? `?page=${uiPage - 1}`
-                          : `&page=${uiPage - 1}`
-                      }`}
-                    >
-                      Prev
-                    </Link>
-                  </Button>
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    disabled={uiPage >= totalPagesUI}
-                  >
-                    <Link
-                      href={`/portal/invoices${
-                        activeTab === 'ALL' ? '' : `?status=${activeTab}`
-                      }${
-                        activeTab === 'ALL'
-                          ? `?page=${uiPage + 1}`
-                          : `&page=${uiPage + 1}`
-                      }`}
-                    >
-                      Next
-                    </Link>
-                  </Button>
-                </div>
+            {/* Pagination (bottom) */}
+            <div className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm text-muted-foreground">
+              <div className="text-xs">
+                Page {uiPage} of {totalPagesUI}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button asChild variant="outline" size="sm" disabled={uiPage <= 1}>
+                  <Link href={qs(uiPage - 1)}>Prev</Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  disabled={uiPage >= totalPagesUI}
+                >
+                  <Link href={qs(uiPage + 1)}>Next</Link>
+                </Button>
               </div>
             </div>
-          )}
-        </Card>
-      </PortalTwoColumnShell>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

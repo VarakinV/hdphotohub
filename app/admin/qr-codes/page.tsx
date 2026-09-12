@@ -12,13 +12,12 @@ import {
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { AdminNavbar } from '@/components/admin/admin-navbar';
-import AdminTwoColumnShell from '@/components/admin/AdminTwoColumnShell';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 import { QRCodeStatsDialog } from '@/components/qr/QRCodeStatsDialog';
 import { QRCodeReassignDialog } from '@/components/qr/QRCodeReassignDialog';
-import { Loader2, Plus, TrendingUp, Edit, Trash2, ChevronDown, X } from 'lucide-react';
+import { Loader2, Plus, TrendingUp, Edit, ChevronDown, X } from 'lucide-react';
+import { DeleteIconButton } from '@/components/admin/ui/icon-action';
 
 interface RealtorOption {
   id: string;
@@ -88,7 +87,7 @@ function RealtorSearchFilter({
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-sm text-gray-600">Realtor:</span>
+      <span className="text-sm text-muted-foreground">Realtor:</span>
       <div ref={ref} className="relative min-w-[200px]">
         <button
           type="button"
@@ -105,7 +104,7 @@ function RealtorSearchFilter({
                   onChange(undefined);
                   setSearch('');
                 }}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-faint hover:text-muted-foreground"
               >
                 <X className="h-3.5 w-3.5" />
               </span>
@@ -130,7 +129,7 @@ function RealtorSearchFilter({
               <button
                 type="button"
                 onClick={() => { onChange(undefined); setSearch(''); setOpen(false); }}
-                className={`w-full text-left px-3 py-1.5 text-sm hover:bg-gray-100 ${!value ? 'bg-gray-50 font-medium' : ''}`}
+                className={`w-full text-left px-3 py-1.5 text-sm hover:bg-surface-2 ${!value ? 'bg-surface-2 font-medium' : ''}`}
               >
                 All
               </button>
@@ -139,13 +138,13 @@ function RealtorSearchFilter({
                   key={r.id}
                   type="button"
                   onClick={() => { onChange(r.id); setSearch(''); setOpen(false); }}
-                  className={`w-full text-left px-3 py-1.5 text-sm hover:bg-gray-100 ${value === r.id ? 'bg-gray-50 font-medium' : ''}`}
+                  className={`w-full text-left px-3 py-1.5 text-sm hover:bg-surface-2 ${value === r.id ? 'bg-surface-2 font-medium' : ''}`}
                 >
                   {r.name}
                 </button>
               ))}
               {filtered.length === 0 && (
-                <div className="px-3 py-2 text-sm text-gray-400">No results</div>
+                <div className="px-3 py-2 text-sm text-faint">No results</div>
               )}
             </div>
           </div>
@@ -297,26 +296,25 @@ export default function AdminQRCodesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AdminNavbar />
+    <div className="min-h-screen bg-surface-2">
       <Toaster position="bottom-right" />
 
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
+      <div className="mb-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">QR Codes</h1>
-              <p className="text-sm text-gray-600 mt-1">
+              <h2 className="font-display text-[22px] font-semibold text-foreground">QR Codes</h2>
+              <p className="text-sm text-muted-foreground mt-1">
                 Manage QR codes for property listings
               </p>
             </div>
           </div>
         </div>
-      </header>
+      </div>
 
-      <AdminTwoColumnShell>
+      <div className="space-y-6">
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-4 flex flex-wrap gap-3 items-center">
+        <div className="rounded-2xl border border-border bg-card p-4 flex flex-wrap gap-3 items-center">
           <RealtorSearchFilter
             realtors={realtors}
             value={filters.realtorId}
@@ -338,10 +336,10 @@ export default function AdminQRCodesPage() {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="rounded-2xl border border-border bg-card overflow-hidden">
           {loading ? (
             <div className="flex justify-center items-center h-64">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              <Loader2 className="h-8 w-8 animate-spin text-faint" />
             </div>
           ) : (
             <>
@@ -370,19 +368,19 @@ export default function AdminQRCodesPage() {
                       <TableRow key={qr.id}>
                         <TableCell>
                           <div className="font-medium">{qr.displayId}</div>
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-muted-foreground">
                             <a
                               href={`/q/${qr.displayId}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="hover:text-blue-600"
+                              className="hover:text-navy-700 dark:text-[#9db5f2]"
                             >
                               /q/{qr.displayId}
                             </a>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="text-sm text-gray-900 max-w-[180px] truncate">
+                          <div className="text-sm text-foreground max-w-[180px] truncate">
                             {propertyAddress}
                           </div>
                         </TableCell>
@@ -398,13 +396,13 @@ export default function AdminQRCodesPage() {
                                   handleToggleWeeklyStats(currentAssignment.id, checked)
                                 }
                               />
-                              <span className="text-xs text-gray-600">
+                              <span className="text-xs text-muted-foreground">
                                 {currentAssignment.sendWeeklyStats ? 'On' : 'Off'}
                               </span>
                             </div>
                           )}
                         </TableCell>
-                        <TableCell className="text-sm text-gray-500">
+                        <TableCell className="text-sm text-muted-foreground">
                           {new Date(qr.createdAt).toLocaleDateString()}
                         </TableCell>
                         <TableCell className="text-right">
@@ -425,14 +423,10 @@ export default function AdminQRCodesPage() {
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
+                            <DeleteIconButton
                               onClick={() => handleDelete(qr.id)}
-                              title="Delete"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                              label="Delete"
+                            />
                           </div>
                         </TableCell>
                       </TableRow>
@@ -445,11 +439,11 @@ export default function AdminQRCodesPage() {
               {!loading && (
                 <div className="p-4 border-t flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-muted-foreground">
                       Page {page} of {totalPages}
                     </div>
                     <div className="flex items-center gap-1">
-                      <label className="text-sm text-gray-500">Rows:</label>
+                      <label className="text-sm text-muted-foreground">Rows:</label>
                       <select
                         className="h-8 rounded-md border px-2 text-sm"
                         value={perPage}
@@ -486,7 +480,7 @@ export default function AdminQRCodesPage() {
             </>
           )}
         </div>
-      </AdminTwoColumnShell>
+      </div>
 
       {selectedQR && showStats && (
         <QRCodeStatsDialog

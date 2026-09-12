@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { QrCode, Plus, TrendingUp, Trash2, FileText, Image, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { QrCode, Plus, TrendingUp, FileText, Image, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { DeleteIconButton } from '@/components/admin/ui/icon-action';
 import { QRCodeStatsDialog } from '@/components/qr/QRCodeStatsDialog';
 
 interface QRCode {
@@ -123,7 +124,7 @@ export function OrderQRCodes({ orderId }: OrderQRCodesProps) {
   if (loading) {
     return (
       <div className="p-8 text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground mx-auto"></div>
       </div>
     );
   }
@@ -133,7 +134,7 @@ export function OrderQRCodes({ orderId }: OrderQRCodesProps) {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">QR Codes for this Order</h3>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             Generate QR codes that link to the property lead capture page
           </p>
         </div>
@@ -153,8 +154,8 @@ export function OrderQRCodes({ orderId }: OrderQRCodesProps) {
       </div>
 
       {qrCodes.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
-          <QrCode className="h-12 w-12 mx-auto mb-3 text-gray-400" />
+        <div className="text-center py-12 text-muted-foreground">
+          <QrCode className="h-12 w-12 mx-auto mb-3 text-faint" />
           <p>No QR codes yet. Generate one to get started.</p>
         </div>
       ) : (
@@ -168,33 +169,33 @@ export function OrderQRCodes({ orderId }: OrderQRCodesProps) {
                     <span
                       className={`px-2 py-0.5 text-xs rounded-full ${
                         qr.status === 'ACTIVE'
-                          ? 'bg-green-100 text-green-800'
+                          ? 'bg-[#e4f4ea] dark:bg-[#123322] text-[#1c7a41] dark:text-[#7fe0a3]'
                           : qr.status === 'UNASSIGNED'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-gray-100 text-gray-800'
+                          ? 'bg-yellow-100 text-[#9a6a12] dark:text-[#f0c674]'
+                          : 'bg-surface-2 text-foreground'
                       }`}
                     >
                       {qr.status}
                     </span>
                   </div>
-                  <div className="text-sm text-gray-600 mb-2">
+                  <div className="text-sm text-muted-foreground mb-2">
                     <a
                       href={`/q/${qr.displayId}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
+                      className="text-navy-700 dark:text-[#9db5f2] hover:underline"
                     >
                       /q/{qr.displayId}
                     </a>
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-muted-foreground">
                     Created {new Date(qr.createdAt).toLocaleDateString()}
                   </div>
 
                   {(qr.printables?.length ?? 0) > 0 && (
                     <div className="mt-4">
                       <div className="text-sm font-medium mb-2">Print Artifacts:</div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
                         {qr.printables?.map((p) => {
                           const variantLabel = p.variantKey
                             .split('-')
@@ -207,35 +208,35 @@ export function OrderQRCodes({ orderId }: OrderQRCodesProps) {
                           return (
                             <div
                               key={p.id}
-                              className="border rounded-lg p-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+                              className="border rounded-lg p-3 bg-surface-2 hover:bg-surface-2 transition-colors"
                             >
                               {p.status === 'COMPLETE' && p.pngUrl && (
                                 <div className="mb-2 flex justify-center">
                                   <img
                                     src={p.pngUrl}
                                     alt={variantLabel}
-                                    className="max-w-full h-auto max-h-20 object-contain rounded border border-gray-200"
+                                    className="max-w-full h-auto max-h-20 object-contain rounded border border-border"
                                   />
                                 </div>
                               )}
                               <div className="flex items-start justify-between mb-2">
                                 <div className="flex-1 min-w-0">
-                                  <div className="text-sm font-medium text-gray-900 truncate">
+                                  <div className="text-sm font-medium text-foreground truncate">
                                     {variantLabel}
                                   </div>
                                   <div className="mt-1">
                                     {p.status === 'COMPLETE' ? (
-                                      <div className="flex items-center gap-1 text-xs text-green-600">
+                                      <div className="flex items-center gap-1 text-xs text-[#1c7a41] dark:text-[#7fe0a3]">
                                         <CheckCircle className="h-3 w-3" />
                                         <span>Ready</span>
                                       </div>
                                     ) : p.status === 'FAILED' ? (
-                                      <div className="flex items-center gap-1 text-xs text-red-600">
+                                      <div className="flex items-center gap-1 text-xs text-[#c23434] dark:text-[#f09a9a]">
                                         <XCircle className="h-3 w-3" />
                                         <span>Failed</span>
                                       </div>
                                     ) : (
-                                      <div className="flex items-center gap-1 text-xs text-gray-500">
+                                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                         <Loader2 className="h-3 w-3 animate-spin" />
                                         <span>{p.status}</span>
                                       </div>
@@ -251,7 +252,7 @@ export function OrderQRCodes({ orderId }: OrderQRCodesProps) {
                                       href={p.pngUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="flex items-center gap-1 px-2 py-1 bg-white border border-gray-300 rounded text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                                      className="flex items-center gap-1 px-2 py-1 bg-card border border-border rounded text-xs text-foreground hover:bg-surface-2 transition-colors"
                                       title="Download PNG"
                                     >
                                       <Image className="h-3 w-3" />
@@ -263,7 +264,7 @@ export function OrderQRCodes({ orderId }: OrderQRCodesProps) {
                                       href={p.pdfUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="flex items-center gap-1 px-2 py-1 bg-white border border-gray-300 rounded text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                                      className="flex items-center gap-1 px-2 py-1 bg-card border border-border rounded text-xs text-foreground hover:bg-surface-2 transition-colors"
                                       title="Download PDF"
                                     >
                                       <FileText className="h-3 w-3" />
@@ -289,14 +290,10 @@ export function OrderQRCodes({ orderId }: OrderQRCodesProps) {
                   >
                     <TrendingUp className="h-4 w-4" />
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
+                  <DeleteIconButton
+                    label="Delete"
                     onClick={() => handleDelete(qr.id)}
-                    title="Delete"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  />
                 </div>
               </div>
             </div>

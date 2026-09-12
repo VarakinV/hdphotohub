@@ -41,7 +41,7 @@ export function Switch({
       className={cn(
         'relative inline-flex items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40',
         track,
-        checked ? 'bg-green-500' : 'bg-gray-300',
+        checked ? 'bg-[#1c7a41]' : 'bg-border',
         disabled && 'opacity-60 cursor-not-allowed',
         className
       )}

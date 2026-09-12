@@ -2,20 +2,21 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Loader2, Music2, RefreshCw, Trash2 } from 'lucide-react';
+import { Loader2, Music2, RefreshCw } from 'lucide-react';
+import { DeleteIconButton } from '@/components/admin/ui/icon-action';
 
 function statusColor(s: string) {
   switch (s) {
     case 'COMPLETE':
-      return 'bg-green-100 text-green-800';
+      return 'bg-[#e4f4ea] dark:bg-[#123322] text-[#1c7a41] dark:text-[#7fe0a3]';
     case 'RENDERING':
       return 'bg-blue-100 text-blue-800';
     case 'QUEUED':
-      return 'bg-yellow-100 text-yellow-800';
+      return 'bg-yellow-100 text-[#9a6a12] dark:text-[#f0c674]';
     case 'FAILED':
       return 'bg-red-100 text-red-800';
     default:
-      return 'bg-gray-100 text-gray-800';
+      return 'bg-surface-2 text-foreground';
   }
 }
 
@@ -58,10 +59,10 @@ function storageInfo(url?: string): { label: string; cls: string } | null {
       return { label: 'S3', cls: 'bg-purple-100 text-purple-800' };
     }
     if (host.includes('shotstack.io')) {
-      return { label: 'Shotstack', cls: 'bg-gray-100 text-gray-800' };
+      return { label: 'Shotstack', cls: 'bg-surface-2 text-foreground' };
     }
     if (host.includes('json2video')) {
-      return { label: 'JSON2Video', cls: 'bg-gray-100 text-gray-800' };
+      return { label: 'JSON2Video', cls: 'bg-surface-2 text-foreground' };
     }
     return { label: 'External', cls: 'bg-slate-100 text-slate-800' };
   } catch {
@@ -73,7 +74,7 @@ function providerBadge(provider?: string) {
   const p = (provider || '').toLowerCase();
   if (p === 'remotion') return { label: 'Remotion', cls: 'bg-indigo-100 text-indigo-800' };
   if (p === 'j2v') return { label: 'J2V', cls: 'bg-sky-100 text-sky-800' };
-  if (p) return { label: p, cls: 'bg-gray-100 text-gray-800' };
+  if (p) return { label: p, cls: 'bg-surface-2 text-foreground' };
   return null;
 }
 
@@ -255,11 +256,11 @@ export default function ReelsList({
         <div className="font-medium">Reels</div>
         <div className="flex items-center gap-2">
           {hasActive && (
-            <div className="flex items-center gap-2 text-xs text-gray-600">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Loader2 className="h-3 w-3 animate-spin" />
-              <div className="w-32 h-1 bg-gray-200 rounded overflow-hidden">
+              <div className="w-32 h-1 bg-border rounded overflow-hidden">
                 <div
-                  className="h-full bg-green-600 transition-[width] duration-400"
+                  className="h-full bg-[#1c7a41] transition-[width] duration-400"
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -293,7 +294,7 @@ export default function ReelsList({
       </div>
       <div className="space-y-2">
         {reels.length === 0 && (
-          <div className="text-sm text-gray-500">No reels yet.</div>
+          <div className="text-sm text-muted-foreground">No reels yet.</div>
         )}
         {(() => {
           const orderKeys = [
@@ -340,7 +341,7 @@ export default function ReelsList({
                     {r.status}
                   </span>
                   {r.musicTrack?.name && (
-                    <span className="text-xs text-gray-600 inline-flex items-center gap-1">
+                    <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
                       ♪ {r.musicTrack.name}
                     </span>
                   )}
@@ -356,12 +357,12 @@ export default function ReelsList({
                       ) : null;
                     })()}
                   {r.width && r.height && (
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-muted-foreground">
                       {r.width}×{r.height}
                     </div>
                   )}
                   {r.renderId && (
-                    <div className="text-xs text-gray-400">
+                    <div className="text-xs text-faint">
                       ID: {r.renderId.slice(0, 8)}…
                     </div>
                   )}
@@ -370,14 +371,14 @@ export default function ReelsList({
                   {/* Per-reel music picker — re-renders with the selected track (Remotion only) */}
                   {(r.provider || '').toLowerCase() === 'remotion' && tracks.length > 0 && (
                     <div className="flex items-center gap-1" title="Assign music and re-render">
-                      <Music2 className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                      <Music2 className="h-3.5 w-3.5 text-faint shrink-0" />
                       {changingMusicId === r.id ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-400" />
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-faint" />
                       ) : (
                         <select
                           value={r.musicTrack?.id || ''}
                           onChange={(e) => changeMusic(r, e.target.value)}
-                          className="border rounded px-1.5 py-1 text-xs bg-white max-w-[150px]"
+                          className="border rounded px-1.5 py-1 text-xs bg-card max-w-[150px]"
                         >
                           <option value="">No music</option>
                           {tracks.map((t) => (
@@ -457,20 +458,11 @@ export default function ReelsList({
                       Cancel
                     </Button>
                   )}
-                  <Button
-                    size="icon"
-                    variant="outline"
+                  <DeleteIconButton
+                    label="Delete"
                     onClick={() => onDelete(r.id)}
-                    title="Delete"
-                    disabled={deletingId === r.id}
-                    aria-busy={deletingId === r.id}
-                  >
-                    {deletingId === r.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-4 w-4" />
-                    )}
-                  </Button>
+                    loading={deletingId === r.id}
+                  />
                 </div>
               </div>
             ));

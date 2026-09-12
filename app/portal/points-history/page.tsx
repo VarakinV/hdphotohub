@@ -3,18 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import { PortalNavbar } from '@/components/portal/portal-navbar';
-import PortalTwoColumnShell from '@/components/portal/PortalTwoColumnShell';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { PageHead } from '@/components/admin/ui/page-head';
+import { Pager } from '@/components/admin/ui/pager';
 import { Loader2, Sparkles } from 'lucide-react';
 
 interface PointTransaction {
@@ -35,13 +25,14 @@ export default function PortalPointsHistoryPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const perPage = 20;
 
   const fetchHistory = useCallback(async () => {
     if (!realtorId) return;
     setLoading(true);
     try {
       const res = await fetch(
-        `/api/realtors/${realtorId}/points?page=${page}&perPage=20`
+        `/api/realtors/${realtorId}/points?page=${page}&perPage=${perPage}`
       );
       if (!res.ok) throw new Error();
       const data = await res.json();
@@ -62,135 +53,115 @@ export default function PortalPointsHistoryPage() {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <PortalNavbar />
-        <PortalTwoColumnShell>
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-          </div>
-        </PortalTwoColumnShell>
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-faint" />
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <PortalNavbar />
-        <PortalTwoColumnShell>
-          <div className="text-center py-20 text-gray-500">
-            Please{' '}
-            <Link href="/login" className="underline text-primary">
-              sign in
-            </Link>
-            .
-          </div>
-        </PortalTwoColumnShell>
+      <div className="py-20 text-center text-muted-foreground">
+        Please{' '}
+        <Link href="/login" className="underline text-primary">
+          sign in
+        </Link>
+        .
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <PortalNavbar />
-      <PortalTwoColumnShell>
-        <Card className="bg-white rounded-lg shadow p-4">
-          <div className="flex items-start justify-between gap-4 mb-4">
-            <div>
-              <h2 className="text-lg font-medium flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-yellow-500" /> Points History
-              </h2>
-              <p className="text-sm text-gray-500 mt-0.5">
-                Current Balance:{' '}
-                <span className="font-bold text-gray-900 text-lg">
-                  {balance.toLocaleString()}
-                </span>
-              </p>
-            </div>
-          </div>
+    <div className="w-full space-y-6">
+      <PageHead title="Points History" subtitle="Your earned and redeemed points" />
 
-          <div className="border rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="text-right">Points</TableHead>
-                  <TableHead>Reason</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={3} className="text-center py-8">
-                      <Loader2 className="h-5 w-5 animate-spin mx-auto text-gray-400" />
-                    </TableCell>
-                  </TableRow>
-                ) : transactions.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={3} className="text-center py-8 text-gray-400">
-                      No point transactions yet.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  transactions.map((tx) => (
-                    <TableRow key={tx.id}>
-                      <TableCell className="whitespace-nowrap text-sm">
-                        {new Date(tx.createdAt).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}
-                      </TableCell>
-                      <TableCell
-                        className={`text-right font-semibold tabular-nums ${
-                          tx.amount > 0
-                            ? 'text-green-600'
-                            : tx.amount < 0
-                            ? 'text-red-600'
-                            : ''
-                        }`}
-                      >
-                        {tx.amount > 0 ? '+' : ''}
-                        {tx.amount.toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-sm text-gray-600">
-                        {tx.reason}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-3 text-sm text-gray-500">
-              <span>
-                Page {page} of {totalPages} ({total} total)
+      <div className="rounded-2xl border border-border bg-card p-4.5 sm:p-6">
+        <div className="mb-4 flex items-start justify-between gap-4">
+          <div>
+            <h2 className="font-display flex items-center gap-2 text-[16px] font-semibold">
+              <Sparkles className="h-5 w-5 text-[#9a6a12] dark:text-[#f0c674]" /> Points History
+            </h2>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              Current Balance:{' '}
+              <span className="num text-lg font-bold text-foreground">
+                {balance.toLocaleString()}
               </span>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => p - 1)}
-                >
-                  Previous
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
-        </Card>
-      </PortalTwoColumnShell>
+            </p>
+          </div>
+        </div>
+
+        <div className="table-responsive overflow-hidden rounded-xl border border-border">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th className="text-right">Points</th>
+                <th>Reason</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={3} className="py-8 text-center">
+                    <Loader2 className="mx-auto h-5 w-5 animate-spin text-faint" />
+                  </td>
+                </tr>
+              ) : transactions.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="py-8 text-center text-faint">
+                    No point transactions yet.
+                  </td>
+                </tr>
+              ) : (
+                transactions.map((tx) => (
+                  <tr
+                    key={tx.id}
+                    className="border-b border-border last:border-b-0 hover:bg-surface-2"
+                  >
+                    <td data-label="Date" className="whitespace-nowrap">
+                      {new Date(tx.createdAt).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                    </td>
+                    <td
+                      data-label="Points"
+                      className={`num text-right font-semibold ${
+                        tx.amount > 0
+                          ? 'text-[#1c7a41] dark:text-[#7fe0a3]'
+                          : tx.amount < 0
+                          ? 'text-[#c23434] dark:text-[#f09a9a]'
+                          : ''
+                      }`}
+                    >
+                      {tx.amount > 0 ? '+' : ''}
+                      {tx.amount.toLocaleString()}
+                    </td>
+                    <td data-label="Reason" className="text-muted-foreground">
+                      {tx.reason}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {totalPages > 1 && (
+          <div className="mt-3">
+            <Pager
+              page={page}
+              totalPages={totalPages}
+              totalItems={total}
+              perPage={perPage}
+              itemName="transactions"
+              onPrev={() => setPage((p) => Math.max(1, p - 1))}
+              onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
-
